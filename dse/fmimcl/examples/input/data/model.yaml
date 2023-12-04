@@ -1,0 +1,53 @@
+# Copyright 2024 Robert Bosch GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+kind: Model
+metadata:
+  name: FMIMCL
+  annotations:
+    mcl_adapter: 'fmi'
+    mcl_version: '2.0.0'
+    fmi_model_cosim: true
+    fmi_model_version: '1.48'
+    fmi_stepsize: '0.0005'
+    fmi_guid: '{11111111-2222-3333-4444-555555555555}'
+    fmi_resource_dir: 'dse/fmimcl/build/_out/example/simple/fmu/resources'
+spec:
+  runtime:
+    dynlib:
+      - os: linux
+        arch: amd64
+        path: lib/fmimcl.so
+    mcl:
+      - os: linux
+        arch: amd64
+        path: examples/lib/fmi2fmu.so
+  channels:
+    - alias: signal_channel
+      selectors:
+        channel: signal_vector
+---
+kind: Model
+metadata:
+  name: Extended
+spec:
+  runtime:
+    dynlib:
+      - os: linux
+        arch: amd64
+        path: examples/lib/input.so
+      - os: linux
+        arch: x86
+        path: examples/lib/input.so
+      - os: windows
+        arch: x64
+        path: examples/lib/input.dll
+      - os: windows
+        arch: x86
+        path: examples/lib/input.dll
+  channels:
+    - alias: input_channel
+      selectors:
+        channel: input_vector

@@ -1,0 +1,57 @@
+# Copyright 2024 Robert Bosch GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+kind: Model
+metadata:
+  name: FMU
+  annotations:
+    mcl_adapter: 'fmi'
+    mcl_version: '2.0'
+    fmi_model_cosim: true
+    fmi_model_version: '1.48'
+    fmi_stepsize: '0.0001'
+    fmi_guid: '{11111111-2222-3333-4444-555555555555}'
+    fmi_resource_dir: 'dse/fmimcl/build/_out/example/simple/fmu/resources'
+spec:
+  runtime:
+    dynlib:
+      - os: linux
+        arch: amd64
+        path: ../../../../dse/fmimcl/build/_out/lib/fmimcl.so
+    mcl:
+      - os: linux
+        arch: amd64
+        path: examples/fmu/fmu/binaries/simple.so
+  channels:
+    - alias: signal_channel
+      selectors:
+        channel: signal_vector
+---
+kind: SignalGroup
+metadata:
+  name: VARIABLES
+  labels:
+    model: FMU
+    channel: signal_vector
+spec:
+  signals:
+    - signal: foo
+      annotations:
+        fmi_variable_id: 0
+        fmi_variable_name: foo
+        fmi_variable_type: Real
+        fmi_variable_start: 42.0
+    - signal: bar
+      annotations:
+        fmi_variable_id: 1
+        fmi_variable_name: bar
+        fmi_variable_type: Real
+        fmi_variable_start: 24.0
+    - signal: count
+      annotations:
+        fmi_variable_id: 2
+        fmi_variable_name: count
+        fmi_variable_type: Integer
+        fmi_variable_start: 0

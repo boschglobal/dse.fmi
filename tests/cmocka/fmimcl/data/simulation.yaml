@@ -1,0 +1,47 @@
+# Copyright 2024 Robert Bosch GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+kind: Stack
+metadata:
+  name: stack
+spec:
+  connection:
+    transport:
+      redispubsub:
+        uri: redis://localhost:6379
+        timeout: 60
+  models:
+    - name: simbus
+      model:
+        name: simbus
+      channels:
+        - name: signal
+          expectedModelCount: 1
+    - name: fmu_inst
+      uid: 42
+      model:
+        name: FMU
+      metadata:
+        network: stub
+      channels:
+        - name: signal
+          alias: signal_channel
+          selectors:
+            channel: signal_vector
+---
+kind: Model
+metadata:
+  name: simbus
+---
+kind: SignalGroup
+metadata:
+  name: signal
+  labels:
+    channel: signal_vector
+spec:
+  signals:
+    - signal: foo
+    - signal: bar
+    - signal: count

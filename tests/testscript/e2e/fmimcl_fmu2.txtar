@@ -1,0 +1,31 @@
+env NAME=basic
+env SIM=dse/fmimcl/build/_out
+
+
+# TEST: FMI MCL with CoSim FMU using FMIv2
+exec sh -e $WORK/test.sh
+
+stdout 'Load YAML File: examples/data/simulation.yaml'
+stdout 'Loading symbol: model_create ... ok'
+stdout 'Loading symbol: model_step ... ok'
+stdout 'Loading symbol: model_destroy ... ok'
+stdout 'Run the Simulation ...'
+stdout 'Controller exit ...'
+
+stdout 'uid=4130119698, val=54.000000, final_val=54.000000, name=real_1_tx'
+stdout 'uid=2274494661, val=99.000000, final_val=99.000000, name=integer_2_tx'
+stdout 'uid=2618602618, val=10.000000, final_val=10.000000, name=real_3_rx'
+stdout 'uid=1459318059, val=0.000000, final_val=0.000000, name=real_2_rx'
+stdout 'uid=490176922, val=9.000000, final_val=9.000000, name=integer_1_tx'
+stdout 'uid=1343595106, val=20.000000, final_val=20.000000, name=integer_3_rx'
+stdout 'uid=1955499220, val=0.000000, final_val=0.000000, name=bool_1_rx'
+stdout 'uid=3382072605, val=0.000000, final_val=0.000000, name=bool_2_tx'
+stdout 'uid=3194481060, val=30.000000, final_val=30.000000, name=real_A_rx'
+stdout 'uid=750647789, val=37.000000, final_val=37.000000, name=real_B_tx'
+stdout 'uid=3054208972, val=127.000000, final_val=127.000000, name=real_C_tx'
+stdout 'uid=3471121503, val=127.000000, final_val=127.000000, name=real_D_tx'
+
+-- test.sh --
+SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
+docker run --name simer -i --rm -v $ENTRYDIR/$SIM:/sim \
+    $SIMER -valgrind $NAME -env $NAME:SIMBUS_LOGLEVEL=2 -stepsize 0.0005 -endtime 0.005

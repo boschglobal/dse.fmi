@@ -1,0 +1,145 @@
+# Copyright 2024 Robert Bosch GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+kind: Stack
+metadata:
+  name: stack
+spec:
+  runtime:
+    env:
+      SIMBUS_LOGLEVEL: 2
+  connection:
+    transport:
+      redispubsub:
+        uri: redis://localhost:6379
+        timeout: 60
+  models:
+    - name: simbus
+      model:
+        name: simbus
+      channels:
+        - name: signal
+          expectedModelCount: 2
+    - name: fmu_inst
+      uid: 42
+      model:
+        name: FMIMCL
+      metadata:
+        network: stub
+      channels:
+        - name: signal
+          alias: signal_channel
+          selectors:
+            channel: signal_vector
+    - name: extended_inst
+      uid: 21
+      model:
+        name: Extended
+      channels:
+        - name: signal
+          alias: input_channel
+---
+kind: Model
+metadata:
+  name: simbus
+---
+kind: SignalGroup
+metadata:
+  name: VARIABLES
+  labels:
+    model: Extended
+    channel: input_vector
+spec:
+  signals:
+    - signal: real_3_rx
+    - signal: integer_3_rx
+    - signal: real_A_rx
+---
+kind: SignalGroup
+metadata:
+  name: VARIABLES
+  labels:
+    model: FMIMCL
+    channel: signal_vector
+spec:
+  signals:
+    - signal: real_3_rx
+      annotations:
+        fmi_variable_id: 0
+        fmi_variable_name: real_3_rx
+        fmi_variable_type: Real
+        fmi_variable_causality: input
+    - signal: real_1_tx
+      annotations:
+        fmi_variable_id: 1
+        fmi_variable_name: real_1_tx
+        fmi_variable_type: Real
+        fmi_variable_causality: output
+    - signal: integer_3_rx
+      annotations:
+        fmi_variable_id: 2
+        fmi_variable_name: integer_3_rx
+        fmi_variable_type: Integer
+        fmi_variable_causality: input
+    - signal: integer_2_tx
+      annotations:
+        fmi_variable_id: 3
+        fmi_variable_name: integer_2_tx
+        fmi_variable_type: Integer
+        fmi_variable_causality: output
+    - signal: integer_1_tx
+      annotations:
+        fmi_variable_id: 4
+        fmi_variable_name: integer_1_tx
+        fmi_variable_type: Integer
+        fmi_variable_causality: output
+    - signal: real_2_rx
+      annotations:
+        fmi_variable_id: 5
+        fmi_variable_name: real_2_rx
+        fmi_variable_type: Real
+        fmi_variable_causality: input
+    - signal: bool_1_rx
+      annotations:
+        fmi_variable_id: 6
+        fmi_variable_name: bool_1_rx
+        fmi_variable_type: Integer
+        fmi_variable_causality: input
+    - signal: bool_2_tx
+      annotations:
+        fmi_variable_id: 7
+        fmi_variable_name: bool_2_tx
+        fmi_variable_type: Integer
+        fmi_variable_causality: output
+    - signal: real_A_rx
+      annotations:
+        fmi_variable_id: 8
+        fmi_variable_name: real_A_rx
+        fmi_variable_type: Real
+        fmi_variable_causality: input
+    - signal: real_A_rx
+      annotations:
+        fmi_variable_id: 9
+        fmi_variable_name: real_A2_rx
+        fmi_variable_type: Real
+        fmi_variable_causality: input
+    - signal: real_B_tx
+      annotations:
+        fmi_variable_id: 10
+        fmi_variable_name: real_A_rx
+        fmi_variable_type: Real
+        fmi_variable_causality: output
+    - signal: real_C_tx
+      annotations:
+        fmi_variable_id: 11
+        fmi_variable_name: real_A2_rx
+        fmi_variable_type: Real
+        fmi_variable_causality: output
+    - signal: real_D_tx
+      annotations:
+        fmi_variable_id: 11
+        fmi_variable_name: real_A2_rx
+        fmi_variable_type: Real
+        fmi_variable_causality: output
