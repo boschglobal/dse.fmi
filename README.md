@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 # Dynamic Simulation Environment - FMI Library
 
 [![CI](https://github.com/boschglobal/dse.fmi/actions/workflows/ci.yaml/badge.svg)](https://github.com/boschglobal/dse.fmi/actions/workflows/ci.yaml)
-[![Super Linter](https://github.com/boschglobal/dse.fmi/actions/workflows/super_linter.yml/badge.svg)](https://github.com/boschglobal/dse.fmi/actions/workflows/super_linter.yml)
+[![Super Linter](https://github.com/boschglobal/dse.fmi/actions/workflows/super-linter.yml/badge.svg)](https://github.com/boschglobal/dse.fmi/actions/workflows/super-linter.yml)
 ![GitHub](https://img.shields.io/github/license/boschglobal/dse.fmi)
 
 
