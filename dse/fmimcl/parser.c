@@ -201,16 +201,15 @@ static int _model_match_handler(ModelInstanceSpec* mi, SchemaObject* o)
 
 /**
 fmimcl_parse
-===========
+============
 
-This function parses the given yaml files into a Fmu Model descriptor object
+This function parses the given yaml files into a FMU Model descriptor object
 and into a mapping list between the signals and FMU variables.
 
 Parameters
 ----------
 fmu_model (FmuModel*)
-: Fmu Model descriptor object.
-
+: FMU Model descriptor object.
 */
 void fmimcl_parse(FmuModel* m)
 {

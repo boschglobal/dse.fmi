@@ -255,18 +255,18 @@ typedef struct FmuModel {
 
 
 /* fmimcl.c */
-int32_t fmimcl_adapter_create(FmuModel* fmu_model);
-void    fmimcl_destroy(FmuModel* fmu_model);
+DLL_PRIVATE int32_t fmimcl_adapter_create(FmuModel* fmu_model);
+DLL_PRIVATE void    fmimcl_destroy(FmuModel* fmu_model);
 
 /* parser.c */
-void fmimcl_parse(FmuModel* fmu_model);
-void fmimcl_load(FmuModel* fmu_model);
+DLL_PRIVATE void fmimcl_parse(FmuModel* fmu_model);
+DLL_PRIVATE void fmimcl_load(FmuModel* fmu_model);
 
 /* engine.c */
-void fmimcl_allocate_scalar_source(FmuModel* m);
+DLL_PRIVATE void fmimcl_allocate_scalar_source(FmuModel* m);
 
 /* engine.c */
-void fmimcl_generate_marshal_table(FmuModel* m);
+DLL_PRIVATE void fmimcl_generate_marshal_table(FmuModel* m);
 
 
 #endif  // DSE_FMIMCL_FMIMCL_H_

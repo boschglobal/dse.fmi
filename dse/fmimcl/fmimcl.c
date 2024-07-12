@@ -23,7 +23,7 @@ extern void mock_create(FmuModel* m);
 
 /**
 fmimcl_adapter_create
-========
+=====================
 
 This method creates an adapter object based on the configuration in the FMU
 Model object.
@@ -31,7 +31,7 @@ Model object.
 Parameters
 ----------
 fmu_model (FmuModel*)
-: Fmu Model descriptor object.
+: FMU Model descriptor object.
 
 Returns
 -------
@@ -64,15 +64,15 @@ int32_t fmimcl_adapter_create(FmuModel* fmu_model)
 
 /**
 fmimcl_destroy
-===========
+==============
 
-Releases memory and system resources allocated by fmimcl.
+Releases memory and system resources allocated by
+FMI Model Compatibility Library.
 
 Parameters
 ----------
 fmu_model (FmuModel*)
-: Fmu Model descriptor object.
-
+: FMU Model descriptor object.
 */
 void fmimcl_destroy(FmuModel* fmu_model)
 {
@@ -146,7 +146,6 @@ Parameters
 ----------
 model (ModelDesc*)
 : Model descriptor object.
-
 */
 void mcl_destroy(MclDesc* model)
 {

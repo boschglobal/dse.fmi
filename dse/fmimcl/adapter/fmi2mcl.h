@@ -50,6 +50,6 @@ typedef struct Fmi2Adapter {
 
 
 /* fmi2mcl.c*/
-void fmi2mcl_create(FmuModel* m);
+DLL_PRIVATE void fmi2mcl_create(FmuModel* m);
 
 #endif  // DSE_FMIMCL_ADAPTER_FMI2MCL_H_

@@ -26,7 +26,7 @@ static size_t _count_signals(FmuModel* m)
 
 /**
 fmimcl_allocate_scalar_source
-===========
+=============================
 
 For each Signal parsed from the Signalgroup, this function creates an
 intermediate signal object for mapping between SignalVector and FMU Variable.
@@ -34,8 +34,7 @@ intermediate signal object for mapping between SignalVector and FMU Variable.
 Parameters
 ----------
 fmu_model (FmuModel*)
-: Fmu Model descriptor object.
-
+: FMU Model descriptor object.
 */
 void fmimcl_allocate_scalar_source(FmuModel* m)
 {
@@ -84,7 +83,7 @@ static MarshalGroup* _create_mg(MarshalKind kind, MarshalDir dir,
 
 /**
 fmimcl_generate_marshal_table
-===========
+=============================
 
 The FMU Signals are sorted according to the marshal groups. A source
 vector is already allocated of N signals. This function will create
@@ -94,8 +93,7 @@ of signal blocks, each representing a marshal group.
 Parameters
 ----------
 fmu_model (FmuModel*)
-: Fmu Model descriptor object.
-
+: FMU Model descriptor object.
 */
 void fmimcl_generate_marshal_table(FmuModel* m)
 {
