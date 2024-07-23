@@ -35,7 +35,7 @@ metadata:
     fmi_model_version: '1.48'
     fmi_stepsize: '0.0001'
     fmi_guid: '{11111111-2222-3333-4444-555555555555}'
-    fmi_resource_dir: 'dse/fmimcl/build/_out/example/simple/fmu/resources'
+    fmi_resource_dir: 'dse/build/_out/fmimcl/example/simple/fmu/resources'
 spec:
   runtime:
     dynlib:

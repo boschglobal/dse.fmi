@@ -1,0 +1,77 @@
+# Copyright 2024 Robert Bosch GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+kind: Model
+metadata:
+  name: Target
+spec:
+  runtime:
+    dynlib:
+      - os: linux
+        arch: amd64
+        path: lib/target.so
+      - os: linux
+        arch: x86
+        path: lib/target.so
+      - os: windows
+        arch: x64
+        path: lib/target.dll
+      - os: windows
+        arch: x86
+        path: lib/target.dll
+  channels:
+    - alias: scalar_vector
+      selectors:
+        side: scalar_vector
+    - alias: network_vector
+      selectors:
+        channel: network_vector
+---
+kind: SignalGroup
+metadata:
+  name: scalar_vector
+  labels:
+    side: scalar_vector
+spec:
+  signals:
+    - signal: counter
+      annotations:
+        fmi_value_reference: 1
+        fmi_variable_start_value: 42
+        fmi_variable_causality: "output"
+---
+kind: SignalGroup
+metadata:
+  name: network_vector
+  labels:
+    channel: network_vector
+  annotations:
+    vector_type: binary
+spec:
+  signals:
+    - signal: can
+      annotations:
+        mime_type: 'application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; node_id=2; interface_id=0'
+        #
+        # FMI Value Reference
+        # -------------------
+        fmi_value_reference: 4
+        fmi_value_reference_input: 4
+        fmi_value_reference_output: 5
+        #
+        # FMI LS Text Encoding (applied to FMI String Variables):
+        # --------------------
+        dse.standards.fmi-ls-text-encoding.encoding: ascii85
+        # (supporting annotations to avoid XML parsing)
+        dse.standards.fmi-ls-text-encoding.vref: [2, 3, 4, 5, 6, 7, 8, 9]
+        #
+        # FMI LS Bus Topology (applied to FMI String/Binary Variables):
+        # -------------------
+        dse.standards.fmi-ls-bus-topology.bus_id: 1
+        dse.standards.fmi-ls-bus-topology.node_id: 2
+        dse.standards.fmi-ls-bus-topology.node_limit: 4
+        # (supporting annotations to avoid XML parsing)
+        dse.standards.fmi-ls-bus-topology.rx_vref: [2, 4, 6, 8]
+        dse.standards.fmi-ls-bus-topology.tx_vref: [3, 5, 7, 9]

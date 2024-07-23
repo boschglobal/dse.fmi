@@ -10,7 +10,7 @@ export DSE_CLIB_VERSION ?= 1.0.17
 
 ###############
 ## DSE Model C Library
-export DSE_MODELC_VERSION ?= 2.0.22
+export DSE_MODELC_VERSION ?= 2.0.24
 
 
 ###############
@@ -23,12 +23,12 @@ SIMER_IMAGE ?= ghcr.io/boschglobal/dse-simer:$(DSE_MODELC_VERSION)
 ###############
 ## Build parameters.
 export NAMESPACE = dse
-export MODULE = fmimcl
+export MODULE = fmi
 export EXTERNAL_BUILD_DIR ?= /tmp/$(NAMESPACE).$(MODULE)
 export PACKAGE_ARCH ?= linux-amd64
 export PACKAGE_ARCH_LIST ?= $(PACKAGE_ARCH)
 export CMAKE_TOOLCHAIN_FILE ?= $(shell pwd -P)/extra/cmake/$(PACKAGE_ARCH).cmake
-SUBDIRS = $(NAMESPACE)/$(MODULE)
+SUBDIRS = $(NAMESPACE)
 export MODELC_SANDBOX_DIR ?= $(shell pwd -P)/dse/modelc/build/_out
 
 
@@ -43,8 +43,8 @@ export PACKAGE_VERSION ?= 0.0.1
 DIST_DIR := $(shell pwd -P)/$(NAMESPACE)/$(MODULE)/build/_dist
 OSS_DIR = $(NAMESPACE)/__oss__
 PACKAGE_DOC_NAME = DSE FMI Library
-PACKAGE_NAME = FmiMcl
-PACKAGE_NAME_LC = fmimcl
+PACKAGE_NAME = Fmi
+PACKAGE_NAME_LC = fmi
 PACKAGE_PATH = $(NAMESPACE)/dist
 
 ###############

@@ -171,29 +171,23 @@ void test_mcl__api(void** state)
     int32_t     rc;
 
     API_TC tc[] = {
-        {
-            .model_time_correction = 0.0,
-            .step_result = {44},
+        { .model_time_correction = 0.0,
+            .step_result = { 44 },
             .model_time = 0.0,
             .end_time = 0.1,
-            .simulation_steps = 1
-        },
-        {
-            .model_time_correction = 0.0,
-            .step_result = {53},
+            .simulation_steps = 1 },
+        { .model_time_correction = 0.0,
+            .step_result = { 53 },
             .step_size = 0.01,
             .model_time = 0.0,
             .end_time = 0.1,
-            .simulation_steps = 1
-        },
-        {
-            .model_time_correction = 0.0,
-            .step_result = {0, 44},
+            .simulation_steps = 1 },
+        { .model_time_correction = 0.0,
+            .step_result = { 0, 44 },
             .step_size = 0.2,
             .model_time = 0.0,
             .end_time = 0.1,
-            .simulation_steps = 2
-        },
+            .simulation_steps = 2 },
     };
 
     // Check the test cases.
@@ -287,114 +281,76 @@ void test_mcl__marshalling(void** state)
     int32_t     rc = 0;
 
     MCLC_TC tc[] = {
-        {
-            .sv = {
-                {
-                    .name = "double_sv",
-                    .signal = {"real_1_tx", "real_3_rx", "real_2_rx"},
-                    .scalar = {1.0, 2.0, 3.0},
-                    .count = 3,
-                }
-            },
-            .expect_msm = {
-                {
-                    .count = 3,
-                    .name = "double_sv",
-                    .result = {2.0, 3.0, 4.0}
-                }
-            },
+        { .sv = { {
+              .name = "double_sv",
+              .signal = { "real_1_tx", "real_3_rx", "real_2_rx" },
+              .scalar = { 1.0, 2.0, 3.0 },
+              .count = 3,
+          } },
+            .expect_msm = { { .count = 3,
+                .name = "double_sv",
+                .result = { 2.0, 3.0, 4.0 } } },
             .steps = 1,
-            .sim_stepsize = 0.0001
-        },
+            .sim_stepsize = 0.0001 },
         {
             // Test case: FMU stepsize is 10x smaller than Simulation
-            .sv = {
-                {
-                    .name = "double_sv",
-                    .signal = {"real_1_tx", "real_3_rx", "real_2_rx"},
-                    .scalar = {1.0, 2.0, 3.0},
-                    .count = 3,
-                }
-            },
-            .expect_msm = {
-                {
-                    .count = 3,
-                    .name = "double_sv",
-                    .result = {11.0, 12.0, 13.0}
-                }
-            },
+            .sv = { {
+                .name = "double_sv",
+                .signal = { "real_1_tx", "real_3_rx", "real_2_rx" },
+                .scalar = { 1.0, 2.0, 3.0 },
+                .count = 3,
+            } },
+            .expect_msm = { { .count = 3,
+                .name = "double_sv",
+                .result = { 11.0, 12.0, 13.0 } } },
             .steps = 1,
             .sim_stepsize = 0.001  // model stepsize is 0.0001
         },
         {
             // Test case: FMU stepsize is 10x bigger than Simulation
-            .sv = {
-                {
-                    .name = "double_sv",
-                    .signal = {"real_1_tx", "real_3_rx", "real_2_rx"},
-                    .scalar = {1.0, 2.0, 3.0},
-                    .count = 3,
-                }
-            },
-            .expect_msm = {
-                {
-                    .count = 3,
-                    .name = "double_sv",
-                    .result = {2.0, 3.0, 4.0}
-                }
-            },
+            .sv = { {
+                .name = "double_sv",
+                .signal = { "real_1_tx", "real_3_rx", "real_2_rx" },
+                .scalar = { 1.0, 2.0, 3.0 },
+                .count = 3,
+            } },
+            .expect_msm = { { .count = 3,
+                .name = "double_sv",
+                .result = { 2.0, 3.0, 4.0 } } },
             .steps = 10,
             .sim_stepsize = 0.00001  // model stepsize is 0.0001
         },
-        {
-            .sv = {
-                {
-                    .name = "double_sv",
-                    .signal = {"real_1_tx", "real_3_rx", "real_2_rx"},
-                    .scalar = {1.0, 2.0, 3.0},
-                    .count = 3,
-                }
-            },
-            .expect_msm = {
-                {
-                    .count = 3,
-                    .name = "double_sv",
-                    .result = {11.0, 12.0, 13.0}
-                }
-            },
+        { .sv = { {
+              .name = "double_sv",
+              .signal = { "real_1_tx", "real_3_rx", "real_2_rx" },
+              .scalar = { 1.0, 2.0, 3.0 },
+              .count = 3,
+          } },
+            .expect_msm = { { .count = 3,
+                .name = "double_sv",
+                .result = { 11.0, 12.0, 13.0 } } },
             .steps = 10,
-            .sim_stepsize = 0.0001
-        },
-        {
-            .sv = {
-                {
-                    .name = "double_sv",
-                    .signal = {"real_1_tx", "real_3_rx", "real_2_rx"},
-                    .scalar = {1.0, 2.0, 3.0},
-                    .count = 3,
-                },
-                {
+            .sim_stepsize = 0.0001 },
+        { .sv = { {
+                      .name = "double_sv",
+                      .signal = { "real_1_tx", "real_3_rx", "real_2_rx" },
+                      .scalar = { 1.0, 2.0, 3.0 },
+                      .count = 3,
+                  },
+              {
+                  .name = "integer_sv",
+                  .signal = { "integer_1_tx", "integer_3_rx", "integer_2_tx" },
+                  .scalar = { 4.0, 5.0, 6.0 },
+                  .count = 3,
+              } },
+            .expect_msm = { { .count = 3,
+                                .name = "double_sv",
+                                .result = { 2.0, 3.0, 4.0 } },
+                { .count = 3,
                     .name = "integer_sv",
-                    .signal = {"integer_1_tx", "integer_3_rx", "integer_2_tx"},
-                    .scalar = {4.0, 5.0, 6.0},
-                    .count = 3,
-                }
-            },
-            .expect_msm = {
-                {
-                    .count = 3,
-                    .name = "double_sv",
-                    .result = {2.0, 3.0, 4.0}
-                },
-                {
-                    .count = 3,
-                    .name = "integer_sv",
-                    .result = {7.0, 5.0, 6.0}
-                }
-            },
+                    .result = { 7.0, 5.0, 6.0 } } },
             .steps = 1,
-            .sim_stepsize = 0.0001
-        },
+            .sim_stepsize = 0.0001 },
     };
 
     // Check the test cases.

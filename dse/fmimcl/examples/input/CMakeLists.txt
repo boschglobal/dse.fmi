@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(Input)
-set(MODEL_PATH "examples")
+set(MODEL_PATH "${MODULE}/examples")
 
 
 # Targets

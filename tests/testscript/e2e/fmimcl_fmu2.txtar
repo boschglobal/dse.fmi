@@ -1,5 +1,5 @@
-env NAME=basic
-env SIM=dse/fmimcl/build/_out
+env NAME=fmimcl_fmu2
+env SIM=dse/build/_out/fmimcl
 
 
 # TEST: FMI MCL with CoSim FMU using FMIv2

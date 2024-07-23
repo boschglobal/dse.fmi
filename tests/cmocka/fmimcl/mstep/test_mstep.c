@@ -74,33 +74,28 @@ void test_mstep(void** state)
     assert_non_null(model->sv_signal->scalar);
 
     TC_MSTEP tc[] = {
-        {
-            // FMU runs 1 time
-            .init_value = {0.0, 0.0, 1.0},
-            .vr_input = {real_3_rx, integer_3_rx, real_A_rx},
-            .expected_value = {1.0, 1.0, 11.0, 101.0, 101.0},
-            .vr_output = {real_1_tx, integer_2_tx, real_B_tx, real_C_tx, real_D_tx},
+        { // FMU runs 1 time
+            .init_value = { 0.0, 0.0, 1.0 },
+            .vr_input = { real_3_rx, integer_3_rx, real_A_rx },
+            .expected_value = { 1.0, 1.0, 11.0, 101.0, 101.0 },
+            .vr_output = { real_1_tx, integer_2_tx, real_B_tx, real_C_tx,
+                real_D_tx },
             .sim_stepsize = 0.0001,
-            .steps = 1
-        },
-        {
-            // FMU runs additional 1 time
-            .init_value = {0.0, 0.0},
-            .vr_input = {real_3_rx, integer_3_rx},
-            .expected_value = {2.0, 2.0},
-            .vr_output = {real_1_tx, integer_2_tx},
+            .steps = 1 },
+        { // FMU runs additional 1 time
+            .init_value = { 0.0, 0.0 },
+            .vr_input = { real_3_rx, integer_3_rx },
+            .expected_value = { 2.0, 2.0 },
+            .vr_output = { real_1_tx, integer_2_tx },
             .sim_stepsize = 0.00001,
-            .steps = 10
-        },
-        {
-            // FMU runs additional 10 times
-            .init_value = {0.0, 0.0},
-            .vr_input = {real_3_rx, integer_3_rx},
-            .expected_value = {12.0, 12.0},
-            .vr_output = {real_1_tx, integer_2_tx},
+            .steps = 10 },
+        { // FMU runs additional 10 times
+            .init_value = { 0.0, 0.0 },
+            .vr_input = { real_3_rx, integer_3_rx },
+            .expected_value = { 12.0, 12.0 },
+            .vr_output = { real_1_tx, integer_2_tx },
             .sim_stepsize = 0.001,
-            .steps = 1
-        },
+            .steps = 1 },
     };
 
     // Check the test cases.

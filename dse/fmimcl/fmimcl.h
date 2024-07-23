@@ -217,7 +217,7 @@ typedef struct FmuData {
     size_t        count;
     const char**  name;
     double*       scalar;
-    MarshalGroup* mg_table;  /* NULL terminated list. */
+    MarshalGroup* mg_table; /* NULL terminated list. */
 } FmuData;
 
 

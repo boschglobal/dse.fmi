@@ -1,0 +1,39 @@
+env NAME=fmimodelc_network_fmu
+env SIM=dse/build/_out/fmimodelc/examples/network_fmu
+
+
+# TEST: FMI ModelC with Network FMU using FMIv2
+exec sh -e $WORK/test.sh
+
+stdout 'Importer: Cwd: /sim/fmu'
+stdout 'Importer: Loading FMU: lib/linux-amd64/fmi2modelcfmu.so'
+stdout 'Runtime: Simulation Path: resources/sim'
+stdout 'Runtime: Simulation YAML: resources/sim/data/simulation.yaml'
+stdout 'Runtime: Model: network_fmu'
+stdout 'Runtime: Loading model: resources/sim/lib/target.so'
+stdout 'Configure Channel: scalar_vector'
+stdout 'Configure Channel: network_vector'
+
+stdout 'name       : can'
+stdout 'length     : 480'
+stdout 'buffer len : 480'
+stdout 'mime_type  : application/x-automotive-bus; interface=stream; type=frame; bus=can;'
+
+stdout 'Importer: Calling fmi2DoStep\(\): model_time=0.004500, step_size=0.000500'
+stdout 'ModelCFmu: Call model_runtime_step\(\) ...'
+stdout 'Model: RX\[03f1\] Hello World! from node_id=2'
+
+stdout 'Importer:   \[1\] 10'
+stdout 'Importer:   \[3\] F8u:'
+stdout 'Importer:   \[5\] F8u:'
+stdout 'Importer:   \[7\] F8u:'
+stdout 'Importer:   \[9\] F8u:'
+
+
+-- test.sh --
+SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
+docker run --name simer -i --rm \
+    -v $ENTRYDIR/$SIM:/sim \
+    --entrypoint="" $SIMER \
+    bash -c "cd fmu; valgrind -q --leak-check=yes --error-exitcode=808 \
+        ../bin/fmi2importer lib/linux-amd64/fmi2modelcfmu.so"

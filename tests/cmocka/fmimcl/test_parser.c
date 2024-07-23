@@ -108,7 +108,7 @@ void test_parser__fmu_model(void** state)
         fmu_model->guid, "{11111111-2222-3333-4444-555555555555}");
     assert_non_null(fmu_model->resource_dir);
     assert_string_equal(fmu_model->resource_dir,
-        "dse/fmimcl/build/_out/example/simple/fmu/resources");
+        "dse/build/_out/fmimcl/example/simple/fmu/resources");
     assert_non_null(fmu_model->path);
     assert_string_equal(fmu_model->path, "examples/fmu/fmu/binaries/simple.so");
     assert_null(fmu_model->handle);

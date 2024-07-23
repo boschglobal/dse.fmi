@@ -219,3 +219,7 @@ install(
     DESTINATION
         data
 )
+
+
+
+add_subdirectory(fmimodelc)

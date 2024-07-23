@@ -17,23 +17,30 @@ FMI Libraries of the Dynamic Simulation Environment (DSE) Core Platform.
 
 <!-- Overview diagram, PlantUML generated, see Network for example. -->
 
-FMI Model Compatibility Layer
-: Load FMUs into a Dynamic Simulation Environment (i.e. using ModelC/SimBus).
+<dl>
+  <dt><b>FMI Model Compatibility Layer</b></dt>
+  <dd>Load FMUs into a Dynamic Simulation Environment (i.e. using ModelC/SimBus).</dd>
 
+  <dt><b>FMI ModelC FMU</b></dt>
+  <dd>FMU capable of running a DSE Simulation (i.e. ModelC based Simulation Stack).</dd>
+</dl>
 
-The FMI Library is implemented with support of the [DSE Model C Library](https://github.com/boschglobal/dse.modelc)
-and [DSE C Library](https://github.com/boschglobal/dse.clib).
+The FMI Library is implemented with support of:
+* [DSE Model C Library](https://github.com/boschglobal/dse.modelc)
+* [DSE C Library](https://github.com/boschglobal/dse.clib)
+* [DSE Network Codec](https://github.com/boschglobal/dse.standards/tree/main/dse/ncodec)
 
 
 ### Project Structure
 
 ```text
 L- dse
-  L- dse/fmimcl  FMI related Library source code.
-L- extra         Build infrastructure.
-  L- tools       Containerised tools.
-L- licenses      Third Party Licenses.
-L- tests         Unit and E2E tests.
+  L- dse/fmimcl     FMI MCL source code.
+  L- dse/fmimodelc  FMI ModelC FMU source code.
+L- extra            Build infrastructure.
+  L- tools          Containerised tools.
+L- licenses         Third Party Licenses.
+L- tests            Unit and E2E tests.
 ```
 
 
@@ -42,6 +49,64 @@ L- tests         Unit and E2E tests.
 ### FMI Model Compatibility Layer
 
 <!-- Usage example showing all steps, see Network for example. -->
+
+
+### FMI ModelC FMU
+
+<!-- Usage example showing all steps, see Network for example. -->
+
+
+#### Example: Network FMU with CAN Network Topology
+
+The FMI ModelC FMU includes an example Network FMU which demonstrates how a
+CAN Network Topology can be realised using FMI2 String variables and a wrapped
+ModelC Simulation Stack with models which implement a [Network Codec](https://github.com/boschglobal/dse.standards/tree/main/dse/ncodec).
+
+
+__Network FMU Layout:__
+
+```text
+L- network_fmu             The example Network FMU.
+  L- bin/fmi2importer      Importer (simple) which can run the Network FMU.
+L- fmu                     FMU Package.
+  L- modelDescription.xml  Model description for the FMU.
+  L- lib/linux-amd64
+    L- fmi2modelcfmu.so    FMU shared library.
+  L- resources/sim         ModelC Simulation Stack.
+    L- data
+      L- simulation.yaml   Simulation Stack specification.
+      L- model.yaml        Model specification.
+    L- lib
+      L- target.so         The ModelC model shared library.
+```
+
+
+__Network FMU Operation:__
+
+```bash
+# Build the DSE FMI and examples.
+$ git clone https://github.com/boschglobal/dse.fmi.git
+$ cd dse.fmi
+$ make
+
+# Change to the FMU directory and run the Importer/FMU.
+$ cd dse/build/_out/fmimodelc/examples/network_fmu/fmu
+$ ../bin/fmi2importer lib/linux-amd64/fmi2modelcfmu.so
+Importer: Loading FMU: lib/linux-amd64/fmi2modelcfmu.so ...
+ModelCFmu: Create the FMU Model Instance Data
+ModelCFmu: Resource location: resource
+ModelCFmu: Allocate the RuntimeModelDesc object
+ModelCFmu: Create the Model Runtime object
+ModelCFmu: Call model_runtime_create() ...
+Runtime: Version: 2.0.24
+Runtime: Platform: linux-amd64
+Runtime: Simulation Path: resources/sim
+Runtime: Simulation YAML: resources/sim/data/simulation.yaml
+Runtime: Model: network_fmu
+Load YAML File: resources/sim/data/simulation.yaml
+Load YAML File: resources/sim/data/model.yaml
+...
+```
 
 
 ## Build

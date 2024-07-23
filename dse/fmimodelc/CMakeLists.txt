@@ -7,50 +7,52 @@ cmake_minimum_required(VERSION 3.21)
 # set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(VERSION "$ENV{PACKAGE_VERSION}")
-set(MODULE "FmiMcl")
-set(MODULE_LC "fmimcl")
+set(MODULE "FmiModelC")
+set(MODULE_LC "fmimodelc")
 
 project(${MODULE}
     VERSION ${VERSION}
-    DESCRIPTION "DSE FMI Model Compatibility Library"
+    DESCRIPTION "DSE FMI ModelC FMU"
     HOMEPAGE_URL "$ENV{PROJECT_URL}"
 )
+
+set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
+
 
 
 # Targets
 # =======
 
-# FMI MCL
-# -------
-add_library(fmimcl SHARED
-    engine.c
-    fmimcl.c
-    model.c
-    parser.c
-    adapter/fmi2mcl.c
+# FMI2 ModelC FMU
+# ---------------
+add_library(fmi2modelcfmu SHARED
+    ascii85.c
+    fmi2fmu.c
+    runtime.c
+    signal_api_backport.c  # Backport of ModelC 2.1.0 api.
 )
-target_include_directories(fmimcl
+target_include_directories(fmi2modelcfmu
     PRIVATE
         ${DSE_CLIB_INCLUDE_DIR}
         ${DSE_MODELC_INCLUDE_DIR}
+        ${FMI2_INCLUDE_DIR}
         ../..
 )
-target_compile_definitions(fmimcl
+target_link_directories(fmi2modelcfmu
     PRIVATE
-        PLATFORM_OS="${CDEF_PLATFORM_OS}"
-        PLATFORM_ARCH="${CDEF_PLATFORM_ARCH}"
+        ${dse_modelc_lib_SOURCE_DIR}/lib
+#        $<$<BOOL:${WIN32}>:${dse_modelc_lib_SOURCE_DIR}/bin>
 )
-target_link_directories(fmimcl
+target_link_libraries(fmi2modelcfmu
     PRIVATE
-        $<$<BOOL:${WIN32}>:${dse_modelc_lib_SOURCE_DIR}/bin>
-)
-target_link_libraries(fmimcl
-    PRIVATE
-        $<$<BOOL:${WIN32}>:modelc>
-        $<$<BOOL:${WIN32}>:dl>
+        -Wl,--whole-archive
+        model_runtime
+        -Wl,--no-whole-archive
+        yaml
 )
 install(
-    TARGETS fmimcl
+    TARGETS
+        fmi2modelcfmu
     LIBRARY DESTINATION
         ${MODULE_LC}/lib
 )
@@ -68,7 +70,7 @@ add_subdirectory(examples)
 # =======
 set(CPACK_SYSTEM_NAME $ENV{PACKAGE_ARCH})
 set(CPACK_PACKAGE_VENDOR "Robert Bosch GmbH")
-set(CPACK_PACKAGE_DESCRIPTION "DSE FMI Model Compatibility Library")
+set(CPACK_PACKAGE_DESCRIPTION "DSE FMI ModelC FMU")
 set(CPACK_OUTPUT_FILE_PREFIX _dist)
 set(CPACK_GENERATOR "ZIP")
 set(CPACK_PACKAGE_CHECKSUM MD5)

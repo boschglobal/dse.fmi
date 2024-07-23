@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(Fmi2FMU)
-set(MODEL_PATH "examples")
+set(MODEL_PATH "${MODULE}/examples")
 
 set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
 
