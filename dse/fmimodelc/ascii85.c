@@ -56,7 +56,7 @@ char* ascii85_decode(const char* source, size_t* len)
     /* Pad the source string to a multiple of 5. */
     int   padded_len = source_len + padding;
     char* source_padded = calloc(padded_len + 1, sizeof(char));
-    snprintf(source_padded, source_len, "%s" source);
+    snprintf(source_padded, padded_len + 1, "%s", source);
     for (int i = 0; i < padding; i++) {
         source_padded[source_len + i] = 'u';
     }
