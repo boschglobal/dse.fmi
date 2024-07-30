@@ -60,7 +60,7 @@ jobs:
         env:
           PACKAGE_ARCH: ${{ matrix.package_arch }}
         run: |
-          make test_cmocka
+          make test
 
       - name: Stats
         run: |
