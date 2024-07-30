@@ -14,8 +14,8 @@ env:
   REGISTRY: ghcr.io
   IMAGE_BASE_NAME: ${{ github.repository_owner }}/dse
   PACKAGE_VERSION: 0.0.2
-  package_name: FmiMcl
-  build_dir: dse/fmimcl/build
+  package_name: Fmi
+  build_dir: dse/build
   CCACHE_SECONDARY_STORAGE: ${{ secrets.CCACHE_SECONDARY_STORAGE }}
 
 jobs:
