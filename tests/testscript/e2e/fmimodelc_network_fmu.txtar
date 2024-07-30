@@ -6,11 +6,11 @@ env SIM=dse/build/_out/fmimodelc/examples/network_fmu
 exec sh -e $WORK/test.sh
 
 stdout 'Importer: Cwd: /sim/fmu'
-stdout 'Importer: Loading FMU: lib/linux-amd64/fmi2modelcfmu.so'
+stdout 'Importer: Loading FMU: lib/linux-amd64/libfmi2modelcfmu.so'
 stdout 'Runtime: Simulation Path: resources/sim'
 stdout 'Runtime: Simulation YAML: resources/sim/data/simulation.yaml'
 stdout 'Runtime: Model: network_fmu'
-stdout 'Runtime: Loading model: resources/sim/lib/target.so'
+stdout 'Runtime: Loading model: resources/sim/lib/libtarget.so'
 stdout 'Configure Channel: scalar_vector'
 stdout 'Configure Channel: network_vector'
 
@@ -36,4 +36,4 @@ docker run --name simer -i --rm \
     -v $ENTRYDIR/$SIM:/sim \
     --entrypoint="" $SIMER \
     bash -c "cd fmu; valgrind -q --leak-check=yes --error-exitcode=808 \
-        ../bin/fmi2importer lib/linux-amd64/fmi2modelcfmu.so"
+        ../bin/fmi2importer lib/linux-amd64/libfmi2modelcfmu.so"

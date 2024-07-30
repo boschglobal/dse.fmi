@@ -19,11 +19,11 @@ spec:
     dynlib:
       - os: linux
         arch: amd64
-        path: lib/fmimcl.so
+        path: lib/libfmimcl.so
     mcl:
       - os: linux
         arch: amd64
-        path: examples/lib/fmi2fmu.so
+        path: examples/lib/libfmi2fmu.so
   channels:
     - alias: signal_channel
       selectors:
@@ -37,16 +37,16 @@ spec:
     dynlib:
       - os: linux
         arch: amd64
-        path: examples/lib/input.so
+        path: examples/lib/libinput.so
       - os: linux
         arch: x86
-        path: examples/lib/input.so
+        path: examples/lib/libinput.so
       - os: windows
         arch: x64
-        path: examples/lib/input.dll
+        path: examples/lib/libinput.dll
       - os: windows
         arch: x86
-        path: examples/lib/input.dll
+        path: examples/lib/libinput.dll
   channels:
     - alias: input_channel
       selectors:

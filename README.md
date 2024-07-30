@@ -91,8 +91,8 @@ $ make
 
 # Change to the FMU directory and run the Importer/FMU.
 $ cd dse/build/_out/fmimodelc/examples/network_fmu/fmu
-$ ../bin/fmi2importer lib/linux-amd64/fmi2modelcfmu.so
-Importer: Loading FMU: lib/linux-amd64/fmi2modelcfmu.so ...
+$ ../bin/fmi2importer lib/linux-amd64/libfmi2modelcfmu.so
+Importer: Loading FMU: lib/linux-amd64/libfmi2modelcfmu.so ...
 ModelCFmu: Create the FMU Model Instance Data
 ModelCFmu: Resource location: resource
 ModelCFmu: Allocate the RuntimeModelDesc object

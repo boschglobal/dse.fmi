@@ -9,7 +9,7 @@
 #include <dse/clib/util/yaml.h>
 
 
-uint8_t __log_level__ = 4; /* LOG_NOTICE */
+extern uint8_t __log_level__;
 
 
 static SchemaSignalObject* __signal_match;

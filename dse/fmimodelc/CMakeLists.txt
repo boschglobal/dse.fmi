@@ -30,6 +30,7 @@ add_library(fmi2modelcfmu SHARED
     fmi2fmu.c
     runtime.c
     signal_api_backport.c  # Backport of ModelC 2.1.0 api.
+    $<$<BOOL:${WIN32}>:clock_gettime.c>
 )
 target_include_directories(fmi2modelcfmu
     PRIVATE
@@ -41,7 +42,6 @@ target_include_directories(fmi2modelcfmu
 target_link_directories(fmi2modelcfmu
     PRIVATE
         ${dse_modelc_lib_SOURCE_DIR}/lib
-#        $<$<BOOL:${WIN32}>:${dse_modelc_lib_SOURCE_DIR}/bin>
 )
 target_link_libraries(fmi2modelcfmu
     PRIVATE
@@ -49,6 +49,7 @@ target_link_libraries(fmi2modelcfmu
         model_runtime
         -Wl,--no-whole-archive
         yaml
+        $<$<BOOL:${WIN32}>:dl>
 )
 install(
     TARGETS

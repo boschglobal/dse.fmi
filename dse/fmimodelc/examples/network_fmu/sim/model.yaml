@@ -11,16 +11,16 @@ spec:
     dynlib:
       - os: linux
         arch: amd64
-        path: lib/target.so
+        path: lib/libtarget.so
       - os: linux
         arch: x86
-        path: lib/target.so
+        path: lib/libtarget.so
       - os: windows
         arch: x64
-        path: lib/target.dll
+        path: lib/libtarget.dll
       - os: windows
         arch: x86
-        path: lib/target.dll
+        path: lib/libtarget.dll
   channels:
     - alias: scalar_vector
       selectors:

@@ -33,7 +33,6 @@ list(APPEND C_CXX_WARNING_FLAGS
 )
 add_compile_options(${C_CXX_WARNING_FLAGS})
 add_compile_definitions(DLL_BUILD)
-set(CMAKE_SHARED_LIBRARY_PREFIX "")
 
 
 # External Project - DSE C Lib

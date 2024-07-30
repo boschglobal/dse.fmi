@@ -41,11 +41,11 @@ spec:
     dynlib:
       - os: linux
         arch: amd64
-        path: ../../../../dse/build/_out/fmimcl/lib/fmimcl.so
+        path: ../../../../dse/build/_out/fmimcl/lib/libfmimcl.so
     mcl:
       - os: linux
         arch: amd64
-        path: ../../../../dse/build/_out/fmimcl/examples/lib/fmi2fmu.so
+        path: ../../../../dse/build/_out/fmimcl/examples/lib/libfmi2fmu.so
   channels:
     - alias: signal_channel
       selectors:

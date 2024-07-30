@@ -38,15 +38,12 @@ add_library(target SHARED
 )
 target_include_directories(target
     PRIVATE
-        ${DSE_CLIB_INCLUDE_DIR}
         ${DSE_MODELC_INCLUDE_DIR}
-#        ${DSE_NCODEC_INCLUDE_DIR}
         ../../../..
 )
 target_link_libraries(target
-    PRIVATE
-        yaml
-        $<$<BOOL:${WIN32}>:${modelc_link_lib}>
+    PUBLIC
+        $<$<BOOL:${WIN32}>:fmi2modelcfmu>
 )
 install(TARGETS target
     LIBRARY DESTINATION
