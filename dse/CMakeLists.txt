@@ -128,7 +128,7 @@ install(
     DIRECTORY
         ../licenses
     DESTINATION
-        licenses
+        .
 )
 install(
     FILES

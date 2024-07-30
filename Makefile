@@ -40,7 +40,7 @@ TOOL_DIRS = fmi
 ###############
 ## Package parameters.
 export PACKAGE_VERSION ?= 0.0.1
-DIST_DIR := $(shell pwd -P)/$(NAMESPACE)/$(MODULE)/build/_dist
+DIST_DIR := $(shell pwd -P)/$(NAMESPACE)/build/_dist
 OSS_DIR = $(NAMESPACE)/__oss__
 PACKAGE_DOC_NAME = DSE FMI Library
 PACKAGE_NAME = Fmi
