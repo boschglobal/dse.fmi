@@ -126,9 +126,9 @@ add_subdirectory(fmimodelc)
 # ==============
 install(
     DIRECTORY
-        ../licenses
+        ../licenses/
     DESTINATION
-        .
+        licenses
 )
 install(
     FILES

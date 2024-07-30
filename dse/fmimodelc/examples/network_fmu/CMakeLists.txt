@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.21)
 # set(CMAKE_VERBOSE_MAKEFILE ON)
 
 project(Model)
-set(EX_PATH "${MODULE}/examples/network_fmu")
+set(EX_PATH "${MODULE_LC}/examples/network_fmu")
 set(FMU_PATH "${EX_PATH}/fmu")
 set(SIM_PATH "${FMU_PATH}/resources/sim")
 
