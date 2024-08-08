@@ -11,6 +11,7 @@
 #include <fmi2FunctionTypes.h>
 #include <fmi2TypesPlatform.h>
 #include <dse/clib/collections/hashlist.h>
+#include <dse/clib/util/strings.h>
 #include <dse/fmimodelc/fmimodelc.h>
 
 
@@ -30,14 +31,15 @@ static void _log(const char* format, ...)
     fflush(stdout);
 }
 
-static void _log_binary_signal(SignalVector* sv, uint32_t index)
+static void _log_binary_signal(SimbusVectorIndex* idx)
 {
-    _log("      - name       : %s", sv->signal[index]);
-    _log("        length     : %d", sv->length[index]);
-    _log("        buffer len : %d", sv->buffer_size[index]);
-    _log("        mime_type  : %s", sv->mime_type[index]);
-    uint8_t* buffer = sv->binary[index];
-    for (uint32_t j = 0; j + 16 < sv->length[index]; j += 16) {
+    if (idx == NULL || idx->sbv == NULL) return;
+    uint32_t index = idx->vi;
+    _log("      - name       : %s", idx->sbv->signal[index]);
+    _log("        length     : %d", idx->sbv->length[index]);
+    _log("        buffer len : %d", idx->sbv->buffer_size[index]);
+    uint8_t* buffer = idx->sbv->binary[index];
+    for (uint32_t j = 0; j + 16 < idx->sbv->length[index]; j += 16) {
         _log("          %02x %02x %02x %02x %02x %02x %02x %02x "
              "%02x %02x %02x %02x %02x %02x %02x %02x",
             buffer[j + 0], buffer[j + 1], buffer[j + 2], buffer[j + 3],
@@ -283,7 +285,7 @@ fmi2Status fmi2GetString(fmi2Component c, const fmi2ValueReference vr[],
     assert(c);
     Fmu2InstanceData* fmu = (Fmu2InstanceData*)c;
 
-    /* Free items on the lazy fre list. */
+    /* Free items on the lazy free list. */
     hashmap_clear(&fmu->runtime.binary.free_list.hash_map);
 
     for (size_t i = 0; i < nvr; i++) {
@@ -293,15 +295,15 @@ fmi2Status fmi2GetString(fmi2Component c, const fmi2ValueReference vr[],
         /* Lookup the binary signal, by VRef. */
         static char vr_idx[VREF_KEY_LEN];
         snprintf(vr_idx, VREF_KEY_LEN, "%i", vr[i]);
-        ModelSignalIndex* idx = hashmap_get(&fmu->runtime.binary.tx, vr_idx);
+        SimbusVectorIndex* idx = hashmap_get(&fmu->runtime.binary.tx, vr_idx);
         if (idx == NULL) continue;
-        if (idx->sv == NULL || idx->binary == NULL) continue;
-        uint8_t* data = idx->sv->binary[idx->signal];
-        uint32_t data_len = idx->sv->length[idx->signal];
+        if (idx->sbv == NULL) continue;
+        uint8_t* data = idx->sbv->binary[idx->vi];
+        uint32_t data_len = idx->sbv->length[idx->vi];
         if (data == NULL || data_len == 0) continue;
 
         /* Write the requested string, encode if configured. */
-        _log_binary_signal(idx->sv, idx->signal);
+        _log_binary_signal(idx);
         EncodeFunc ef = hashmap_get(&fmu->runtime.binary.encode_func, vr_idx);
         if (ef) {
             value[i] = ef((char*)data, data_len);
@@ -411,9 +413,9 @@ fmi2Status fmi2SetString(fmi2Component c, const fmi2ValueReference vr[],
         /* Lookup the binary signal, by VRef. */
         static char vr_idx[VREF_KEY_LEN];
         snprintf(vr_idx, VREF_KEY_LEN, "%i", vr[i]);
-        ModelSignalIndex* idx = hashmap_get(&fmu->runtime.binary.rx, vr_idx);
+        SimbusVectorIndex* idx = hashmap_get(&fmu->runtime.binary.rx, vr_idx);
         if (idx == NULL) continue;
-        if (idx->sv == NULL || idx->binary == NULL) continue;
+        if (idx->sbv == NULL) continue;
 
         /* Get the input binary string, decode if configured. */
         char*      data = (char*)value[i];
@@ -423,9 +425,11 @@ fmi2Status fmi2SetString(fmi2Component c, const fmi2ValueReference vr[],
             data = df((char*)data, &data_len);
         }
 
-        /* Append the binary string to the Network Binary Signal. */
-        signal_append(idx->sv, idx->signal, (void*)data, data_len);
-        _log_binary_signal(idx->sv, idx->signal);
+        /* Append the binary string to the Binary Signal. */
+        dse_buffer_append(&idx->sbv->binary[idx->vi],
+            &idx->sbv->length[idx->vi], &idx->sbv->buffer_size[idx->vi],
+            (void*)data, data_len);
+        _log_binary_signal(idx);
 
         /* Release the decode string/memory. Caller owns value[]. */
         if (data != value[i]) free(data);
@@ -486,8 +490,8 @@ fmi2Status fmi2DoStep(fmi2Component c, fmi2Real currentCommunicationPoint,
     int rc = model_runtime_step(
         m, &model_time, currentCommunicationPoint + communicationStepSize);
 
-    /* Reset the tracking on binary variables. */
-    fmimodelc_clear_reset_called(m);
+    /* Reset the binary signal reset mechanism. */
+    m->runtime.binary_signals_reset = false;
 
     /* return final status. */
     return (rc == 0 ? fmi2OK : fmi2Error);

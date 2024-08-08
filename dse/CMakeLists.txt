@@ -58,6 +58,7 @@ FetchContent_Declare(dse_modelc
 )
 FetchContent_MakeAvailable(dse_modelc)
 set(DSE_MODELC_SOURCE_DIR ${dse_modelc_SOURCE_DIR}/dse/modelc)
+set(DSE_MODELC_SOURCE_INCLUDE_DIR "${dse_modelc_SOURCE_DIR}")
 
 
 # External Project - DSE ModelC LIB

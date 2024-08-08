@@ -56,13 +56,10 @@ void test_index__scalar(void** state)
 
     m = model_runtime_create(m);
 
-    /* Locate the scalar SV. */
-    SignalVector* sv = m->model.sv;
-    for (; sv && sv->name; sv++) {
-        if (strcmp(sv->alias, "scalar_vector") == 0) break;
-    }
-    assert_non_null(sv);
-    assert_string_equal("scalar_vector", sv->alias);
+    /* Locate the SimBus scalar SV. */
+    SimbusVectorIndex index = simbus_vector_lookup(
+        m->model.sim, "scalar", "counter");
+    assert_non_null(index.sbv);
 
     /* Index the scalar signals. */
     fmimodelc_index_scalar_signals(m, &input, &output);
@@ -71,8 +68,8 @@ void test_index__scalar(void** state)
     double* sig_counter = NULL;
     sig_counter = hashmap_get(&output, "1");
     assert_non_null(sig_counter);
-    assert_string_equal("counter", sv->signal[0]);
-    assert_ptr_equal(sig_counter, &sv->scalar[0]);
+    assert_string_equal("counter", index.sbv->signal[index.vi]);
+    assert_ptr_equal(sig_counter, &index.sbv->scalar[index.vi]);
 
     /* Cleanup. */
     model_runtime_destroy(m);
@@ -90,34 +87,16 @@ void test_index__binary(void** state)
     hashmap_init(&tx);
 
     m = model_runtime_create(m);
-    assert_non_null(m);
-    assert_non_null(m->model.mi);
-    assert_non_null(m->model.mi->model_desc);
-    assert_non_null(m->model.mi->model_desc->index);
 
-    assert_non_null(m->model.index);
-
-    /* Locate the network SV. */
-    SignalVector* sv = m->model.sv;
-    for (; sv && sv->name; sv++) {
-        if (strcmp(sv->alias, "network_vector") == 0) break;
-    }
-    assert_non_null(sv);
-    assert_string_equal("network_vector", sv->alias);
+    /* Locate the SimBus network SV. */
+    SimbusVectorIndex index = simbus_vector_lookup(
+        m->model.sim, "network", "can");
+    assert_non_null(index.sbv);
 
     /* Index the network signals. */
     fmimodelc_index_binary_signals(m, &rx, &tx);
     assert_int_equal(rx.used_nodes, 4);
     assert_int_equal(tx.used_nodes, 4);
-
-    /* Get the reference index object. */
-    ModelSignalIndex sig_can =
-        m->model.index((ModelDesc*)m, "network_vector", "can");
-    assert_non_null(sig_can.sv);
-    assert_null(sig_can.scalar);
-    assert_non_null(sig_can.binary);
-    assert_string_equal("can", sig_can.sv->signal[sig_can.signal]);
-    assert_ptr_equal(sig_can.binary, &sig_can.sv->binary[sig_can.signal]);
 
     /* Check the RX index. */
     const char* rx_vref[] = {
@@ -128,10 +107,10 @@ void test_index__binary(void** state)
     };
     for (size_t i = 0; i < ARRAY_SIZE(rx_vref); i++) {
         // Each index should have a ModelSignalIndex with the same content.
-        ModelSignalIndex* var = NULL;
+        SimbusVectorIndex* var = NULL;
         var = hashmap_get(&rx, rx_vref[i]);
         assert_non_null(var);
-        assert_memory_equal(var, &sig_can, sizeof(ModelSignalIndex));
+        assert_memory_equal(var, &index, sizeof(SimbusVectorIndex));
     }
 
     /* Check the TX index. */
@@ -143,10 +122,10 @@ void test_index__binary(void** state)
     };
     for (size_t i = 0; i < ARRAY_SIZE(tx_vref); i++) {
         // Each index should have a ModelSignalIndex with the same content.
-        ModelSignalIndex* var = NULL;
+        SimbusVectorIndex* var = NULL;
         var = hashmap_get(&tx, tx_vref[i]);
         assert_non_null(var);
-        assert_memory_equal(var, &sig_can, sizeof(ModelSignalIndex));
+        assert_memory_equal(var, &index, sizeof(SimbusVectorIndex));
     }
 
     /* Cleanup. */

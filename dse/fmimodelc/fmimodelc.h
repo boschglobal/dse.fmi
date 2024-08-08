@@ -7,6 +7,7 @@
 
 #include <dse/platform.h>
 #include <dse/clib/collections/hashmap.h>
+#include <dse/modelc/adapter/simbus/simbus.h>
 #include <dse/modelc/runtime.h>
 
 
@@ -60,7 +61,6 @@ DLL_PRIVATE void fmimodelc_index_binary_signals(
 DLL_PRIVATE void fmimodelc_index_text_encoding(
     RuntimeModelDesc* m, HashMap* encode_func, HashMap* decode_func);
 DLL_PRIVATE void fmimodelc_reset_binary_signals(RuntimeModelDesc* m);
-DLL_PRIVATE void fmimodelc_clear_reset_called(RuntimeModelDesc* m);
 
 
 /* ascii85.h */

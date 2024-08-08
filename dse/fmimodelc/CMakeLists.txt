@@ -36,6 +36,7 @@ target_include_directories(fmi2modelcfmu
     PRIVATE
         ${DSE_CLIB_INCLUDE_DIR}
         ${DSE_MODELC_INCLUDE_DIR}
+        ${DSE_MODELC_SOURCE_INCLUDE_DIR}
         ${FMI2_INCLUDE_DIR}
         ../..
 )

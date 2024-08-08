@@ -2,9 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <dse/fmimodelc/fmimodelc.h>
+#include <dse/modelc/runtime.h>
 #include <dse/modelc/schema.h>
 #include <dse/clib/util/yaml.h>
 
@@ -14,6 +16,19 @@ extern uint8_t __log_level__;
 
 static SchemaSignalObject* __signal_match;
 static const char*         __signal_match_name;
+
+
+static void _log(const char* format, ...)
+{
+    printf("ModelCFmu: ");
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+    printf("\n");
+    fflush(stdout);
+}
+
 
 static int _signal_group_match_handler(
     ModelInstanceSpec* model_instance, SchemaObject* object)
@@ -74,82 +89,102 @@ static const char** _signal_annotation_list(ModelInstanceSpec* mi,
 void fmimodelc_index_scalar_signals(
     RuntimeModelDesc* m, HashMap* input, HashMap* output)
 {
-    for (SignalVector* sv = m->model.sv; sv && sv->name; sv++) {
-        if (sv->is_binary == true) continue;
+    for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
+         mi++) {
+        for (SignalVector* sv = mi->model_desc->sv; sv && sv->name; sv++) {
+            if (sv->is_binary == true) continue;
 
-        for (uint32_t i = 0; i < sv->count; i++) {
-            /* Value Reference. */
-            const char* vref = signal_annotation(sv, i, "fmi_value_reference");
-            if (vref == NULL) continue;
+            for (uint32_t i = 0; i < sv->count; i++) {
+                /* Value Reference. */
+                const char* vref =
+                    signal_annotation(sv, i, "fmi_value_reference");
+                if (vref == NULL) continue;
 
-            /* Index based on causality. */
-            const char* causality =
-                signal_annotation(sv, i, "fmi_variable_causality");
-            if (strcmp(causality, "output") == 0) {
-                hashmap_set(output, vref, &sv->scalar[i]);
-            } else if (strcmp(causality, "input") == 0) {
-                hashmap_set(input, vref, &sv->scalar[i]);
+                /* Locate the SimBus variable. */
+                SimbusVectorIndex index =
+                    simbus_vector_lookup(m->model.sim, sv->name, sv->signal[i]);
+                if (index.sbv == NULL) continue;
+                double* scalar = &index.sbv->scalar[index.vi];
+                if (scalar == NULL) continue;
+
+                /* Index based on causality. */
+                const char* causality =
+                    signal_annotation(sv, i, "fmi_variable_causality");
+                if (strcmp(causality, "output") == 0) {
+                    hashmap_set(output, vref, scalar);
+                } else if (strcmp(causality, "input") == 0) {
+                    hashmap_set(input, vref, scalar);
+                }
             }
         }
     }
+    _log(
+        "  Scalar: input=%u, output=%u", input->used_nodes, output->used_nodes);
 }
 
 
 void fmimodelc_index_binary_signals(
     RuntimeModelDesc* m, HashMap* rx, HashMap* tx)
 {
-    for (SignalVector* sv = m->model.sv; sv && sv->name; sv++) {
-        if (sv->is_binary == false) continue;
+    for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
+         mi++) {
+        for (SignalVector* sv = mi->model_desc->sv; sv && sv->name; sv++) {
+            if (sv->is_binary == false) continue;
 
-        for (uint32_t i = 0; i < sv->count; i++) {
-            /* Value Reference. */
-            const char* vref = signal_annotation(sv, i, "fmi_value_reference");
-            if (vref == NULL) continue;
+            for (uint32_t i = 0; i < sv->count; i++) {
+                /* Value Reference. */
+                const char* vref =
+                    signal_annotation(sv, i, "fmi_value_reference");
+                if (vref == NULL) continue;
 
-            /* Index according to bus topology. */
-            // dse.standards.fmi-ls-bus-topology.rx_vref: [2,4,6,8]
-            const char** rx_list = _signal_annotation_list(sv->mi, sv,
-                sv->signal[i], "dse.standards.fmi-ls-bus-topology.rx_vref");
-            if (rx_list) {
-                for (size_t j = 0; rx_list[j]; j++) {
-                    /* Value Reference for the RX variable. */
-                    const char* rx_vref = rx_list[j];
+                /* Index according to bus topology. */
+                // dse.standards.fmi-ls-bus-topology.rx_vref: [2,4,6,8]
+                const char** rx_list = _signal_annotation_list(sv->mi, sv,
+                    sv->signal[i], "dse.standards.fmi-ls-bus-topology.rx_vref");
+                if (rx_list) {
+                    for (size_t j = 0; rx_list[j]; j++) {
+                        /* Value Reference for the RX variable. */
+                        const char* rx_vref = rx_list[j];
 
-                    /* Binary signal index object. */
-                    ModelSignalIndex idx =
-                        m->model.index((ModelDesc*)m, sv->alias, sv->signal[i]);
-                    if (idx.binary == NULL) continue;
+                        /* Locate the SimBus variable. */
+                        SimbusVectorIndex idx = simbus_vector_lookup(
+                            m->model.sim, sv->name, sv->signal[i]);
+                        if (idx.sbv == NULL) continue;
 
-                    /* Complete the index entry. */
-                    ModelSignalIndex* _ = calloc(1, sizeof(ModelSignalIndex));
-                    *_ = idx;
-                    hashmap_set_alt(rx, rx_vref, _);
+                        /* Complete the index entry. */
+                        SimbusVectorIndex* _ =
+                            calloc(1, sizeof(SimbusVectorIndex));
+                        *_ = idx;
+                        hashmap_set_alt(rx, rx_vref, _);
+                    }
+                    free(rx_list);
                 }
-                free(rx_list);
-            }
 
-            // dse.standards.fmi-ls-bus-topology.tx_vref: [3,5,7,9]
-            const char** tx_list = _signal_annotation_list(sv->mi, sv,
-                sv->signal[i], "dse.standards.fmi-ls-bus-topology.tx_vref");
-            if (tx_list) {
-                for (size_t j = 0; tx_list[j]; j++) {
-                    /* Value Reference for the TX variable. */
-                    const char* tx_vref = tx_list[j];
+                // dse.standards.fmi-ls-bus-topology.tx_vref: [3,5,7,9]
+                const char** tx_list = _signal_annotation_list(sv->mi, sv,
+                    sv->signal[i], "dse.standards.fmi-ls-bus-topology.tx_vref");
+                if (tx_list) {
+                    for (size_t j = 0; tx_list[j]; j++) {
+                        /* Value Reference for the TX variable. */
+                        const char* tx_vref = tx_list[j];
 
-                    /* Binary signal index object. */
-                    ModelSignalIndex idx =
-                        m->model.index((ModelDesc*)m, sv->alias, sv->signal[i]);
-                    if (idx.binary == NULL) continue;
+                        /* Locate the SimBus variable. */
+                        SimbusVectorIndex idx = simbus_vector_lookup(
+                            m->model.sim, sv->name, sv->signal[i]);
+                        if (idx.sbv == NULL) continue;
 
-                    /* Complete the index entry. */
-                    ModelSignalIndex* _ = calloc(1, sizeof(ModelSignalIndex));
-                    *_ = idx;
-                    hashmap_set_alt(tx, tx_vref, _);
+                        /* Complete the index entry. */
+                        SimbusVectorIndex* _ =
+                            calloc(1, sizeof(SimbusVectorIndex));
+                        *_ = idx;
+                        hashmap_set_alt(tx, tx_vref, _);
+                    }
+                    free(tx_list);
                 }
-                free(tx_list);
             }
         }
     }
+    _log("  Binary: rx=%u, tx=%u", rx->used_nodes, tx->used_nodes);
 }
 
 
@@ -158,60 +193,48 @@ void fmimodelc_index_text_encoding(
 {
     // dse.standards.fmi-ls-text-encoding.encoding: ascii85
 
-    for (SignalVector* sv = m->model.sv; sv && sv->name; sv++) {
-        if (sv->is_binary == false) continue;
+    for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
+         mi++) {
+        for (SignalVector* sv = mi->model_desc->sv; sv && sv->name; sv++) {
+            if (sv->is_binary == false) continue;
 
-        for (uint32_t i = 0; i < sv->count; i++) {
-            /* Value Reference. */
-            const char* _ = signal_annotation(sv, i, "fmi_value_reference");
-            if (_ == NULL) continue;
+            for (uint32_t i = 0; i < sv->count; i++) {
+                /* Value Reference. */
+                const char* _ = signal_annotation(sv, i, "fmi_value_reference");
+                if (_ == NULL) continue;
 
-            /* Encoding. */
-            const char* encoding = signal_annotation(
-                sv, i, "dse.standards.fmi-ls-text-encoding.encoding");
-            if (strcmp(encoding, "ascii85") != 0) continue;
+                /* Encoding. */
+                const char* encoding = signal_annotation(
+                    sv, i, "dse.standards.fmi-ls-text-encoding.encoding");
+                if (strcmp(encoding, "ascii85") != 0) continue;
 
-            /* Index, all with same encoding (for now). */
-            // dse.standards.fmi-ls-text-encoding.vref: [[2,3,4,5,6,7,8,9]
-            const char** vref_list = _signal_annotation_list(sv->mi, sv,
-                sv->signal[i], "dse.standards.fmi-ls-text-encoding.vref");
-            if (vref_list) {
-                for (size_t j = 0; vref_list[j]; j++) {
-                    /* Value Reference for the RX variable. */
-                    const char* vref = vref_list[j];
+                /* Index, all with same encoding (for now). */
+                // dse.standards.fmi-ls-text-encoding.vref: [[2,3,4,5,6,7,8,9]
+                const char** vref_list = _signal_annotation_list(sv->mi, sv,
+                    sv->signal[i], "dse.standards.fmi-ls-text-encoding.vref");
+                if (vref_list) {
+                    for (size_t j = 0; vref_list[j]; j++) {
+                        /* Value Reference for the RX variable. */
+                        const char* vref = vref_list[j];
 
-                    /* Encoding. */
-                    hashmap_set(encode_func, vref, ascii85_encode);
-                    hashmap_set(decode_func, vref, ascii85_decode);
+                        /* Encoding. */
+                        hashmap_set(encode_func, vref, ascii85_encode);
+                        hashmap_set(decode_func, vref, ascii85_decode);
+                    }
+                    free(vref_list);
                 }
-                free(vref_list);
             }
         }
     }
+    _log("  Encoding: enc=%u, dec=%u", encode_func->used_nodes,
+        decode_func->used_nodes);
 }
 
 
 void fmimodelc_reset_binary_signals(RuntimeModelDesc* m)
 {
-    for (SignalVector* sv = m->model.sv; sv && sv->name; sv++) {
-        if (sv->is_binary == false) continue;
-
-        for (uint32_t i = 0; i < sv->count; i++) {
-            if (sv->reset_called[i] == false) {
-                signal_reset(sv, i);
-            }
-        }
-    }
-}
-
-
-void fmimodelc_clear_reset_called(RuntimeModelDesc* m)
-{
-    for (SignalVector* sv = m->model.sv; sv && sv->name; sv++) {
-        if (sv->is_binary == false) continue;
-
-        for (uint32_t i = 0; i < sv->count; i++) {
-            sv->reset_called[i] = false;
-        }
+    if (m->runtime.binary_signals_reset == false) {
+        simbus_vector_binary_reset(m->model.sim);
+        m->runtime.binary_signals_reset = true;
     }
 }
