@@ -55,3 +55,9 @@ spec:
         fmi_variable_name: count
         fmi_variable_type: Integer
         fmi_variable_start: 0
+    - signal: active
+      annotations:
+        fmi_variable_id: 3
+        fmi_variable_name: active
+        fmi_variable_type: Boolean
+        fmi_variable_start: 0

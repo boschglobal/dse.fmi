@@ -8,15 +8,17 @@
 #include <dse/mocks/simmock.h>
 #include <dse/modelc/mcl.h>
 
-#define real_3_rx    0
-#define real_1_tx    1
-#define integer_3_rx 2
-#define integer_2_tx 3
-#define integer_1_tx 4
-#define real_A_rx    8
-#define real_B_tx    10
-#define real_C_tx    11
-#define real_D_tx    12
+#define real_3_tx    0
+#define real_1_rx    1
+#define integer_3_tx 2
+#define integer_2_rx 3
+#define integer_1_rx 4
+#define bool_1_tx    6
+#define bool_2_rx    7
+#define real_A_tx    8
+#define real_B_rx    10
+#define real_C_rx    11
+#define real_D_rx    12
 
 
 int test_setup(void** state)
@@ -75,25 +77,25 @@ void test_mstep(void** state)
 
     TC_MSTEP tc[] = {
         { // FMU runs 1 time
-            .init_value = { 0.0, 0.0, 1.0 },
-            .vr_input = { real_3_rx, integer_3_rx, real_A_rx },
-            .expected_value = { 1.0, 1.0, 11.0, 101.0, 101.0 },
-            .vr_output = { real_1_tx, integer_2_tx, real_B_tx, real_C_tx,
-                real_D_tx },
+            .init_value = { 0.0, 0.0, 1.0, 1},
+            .vr_input = { real_3_tx, integer_3_tx, real_A_tx, bool_1_tx },
+            .expected_value = { 1.0, 1.0, 11.0, 101.0, 101.0, 1 },
+            .vr_output = { real_1_rx, integer_2_rx, real_B_rx, real_C_rx,
+                real_D_rx, bool_2_rx },
             .sim_stepsize = 0.0001,
             .steps = 1 },
         { // FMU runs additional 1 time
             .init_value = { 0.0, 0.0 },
-            .vr_input = { real_3_rx, integer_3_rx },
+            .vr_input = { real_3_tx, integer_3_tx },
             .expected_value = { 2.0, 2.0 },
-            .vr_output = { real_1_tx, integer_2_tx },
+            .vr_output = { real_1_rx, integer_2_rx },
             .sim_stepsize = 0.00001,
             .steps = 10 },
         { // FMU runs additional 10 times
             .init_value = { 0.0, 0.0 },
-            .vr_input = { real_3_rx, integer_3_rx },
+            .vr_input = { real_3_tx, integer_3_tx },
             .expected_value = { 12.0, 12.0 },
-            .vr_output = { real_1_tx, integer_2_tx },
+            .vr_output = { real_1_rx, integer_2_rx },
             .sim_stepsize = 0.001,
             .steps = 1 },
     };

@@ -66,6 +66,7 @@ static MarshalType _decode_var_type(const char* t)
 
     if (strcmp(t, "Real") == 0) return MARSHAL_TYPE_DOUBLE;
     if (strcmp(t, "Integer") == 0) return MARSHAL_TYPE_INT32;
+    if (strcmp(t, "Boolean") == 0) return MARSHAL_TYPE_BOOL;
 
     return MARSHAL_TYPE_NONE;
 }

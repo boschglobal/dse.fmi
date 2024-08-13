@@ -59,81 +59,81 @@ metadata:
     channel: signal_vector
 spec:
   signals:
-    - signal: real_3_rx
+    - signal: real_3_tx
       annotations:
         fmi_variable_id: 0
-        fmi_variable_name: real_3_rx
+        fmi_variable_name: real_3_tx
         fmi_variable_type: Real
         fmi_variable_causality: input
-    - signal: real_1_tx
+    - signal: real_1_rx
       annotations:
         fmi_variable_id: 1
-        fmi_variable_name: real_1_tx
+        fmi_variable_name: real_1_rx
         fmi_variable_type: Real
         fmi_variable_causality: output
-    - signal: integer_3_rx
+    - signal: integer_3_tx
       annotations:
         fmi_variable_id: 2
-        fmi_variable_name: integer_3_rx
+        fmi_variable_name: integer_3_tx
         fmi_variable_type: Integer
         fmi_variable_causality: input
-    - signal: integer_2_tx
+    - signal: integer_2_rx
       annotations:
         fmi_variable_id: 3
-        fmi_variable_name: integer_2_tx
+        fmi_variable_name: integer_2_rx
         fmi_variable_type: Integer
         fmi_variable_causality: output
-    - signal: integer_1_tx
+    - signal: integer_1_rx
       annotations:
         fmi_variable_id: 4
-        fmi_variable_name: integer_1_tx
+        fmi_variable_name: integer_1_rx
         fmi_variable_type: Integer
         fmi_variable_causality: output
-    - signal: real_2_rx
+    - signal: real_2_tx
       annotations:
         fmi_variable_id: 5
-        fmi_variable_name: real_2_rx
+        fmi_variable_name: real_2_tx
         fmi_variable_type: Real
         fmi_variable_causality: input
-    - signal: bool_1_rx
+    - signal: bool_1_tx
       annotations:
         fmi_variable_id: 6
-        fmi_variable_name: bool_1_rx
-        fmi_variable_type: Integer
+        fmi_variable_name: bool_1_tx
+        fmi_variable_type: Boolean
         fmi_variable_causality: input
-    - signal: bool_2_tx
+    - signal: bool_2_rx
       annotations:
         fmi_variable_id: 7
-        fmi_variable_name: bool_2_tx
-        fmi_variable_type: Integer
+        fmi_variable_name: bool_2_rx
+        fmi_variable_type: Boolean
         fmi_variable_causality: output
-    - signal: real_A_rx
+    - signal: real_A_tx
       annotations:
         fmi_variable_id: 8
-        fmi_variable_name: real_A_rx
+        fmi_variable_name: real_A_tx
         fmi_variable_type: Real
         fmi_variable_causality: input
-    - signal: real_A_rx
+    - signal: real_A_tx
       annotations:
         fmi_variable_id: 9
-        fmi_variable_name: real_A2_rx
+        fmi_variable_name: real_A2_tx
         fmi_variable_type: Real
         fmi_variable_causality: input
-    - signal: real_B_tx
+    - signal: real_B_rx
       annotations:
         fmi_variable_id: 10
-        fmi_variable_name: real_A_rx
+        fmi_variable_name: real_A_tx
         fmi_variable_type: Real
         fmi_variable_causality: output
-    - signal: real_C_tx
+    - signal: real_C_rx
       annotations:
         fmi_variable_id: 11
-        fmi_variable_name: real_A2_rx
+        fmi_variable_name: real_A2_tx
         fmi_variable_type: Real
         fmi_variable_causality: output
-    - signal: real_D_tx
+    - signal: real_D_rx
       annotations:
         fmi_variable_id: 11
-        fmi_variable_name: real_A2_rx
+        fmi_variable_name: real_A2_tx
         fmi_variable_type: Real
         fmi_variable_causality: output

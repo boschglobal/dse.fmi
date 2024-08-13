@@ -150,6 +150,14 @@ void test_parser__fmu_signal(void** state)
             .variable_dir = MARSHAL_DIRECTION_TXRX,
             .variable_type = MARSHAL_TYPE_DOUBLE,
         },
+        {
+            .name = "active",
+            .variable_name = "active",
+            .variable_vref = 3,
+            .variable_kind = MARSHAL_KIND_PRIMITIVE,
+            .variable_dir = MARSHAL_DIRECTION_TXRX,
+            .variable_type = MARSHAL_TYPE_BOOL,
+        },
     };
 
     // Run parser.
@@ -199,40 +207,52 @@ void test_parser__fmu_signal_sorting(void** state)
     // Test conditions:
     FmuSignal signals[] = {
         {
-            .name = "integer_2_tx",
+            .name = "integer_2_rx",
             .variable_kind = MARSHAL_KIND_PRIMITIVE,
             .variable_dir = MARSHAL_DIRECTION_RXONLY,
             .variable_type = MARSHAL_TYPE_INT32,
         },
         {
-            .name = "integer_1_tx",
+            .name = "integer_1_rx",
             .variable_kind = MARSHAL_KIND_PRIMITIVE,
             .variable_dir = MARSHAL_DIRECTION_RXONLY,
             .variable_type = MARSHAL_TYPE_INT32,
         },
         {
-            .name = "integer_3_rx",
+            .name = "integer_3_tx",
             .variable_kind = MARSHAL_KIND_PRIMITIVE,
             .variable_dir = MARSHAL_DIRECTION_TXONLY,
             .variable_type = MARSHAL_TYPE_INT32,
         },
         {
-            .name = "real_1_tx",
+            .name = "real_1_rx",
             .variable_kind = MARSHAL_KIND_PRIMITIVE,
             .variable_dir = MARSHAL_DIRECTION_RXONLY,
             .variable_type = MARSHAL_TYPE_DOUBLE,
         },
         {
-            .name = "real_3_rx",
+            .name = "real_3_tx",
             .variable_kind = MARSHAL_KIND_PRIMITIVE,
             .variable_dir = MARSHAL_DIRECTION_TXONLY,
             .variable_type = MARSHAL_TYPE_DOUBLE,
         },
         {
-            .name = "real_2_rx",
+            .name = "real_2_tx",
             .variable_kind = MARSHAL_KIND_PRIMITIVE,
             .variable_dir = MARSHAL_DIRECTION_TXONLY,
             .variable_type = MARSHAL_TYPE_DOUBLE,
+        },
+        {
+            .name = "Boolean_1_rx",
+            .variable_kind = MARSHAL_KIND_PRIMITIVE,
+            .variable_dir = MARSHAL_DIRECTION_RXONLY,
+            .variable_type = MARSHAL_TYPE_BOOL,
+        },
+        {
+            .name = "Boolean_2_tx",
+            .variable_kind = MARSHAL_KIND_PRIMITIVE,
+            .variable_dir = MARSHAL_DIRECTION_TXONLY,
+            .variable_type = MARSHAL_TYPE_BOOL,
         },
     };
 

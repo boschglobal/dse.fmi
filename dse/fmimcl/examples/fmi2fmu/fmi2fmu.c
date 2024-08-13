@@ -56,8 +56,10 @@ fmi2Component fmi2Instantiate(fmi2String instance_name, fmi2Type fmu_type,
     hashmap_set_long(&fmu_inst->var, "3", 0);
     hashmap_set_long(&fmu_inst->var, "4", 0);
     hashmap_set_double(&fmu_inst->var, "5", 0.0);
+    /* Boolean. */
     hashmap_set_long(&fmu_inst->var, "6", 0);
     hashmap_set_long(&fmu_inst->var, "7", 0);
+    /* Shared VRs. */
     hashmap_set_double(&fmu_inst->var, "8", 0);
     hashmap_set_double(&fmu_inst->var, "9", 0);
     hashmap_set_double(&fmu_inst->var, "10", 0);
@@ -246,7 +248,11 @@ fmi2Status fmi2DoStep(fmi2Component c, fmi2Real currentCommunicationPoint,
 
     int* vr_6 = hashmap_get(&fmu_inst->var, "6");
     int* vr_7 = hashmap_get(&fmu_inst->var, "7");
-    *vr_7 = *vr_6;
+    if (*vr_6 == true) {
+        *vr_7 = true;
+    } else {
+        *vr_7 = false;
+    }
 
     double* vr_8 = hashmap_get(&fmu_inst->var, "8");
     double* vr_9 = hashmap_get(&fmu_inst->var, "9");
