@@ -189,7 +189,7 @@ fmi2Status fmi2ExitInitializationMode(fmi2Component c)
          .runtime = {
              .runtime_model = fmu->instance.name,
              .model_name = fmu->instance.name,
-             .sim_path = "resources/sim",
+             .sim_path = dse_path_cat(fmu->instance.resource_location, "sim"),
              .simulation_yaml = "data/simulation.yaml",
              .end_time = END_TIME,
              .log_level = 5,
@@ -517,8 +517,9 @@ void fmi2FreeInstance(fmi2Component c)
     assert(m);
 
     _log("Call model_runtime_destroy() ...");
+    free(m->runtime.sim_path);
     model_runtime_destroy(m);
-    if (m->model.sim) free(m->model.sim);
+    free(m->model.sim);
 
     _log("Destroy the index");
     hashmap_destroy(&fmu->runtime.scalar.input);
