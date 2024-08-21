@@ -26,6 +26,7 @@ jobs:
         package_arch:
           - linux-amd64
           - linux-x86
+          - linux-i386
           - windows-x86
           - windows-x64
     container:
@@ -119,6 +120,7 @@ jobs:
         package_arch:
           - linux-amd64
           - linux-x86
+          - linux-i386
           - windows-x86
           - windows-x64
     steps:
