@@ -97,7 +97,7 @@ void fmimodelc_index_scalar_signals(
             for (uint32_t i = 0; i < sv->count; i++) {
                 /* Value Reference. */
                 const char* vref =
-                    signal_annotation(sv, i, "fmi_value_reference");
+                    signal_annotation(sv, i, "fmi_value_reference", NULL);
                 if (vref == NULL) continue;
 
                 /* Locate the SimBus variable. */
@@ -109,7 +109,7 @@ void fmimodelc_index_scalar_signals(
 
                 /* Index based on causality. */
                 const char* causality =
-                    signal_annotation(sv, i, "fmi_variable_causality");
+                    signal_annotation(sv, i, "fmi_variable_causality", NULL);
                 if (strcmp(causality, "output") == 0) {
                     hashmap_set(output, vref, scalar);
                 } else if (strcmp(causality, "input") == 0) {
@@ -134,7 +134,7 @@ void fmimodelc_index_binary_signals(
             for (uint32_t i = 0; i < sv->count; i++) {
                 /* Value Reference. */
                 const char* vref =
-                    signal_annotation(sv, i, "fmi_value_reference");
+                    signal_annotation(sv, i, "fmi_value_reference", NULL);
                 if (vref == NULL) continue;
 
                 /* Index according to bus topology. */
@@ -200,12 +200,13 @@ void fmimodelc_index_text_encoding(
 
             for (uint32_t i = 0; i < sv->count; i++) {
                 /* Value Reference. */
-                const char* _ = signal_annotation(sv, i, "fmi_value_reference");
+                const char* _ = signal_annotation(
+                    sv, i, "fmi_value_reference", NULL);
                 if (_ == NULL) continue;
 
                 /* Encoding. */
                 const char* encoding = signal_annotation(
-                    sv, i, "dse.standards.fmi-ls-text-encoding.encoding");
+                    sv, i, "dse.standards.fmi-ls-text-encoding.encoding", NULL);
                 if (strcmp(encoding, "ascii85") != 0) continue;
 
                 /* Index, all with same encoding (for now). */

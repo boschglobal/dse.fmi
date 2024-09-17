@@ -29,7 +29,6 @@ add_library(fmi2modelcfmu SHARED
     ascii85.c
     fmi2fmu.c
     runtime.c
-    signal_api_backport.c  # Backport of ModelC 2.1.0 api.
     $<$<BOOL:${WIN32}>:clock_gettime.c>
 )
 target_include_directories(fmi2modelcfmu

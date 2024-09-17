@@ -15,7 +15,6 @@ project(test_fmimodelc)
 set(DSE_FMIMODELC_SOURCE_DIR ../../../dse/fmimodelc)
 set(DSE_FMIMODELC_SOURCE_FILES
     ${DSE_FMIMODELC_SOURCE_DIR}/runtime.c
-    ${DSE_FMIMODELC_SOURCE_DIR}/signal_api_backport.c
     ${DSE_FMIMODELC_SOURCE_DIR}/ascii85.c
 )
 set(DSE_FMIMODELC_INCLUDE_DIR "${DSE_FMIMODELC_SOURCE_DIR}/../..")

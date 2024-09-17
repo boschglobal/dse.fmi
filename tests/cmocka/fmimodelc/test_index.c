@@ -23,7 +23,7 @@ int test_index_setup(void** state)
     *m = (RuntimeModelDesc){
         .runtime = {
              .runtime_model = "network_fmu",
-             .sim_path = EXAMPLE_MODEL_PATH,
+             .sim_path = (const char*)EXAMPLE_MODEL_PATH,
              .simulation_yaml = "data/simulation.yaml",
              .end_time = 3600,
              .log_level = 5,
