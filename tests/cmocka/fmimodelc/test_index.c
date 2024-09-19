@@ -23,7 +23,7 @@ int test_index_setup(void** state)
     *m = (RuntimeModelDesc){
         .runtime = {
              .runtime_model = "network_fmu",
-             .sim_path = (const char*)EXAMPLE_MODEL_PATH,
+             .sim_path = strdup(EXAMPLE_MODEL_PATH),
              .simulation_yaml = "data/simulation.yaml",
              .end_time = 3600,
              .log_level = 5,
@@ -40,6 +40,7 @@ int test_index_teardown(void** state)
     RuntimeModelDesc* m = *state;
     if (m) {
         free(m->model.sim);
+        free(m->runtime.sim_path);
         free(m);
     }
     return 0;

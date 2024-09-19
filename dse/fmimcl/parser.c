@@ -25,6 +25,7 @@ static void _sort_by_marshal_group(HashList* signal_list)
     */
     MarshalDir mDirOrder[] = {
         MARSHAL_DIRECTION_NONE,
+        MARSHAL_DIRECTION_LOCAL,
         MARSHAL_DIRECTION_RXONLY,
         MARSHAL_DIRECTION_TXRX,
         MARSHAL_DIRECTION_TXONLY,
@@ -80,6 +81,7 @@ static MarshalDir _decode_var_dir(const char* t)
     if (strcmp(t, "output") == 0) return MARSHAL_DIRECTION_RXONLY;
     if (strcmp(t, "inout") == 0) return MARSHAL_DIRECTION_TXRX;
     if (strcmp(t, "parameter") == 0) return MARSHAL_DIRECTION_PARAMETER;
+    if (strcmp(t, "local") == 0) return MARSHAL_DIRECTION_LOCAL;
 
     return MARSHAL_DIRECTION_NONE;
 }

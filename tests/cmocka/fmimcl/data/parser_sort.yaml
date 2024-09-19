@@ -99,3 +99,9 @@ spec:
         fmi_variable_name: Boolean_1_rx
         fmi_variable_type: Boolean
         fmi_variable_causality: output
+    - signal: real_4_local
+      annotations:
+        fmi_variable_id: 8
+        fmi_variable_name: real_4_local
+        fmi_variable_type: Real
+        fmi_variable_causality: local

@@ -225,6 +225,12 @@ void test_parser__fmu_signal_sorting(void** state)
             .variable_type = MARSHAL_TYPE_INT32,
         },
         {
+            .name = "real_4_local",
+            .variable_kind = MARSHAL_KIND_PRIMITIVE,
+            .variable_dir = MARSHAL_DIRECTION_LOCAL,
+            .variable_type = MARSHAL_TYPE_DOUBLE,
+        },
+        {
             .name = "real_1_rx",
             .variable_kind = MARSHAL_KIND_PRIMITIVE,
             .variable_dir = MARSHAL_DIRECTION_RXONLY,

@@ -64,6 +64,8 @@ fmi2Component fmi2Instantiate(fmi2String instance_name, fmi2Type fmu_type,
     hashmap_set_double(&fmu_inst->var, "9", 0);
     hashmap_set_double(&fmu_inst->var, "10", 0);
     hashmap_set_double(&fmu_inst->var, "11", 0);
+    /* Local variable. */
+    hashmap_set_double(&fmu_inst->var, "12", 0);
 
     return (fmi2Component)fmu_inst;
 }
@@ -264,6 +266,10 @@ fmi2Status fmi2DoStep(fmi2Component c, fmi2Real currentCommunicationPoint,
     /* Keep track on how many times the fmu ran. */
     int* vr_4 = hashmap_get(&fmu_inst->var, "4");
     *vr_4 += 1;
+
+    /* Local vars too. */
+    double* vr_12 = hashmap_get(&fmu_inst->var, "12");
+    *vr_12 = 12000 + *vr_4;  // Offset step count.
 
     return fmi2OK;
 }

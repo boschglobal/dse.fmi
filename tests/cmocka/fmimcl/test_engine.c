@@ -77,7 +77,7 @@ void test_engine__allocate_scalar_source(void** state)
     fmimcl_allocate_scalar_source(fmu_model);
     assert_non_null(fmu_model->data.scalar);
     assert_non_null(fmu_model->data.name);
-    assert_int_equal(fmu_model->data.count, 8);
+    assert_int_equal(fmu_model->data.count, 9);
 
     fmimcl_destroy(fmu_model);
 }
@@ -119,11 +119,20 @@ void test_engine__create_marshal_tables(void** state)
             .ref = { 2 },
         },
         {
+            .name = "mg-1-5-10",
+            .kind = MARSHAL_KIND_PRIMITIVE,
+            .dir = MARSHAL_DIRECTION_LOCAL,
+            .type = MARSHAL_TYPE_DOUBLE,
+            .offset = 3,
+            .count = 1,
+            .ref = { 8 },
+        },
+        {
             .name = "mg-1-2-10",
             .kind = MARSHAL_KIND_PRIMITIVE,
             .dir = MARSHAL_DIRECTION_RXONLY,
             .type = MARSHAL_TYPE_DOUBLE,
-            .offset = 3,
+            .offset = 4,
             .count = 1,
             .ref = { 1 },
         },
@@ -132,7 +141,7 @@ void test_engine__create_marshal_tables(void** state)
             .kind = MARSHAL_KIND_PRIMITIVE,
             .dir = MARSHAL_DIRECTION_TXONLY,
             .type = MARSHAL_TYPE_DOUBLE,
-            .offset = 4,
+            .offset = 5,
             .count = 2,
             .ref = { 0, 5 },
         },
@@ -141,7 +150,7 @@ void test_engine__create_marshal_tables(void** state)
             .kind = MARSHAL_KIND_PRIMITIVE,
             .dir = MARSHAL_DIRECTION_RXONLY,
             .type = MARSHAL_TYPE_BOOL,
-            .offset = 6,
+            .offset = 7,
             .count = 1,
             .ref = { 7 },
         },
@@ -150,7 +159,7 @@ void test_engine__create_marshal_tables(void** state)
             .kind = MARSHAL_KIND_PRIMITIVE,
             .dir = MARSHAL_DIRECTION_TXONLY,
             .type = MARSHAL_TYPE_BOOL,
-            .offset = 7,
+            .offset = 8,
             .count = 1,
             .ref = { 6 },
         },
@@ -168,7 +177,7 @@ void test_engine__create_marshal_tables(void** state)
     MarshalGroup* mg;
     for (mg = fmu_model->data.mg_table; mg->name; mg++)
         count++;
-    assert_int_equal(count, 6);
+    assert_int_equal(count, 7);
     assert_int_equal(count, ARRAY_SIZE(tc));
 
     // Check the test cases.
@@ -176,7 +185,6 @@ void test_engine__create_marshal_tables(void** state)
         mg = &fmu_model->data.mg_table[i];
         MCT_TC* t = &tc[i];
         if (t->name == NULL) continue;
-
         assert_string_equal(mg->name, t->name);
         assert_int_equal(mg->kind, t->kind);
         assert_int_equal(mg->dir, t->dir);
@@ -214,15 +222,15 @@ void test_engine__marshal_to_adapter(void** state)
     MarshalGroup* mg;
     for (mg = fmu_model->data.mg_table; mg->name; mg++)
         count++;
-    assert_int_equal(count, 6);
+    assert_int_equal(count, 7);
 
     // Set the source signals to known values.
-    assert_int_equal(fmu_model->data.count, 8);
+    assert_int_equal(fmu_model->data.count, 9);
     for (size_t i = 0; i < fmu_model->data.count - 2; i++) {
         fmu_model->data.scalar[i] = i + 1;
     }
-    fmu_model->data.scalar[6] = true;
     fmu_model->data.scalar[7] = true;
+    fmu_model->data.scalar[8] = true;
 
     // Marshal out.
     marshal_group_out(fmu_model->data.mg_table);
@@ -233,10 +241,11 @@ void test_engine__marshal_to_adapter(void** state)
     assert_int_equal(mg[0].target._int32[1], 0);
     assert_int_equal(mg[1].target._int32[0], 3);
     assert_double_equal(mg[2].target._double[0], 0.0, 0.0);
-    assert_double_equal(mg[3].target._double[0], 5.0, 0.0);
-    assert_double_equal(mg[3].target._double[1], 6.0, 0.0);
-    assert_false(mg[4].target._int32[0]);
-    assert_true(mg[5].target._int32[0]);
+    assert_double_equal(mg[3].target._double[0], 0.0, 0.0);
+    assert_double_equal(mg[4].target._double[0], 6.0, 0.0);
+    assert_double_equal(mg[4].target._double[1], 7.0, 0.0);
+    assert_false(mg[5].target._int32[0]);
+    assert_true(mg[6].target._int32[0]);
 
     fmimcl_destroy(fmu_model);
 }
@@ -259,19 +268,22 @@ void test_engine__marshal_from_adapter(void** state)
     MarshalGroup* mg;
     for (mg = fmu_model->data.mg_table; mg->name; mg++)
         count++;
-    assert_int_equal(count, 6);
+    assert_int_equal(count, 7);
 
     // Set the target signals/variables to known values.
-    assert_int_equal(fmu_model->data.count, 8);
+    assert_int_equal(fmu_model->data.count, 9);
     mg = fmu_model->data.mg_table;
     mg[0].target._int32[0] = 10;
     mg[0].target._int32[1] = 20;
     mg[1].target._int32[0] = 30;
-    mg[2].target._double[0] = 40.0;
-    mg[3].target._double[0] = 50.0;
-    mg[3].target._double[1] = 60.0;
-    mg[4].target._int32[0] = true;
+
+    mg[2].target._double[0] = 24.0;
+
+    mg[3].target._double[0] = 40.0;
+    mg[4].target._double[0] = 50.0;
+    mg[4].target._double[1] = 60.0;
     mg[5].target._int32[0] = true;
+    mg[6].target._int32[0] = true;
 
     // Marshal in.
     marshal_group_in(fmu_model->data.mg_table);
@@ -280,11 +292,12 @@ void test_engine__marshal_from_adapter(void** state)
     assert_double_equal(fmu_model->data.scalar[0], 10.0, 0.0);
     assert_double_equal(fmu_model->data.scalar[1], 20.0, 0.0);
     assert_double_equal(fmu_model->data.scalar[2], 0.0, 0.0);
-    assert_double_equal(fmu_model->data.scalar[3], 40.0, 0.0);
-    assert_double_equal(fmu_model->data.scalar[4], 0.0, 0.0);
+    assert_double_equal(fmu_model->data.scalar[3], 24.0, 0.0);
+    assert_double_equal(fmu_model->data.scalar[4], 40.0, 0.0);
     assert_double_equal(fmu_model->data.scalar[5], 0.0, 0.0);
-    assert_true(fmu_model->data.scalar[6]);
-    assert_false(fmu_model->data.scalar[7]);
+    assert_double_equal(fmu_model->data.scalar[6], 0.0, 0.0);
+    assert_true(fmu_model->data.scalar[7]);
+    assert_false(fmu_model->data.scalar[8]);
 
 
     fmimcl_destroy(fmu_model);
