@@ -251,6 +251,12 @@ typedef struct FmuModel {
     void*       adapter;
     /* Data marshalling support. */
     FmuData     data;
+    /* Measurement file. */
+    struct {
+        char* file_name;
+        void* file;
+        // TODO measurement descriptor
+    } measurement;
 } FmuModel;
 
 

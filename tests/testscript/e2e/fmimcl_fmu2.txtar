@@ -1,4 +1,4 @@
-env NAME=fmimcl_fmu2
+env NAME=fmu_inst
 env SIM=dse/build/_out/fmimcl
 
 
@@ -28,4 +28,8 @@ stdout 'uid=3471121503, val=127.000000, final_val=127.000000, name=real_D_tx'
 -- test.sh --
 SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
 docker run --name simer -i --rm -v $ENTRYDIR/$SIM:/sim \
-    $SIMER -valgrind $NAME -env $NAME:SIMBUS_LOGLEVEL=2 -stepsize 0.0005 -endtime 0.005
+    $SIMER -valgrind $NAME \
+        -env simbus:SIMBUS_LOGLEVEL=5 \
+        -env extended_inst:SIMBUS_LOGLEVEL=5 \
+        -env $NAME:SIMBUS_LOGLEVEL=2 \
+        -stepsize 0.0005 -endtime 0.005

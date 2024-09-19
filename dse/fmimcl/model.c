@@ -2,13 +2,35 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
 #include <dse/testing.h>
 #include <dse/logger.h>
+#include <dse/clib/util/strings.h>
 #include <dse/fmimcl/fmimcl.h>
+#include <dse/modelc/runtime.h>
 
 
-#define UNUSED(x)     ((void)x)
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
+#define UNUSED(x)      ((void)x)
+#define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
+#define VARNAME_MAXLEN 250
+
+
+char* _get_measurement_file_name(ModelDesc* model)
+{
+    char var[VARNAME_MAXLEN] = {};
+    snprintf(var, VARNAME_MAXLEN, "${%s_MEASUREMENT_FILE:-}", model->mi->name);
+    for (char* p = var; *p; p++)
+        *p = toupper(*p);
+    char* value = dse_expand_vars(var);
+    if (strlen(value)) {
+        return value;
+    } else {
+        free(value);
+        return NULL;
+    }
+}
 
 
 ModelDesc* model_create(ModelDesc* model)
@@ -22,7 +44,21 @@ ModelDesc* model_create(ModelDesc* model)
     rc = mcl_init(m);
     if (rc != 0) log_fatal("Could not initiate MCL (%d)", rc);
 
-    /* Return the extended object. */
+    /* Initialise measurement. */
+    FmuModel* fmu = (FmuModel*)m;
+    fmu->measurement.file_name = _get_measurement_file_name(model);
+    log_notice("Measurement File: %s", fmu->measurement.file_name);
+    if (fmu->measurement.file_name) {
+        errno = 0;
+        fmu->measurement.file = fopen(fmu->measurement.file_name, "wb");
+        if (fmu->measurement.file == NULL)
+            log_fatal("Failed to open measurement file: %s",
+                fmu->measurement.file_name);
+        // TODO configure the measurement interface
+        // (fmu_model->data.count/name/scalar)
+    }
+
+    /* Return the extended object (FmuModel). */
     return (ModelDesc*)m;
 }
 
@@ -31,6 +67,8 @@ int model_step(ModelDesc* model, double* model_time, double stop_time)
 {
     int32_t  rc;
     MclDesc* m = (MclDesc*)model;
+
+    // TODO call measurement interface
 
     rc = mcl_marshal_out(m);
     if (rc != 0) return rc;
@@ -53,6 +91,16 @@ void model_destroy(ModelDesc* model)
     int32_t  rc;
     MclDesc* m = (MclDesc*)model;
 
+    /* Finalise measurement. */
+    FmuModel* fmu = (FmuModel*)m;
+    if (fmu->measurement.file) {
+        // TODO finalise the measurement interface
+        fclose(fmu->measurement.file);
+        fmu->measurement.file = NULL;
+    }
+    free(fmu->measurement.file_name);
+
+    /* Unload the MCL. */
     rc = mcl_unload((void*)m);
     if (rc != 0) log_fatal("Could not unload MCL (%d)", rc);
 

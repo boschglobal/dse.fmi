@@ -1,0 +1,31 @@
+env NAME=fmu_inst
+env SIM=dse/build/_out/fmimcl
+env MEASUREMENT_FILE=examples/data/measurement.mf4
+
+# TEST: FMI MCL with Measurement
+rm /repo/$SIM/data/measurement.mf4
+exec sh -e $WORK/test.sh
+
+exists /repo/$SIM/$MEASUREMENT_FILE
+
+
+stdout 'Load YAML File: examples/data/simulation.yaml'
+stdout 'Loading symbol: model_create ... ok'
+stdout 'Loading symbol: model_step ... ok'
+stdout 'Loading symbol: model_destroy ... ok'
+stdout 'Run the Simulation ...'
+stdout 'Controller exit ...'
+stdout 'Measurement File: /sim/examples/data/measurement.mf4'
+
+
+# TODO check measurement file content
+
+-- test.sh --
+SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
+docker run --name simer -i --rm -v $ENTRYDIR/$SIM:/sim \
+    $SIMER -valgrind $NAME \
+        -env simbus:SIMBUS_LOGLEVEL=5 \
+        -env extended_inst:SIMBUS_LOGLEVEL=5 \
+        -env $NAME:SIMBUS_LOGLEVEL=4 \
+        -env $NAME:FMU_INST_MEASUREMENT_FILE=/sim/$MEASUREMENT_FILE \
+        -stepsize 0.0005 -endtime 0.005
