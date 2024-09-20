@@ -11,6 +11,8 @@ stdout 'Loading symbol: model_step ... ok'
 stdout 'Loading symbol: model_destroy ... ok'
 stdout 'Run the Simulation ...'
 stdout 'Controller exit ...'
+stdout 'Transport: redis'
+! stdout 'Transport: redispubsub'
 
 stdout 'uid=4130119698, val=54.000000, final_val=54.000000, name=real_1_tx'
 stdout 'uid=2274494661, val=99.000000, final_val=99.000000, name=integer_2_tx'
@@ -29,7 +31,7 @@ stdout 'uid=3471121503, val=127.000000, final_val=127.000000, name=real_D_tx'
 SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
 docker run --name simer -i --rm -v $ENTRYDIR/$SIM:/sim \
     $SIMER -valgrind $NAME \
-        -env simbus:SIMBUS_LOGLEVEL=5 \
+        -env simbus:SIMBUS_LOGLEVEL=1 \
         -env extended_inst:SIMBUS_LOGLEVEL=5 \
         -env $NAME:SIMBUS_LOGLEVEL=2 \
         -stepsize 0.0005 -endtime 0.005
