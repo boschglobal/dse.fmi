@@ -191,7 +191,7 @@ void fmimodelc_index_binary_signals(
 void fmimodelc_index_text_encoding(
     RuntimeModelDesc* m, HashMap* encode_func, HashMap* decode_func)
 {
-    // dse.standards.fmi-ls-text-encoding.encoding: ascii85
+    // dse.standards.fmi-ls-binary-to-text.encoding: ascii85
 
     for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
          mi++) {
@@ -206,13 +206,13 @@ void fmimodelc_index_text_encoding(
 
                 /* Encoding. */
                 const char* encoding = signal_annotation(
-                    sv, i, "dse.standards.fmi-ls-text-encoding.encoding", NULL);
+                    sv, i, "dse.standards.fmi-ls-binary-to-text.encoding", NULL);
                 if (strcmp(encoding, "ascii85") != 0) continue;
 
                 /* Index, all with same encoding (for now). */
-                // dse.standards.fmi-ls-text-encoding.vref: [[2,3,4,5,6,7,8,9]
+                // dse.standards.fmi-ls-binary-to-text.vref: [[2,3,4,5,6,7,8,9]
                 const char** vref_list = _signal_annotation_list(sv->mi, sv,
-                    sv->signal[i], "dse.standards.fmi-ls-text-encoding.vref");
+                    sv->signal[i], "dse.standards.fmi-ls-binary-to-text.vref");
                 if (vref_list) {
                     for (size_t j = 0; vref_list[j]; j++) {
                         /* Value Reference for the RX variable. */

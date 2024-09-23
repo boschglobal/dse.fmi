@@ -1,0 +1,3 @@
+Annotation,Value,FmiAnnotation,FmiValue
+softecu_direction,E2M,fmi_variable_causality,output
+softecu_direction,M2E,fmi_variable_causality,input

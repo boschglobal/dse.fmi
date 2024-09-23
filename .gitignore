@@ -7,6 +7,9 @@ out/
 __oss__
 super-linter.log
 /*.zip
+extra/tools/*/bin
+!extra/tools/*/build
+extra/tools/*/build/stage
 
 
 # Prerequisites

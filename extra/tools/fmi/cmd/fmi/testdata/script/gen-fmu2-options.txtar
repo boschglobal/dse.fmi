@@ -1,0 +1,20 @@
+env SIM=$BUILD_DIR/examples/fmimodelc/sim
+env FMU_NAME=test_fmu
+env UUID=88888888-4444-4444-4444-121212121212
+env VERSION=1.2.3
+
+# Create the simulation folder (Simer layout)
+env
+mkdir sim out
+exec cp -r $SIM $WORK
+exec ls -R $WORK
+
+# Generate the FMI ModelC FMU
+env
+exec fmi gen-fmu -sim sim -name $FMU_NAME -uuid $UUID -version $VERSION -outdir out -libroot $BUILD_DIR
+exec ls -R $WORK/out
+exists out/$FMU_NAME.fmu
+
+# Check options
+filecontains out/$FMU_NAME/modelDescription.xml guid="{$UUID}"
+filecontains out/$FMU_NAME/modelDescription.xml version="$VERSION"

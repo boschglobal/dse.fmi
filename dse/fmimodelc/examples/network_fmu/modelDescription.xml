@@ -7,26 +7,25 @@
     <ScalarVariable name="network_1_2_rx" valueReference="4" causality="input" initial="" variability="">
         <String start=""></String>
             <Annotations>
-                <Tool name="dse.standards.fmi-ls-text-encoding">
+                <Tool name="dse.standards.fmi-ls-binary-codec">
+                    <Annotation name="mimetype">ascii85</Annotation>
+                </Tool>
+                <Tool name="dse.standards.fmi-ls-binary-to-text">
                     <Annotation name="encoding">ascii85</Annotation>
                 </Tool>
-                <Tool name="dse.standards.fmi-ls-binary-codec">
+                <Tool name="dse.standards.fmi-ls-bus-topology">
                     <Annotation name="bus_id">1</Annotation>
-                    <Annotation name="node_id">2</Annotation>
-                    <Annotation name="node_limit">4</Annotation>
                 </Tool>
             </Annotations>
     </ScalarVariable>
     <ScalarVariable name="network_1_2_tx" valueReference="5" causality="output" initial="" variability="">
         <String start=""></String>
             <Annotations>
-                <Tool name="dse.standards.fmi-ls-text-encoding">
+                <Tool name="dse.standards.fmi-ls-binary-to-text">
                     <Annotation name="encoding">ascii85</Annotation>
                 </Tool>
-                <Tool name="dse.standards.fmi-ls-binary-codec">
+                <Tool name="dse.standards.fmi-ls-bus-topology">
                     <Annotation name="bus_id">1</Annotation>
-                    <Annotation name="node_id">2</Annotation>
-                    <Annotation name="node_limit">4</Annotation>
                 </Tool>
             </Annotations>
     </ScalarVariable>

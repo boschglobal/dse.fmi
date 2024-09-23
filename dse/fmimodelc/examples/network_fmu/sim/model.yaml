@@ -63,15 +63,13 @@ spec:
         #
         # FMI LS Text Encoding (applied to FMI String Variables):
         # --------------------
-        dse.standards.fmi-ls-text-encoding.encoding: ascii85
+        dse.standards.fmi-ls-binary-to-text.encoding: ascii85
         # (supporting annotations to avoid XML parsing)
-        dse.standards.fmi-ls-text-encoding.vref: [2, 3, 4, 5, 6, 7, 8, 9]
+        dse.standards.fmi-ls-binary-to-text.vref: [2, 3, 4, 5, 6, 7, 8, 9]
         #
         # FMI LS Bus Topology (applied to FMI String/Binary Variables):
         # -------------------
         dse.standards.fmi-ls-bus-topology.bus_id: 1
-        dse.standards.fmi-ls-bus-topology.node_id: 2
-        dse.standards.fmi-ls-bus-topology.node_limit: 4
         # (supporting annotations to avoid XML parsing)
         dse.standards.fmi-ls-bus-topology.rx_vref: [2, 4, 6, 8]
         dse.standards.fmi-ls-bus-topology.tx_vref: [3, 5, 7, 9]

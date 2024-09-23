@@ -1,0 +1,51 @@
+env SIM=$BUILD_DIR/examples/fmimodelc/sim
+env FMU_NAME=test_fmu
+
+
+# Create the simulation folder and stage folder
+mkdir sim
+exec cp -r $SIM $WORK
+exec touch $BUILD_DIR/lib32/fmi2modelcfmu_x86.so
+exec touch $BUILD_DIR/lib32/fmi2modelcfmu_i386.so
+exec touch $BUILD_DIR/lib/fmi2modelcfmu.dll
+exec touch $BUILD_DIR/lib32/fmi2modelcfmu.dll
+
+# Generate for platform linux-amd64
+rm $WORK/out
+mkdir out
+exec fmi gen-fmu -sim sim -name $FMU_NAME -platform linux-amd64 -outdir out -libroot $BUILD_DIR
+exec ls -R $WORK/out
+exists out/$FMU_NAME.fmu
+exists out/$FMU_NAME/binaries/linux64/fmi2modelcfmu.so
+
+# Generate for platform linux-x86
+rm $WORK/out
+mkdir out
+exec fmi gen-fmu -sim sim -name $FMU_NAME -platform linux-x86 -outdir out -libroot $BUILD_DIR
+exec ls -R $WORK/out
+exists out/$FMU_NAME.fmu
+exists out/$FMU_NAME/binaries/linux32/fmi2modelcfmu.so
+
+# Generate for platform linux-i386
+rm $WORK/out
+mkdir out
+exec fmi gen-fmu -sim sim -name $FMU_NAME -platform linux-i386 -outdir out -libroot $BUILD_DIR
+exec ls -R $WORK/out
+exists out/$FMU_NAME.fmu
+exists out/$FMU_NAME/binaries/linux32/fmi2modelcfmu.so
+
+# Generate for platform windows-x64
+rm $WORK/out
+mkdir out
+exec fmi gen-fmu -sim sim -name $FMU_NAME -platform windows-x64 -outdir out -libroot $BUILD_DIR
+exec ls -R $WORK/out
+exists out/$FMU_NAME.fmu
+exists out/$FMU_NAME/binaries/win64/fmi2modelcfmu.dll
+
+# Generate for platform windows-x86
+rm $WORK/out
+mkdir out
+exec fmi gen-fmu -sim sim -name $FMU_NAME -platform windows-x86 -outdir out -libroot $BUILD_DIR
+exec ls -R $WORK/out
+exists out/$FMU_NAME.fmu
+exists out/$FMU_NAME/binaries/win32/fmi2modelcfmu.dll

@@ -1,0 +1,25 @@
+---
+kind: SignalGroup
+metadata:
+  labels:
+    channel: E2M_M2E
+    model: Test
+  name: Test
+spec:
+  signals:
+    - annotations:
+        softecu_access_function: E2M+M2E
+        softecu_direction: M2E
+      signal: input_1
+    - annotations:
+        softecu_access_function: E2M+M2E
+        softecu_direction: M2E
+      signal: input_2
+    - annotations:
+        softecu_access_function: E2M+M2E
+        softecu_direction: E2M
+      signal: output_1
+    - annotations:
+        softecu_access_function: E2M+M2E
+        softecu_direction: E2M
+      signal: output_2

@@ -1,0 +1,27 @@
+env SIM=$BUILD_DIR/examples/fmimodelc/sim
+env FMU_NAME=test_fmu
+
+# Create the simulation folder (Simer layout)
+env
+mkdir sim out
+exec cp -r $SIM $WORK
+exec ls -R $WORK
+
+# Generate the FMI ModelC FMU
+env
+exec fmi gen-fmu -sim sim -name $FMU_NAME -outdir out -libroot $BUILD_DIR
+exec ls -R $WORK/out
+exists out/$FMU_NAME.fmu
+
+# Check FMU Layout
+mkdir -p fmu/$FMU_NAME
+exec unzip -q -o out/$FMU_NAME.fmu -d fmu/$FMU_NAME
+exec ls -R $WORK/fmu
+exists fmu/$FMU_NAME/modelDescription.xml
+exists fmu/$FMU_NAME/binaries/linux64/fmi2modelcfmu.so
+exists fmu/$FMU_NAME/resources/sim
+exists fmu/$FMU_NAME/resources/licenses/modelica/fmi-standard/v2.0.x/LICENSE.txt
+exists fmu/$FMU_NAME/resources/licenses/modelica/fmi-standard/v2.0.x/__url__
+exists fmu/$FMU_NAME/resources/sim/lib/libtarget.so
+exists fmu/$FMU_NAME/resources/sim/data/simulation.yaml
+exists fmu/$FMU_NAME/resources/sim/data/model.yaml

@@ -187,12 +187,14 @@ fmi2Status fmi2ExitInitializationMode(fmi2Component c)
     _log("Create the Model Runtime object");
     *m = (RuntimeModelDesc){
          .runtime = {
-             .runtime_model = fmu->instance.name,
-             .model_name = fmu->instance.name,
-             .sim_path = dse_path_cat(fmu->instance.resource_location, "sim"),
-             .simulation_yaml = "data/simulation.yaml",
-             .end_time = END_TIME,
-             .log_level = 5,
+            /* Logging/Information parameters (Importer only). */
+            .runtime_model = fmu->instance.name,
+            .model_name = fmu->instance.name,
+            /* Operational parameters. */
+            .sim_path = dse_path_cat(fmu->instance.resource_location, "sim"),
+            .simulation_yaml = "data/simulation.yaml",
+            .end_time = END_TIME,
+            .log_level = 5,
          },
     };
     m->model.sim = calloc(1, sizeof(SimulationSpec));

@@ -38,6 +38,15 @@ TOOL_DIRS = fmi
 
 
 ###############
+## Test Parameters.
+export HOST_DOCKER_WORKSPACE ?= $(shell pwd -P)
+export TESTSCRIPT_E2E_DIR ?= tests/testscript/e2e
+TESTSCRIPT_E2E_FILES = $(wildcard $(TESTSCRIPT_E2E_DIR)/*.txtar)
+FMI_IMAGE ?= $(NAMESPACE)-$(MODULE)
+FMI_TAG ?= test
+
+
+###############
 ## Package parameters.
 export PACKAGE_VERSION ?= 0.0.1
 DIST_DIR := $(shell pwd -P)/$(NAMESPACE)/build/_dist
@@ -46,11 +55,6 @@ PACKAGE_DOC_NAME = DSE FMI Library
 PACKAGE_NAME = Fmi
 PACKAGE_NAME_LC = fmi
 PACKAGE_PATH = $(NAMESPACE)/dist
-
-###############
-## Test Parameters.
-export TESTSCRIPT_E2E_DIR ?= tests/testscript/e2e
-TESTSCRIPT_E2E_FILES = $(wildcard $(TESTSCRIPT_E2E_DIR)/*.txtar)
 
 
 ifneq ($(CI), true)
@@ -79,12 +83,37 @@ build:
 package:
 	@${DOCKER_BUILDER_CMD} $(MAKE) do-package
 
+.PHONY: test_tools
+test_tools:
+	for d in $(TOOL_DIRS) ;\
+	do \
+		cd extra/tools/$$d ;\
+		make ;\
+		make test ;\
+	done;
+
+.PHONY: fmi
+fmi:
+	mkdir -p extra/tools/fmi/build/stage/lib
+	mkdir -p extra/tools/fmi/build/stage/lib32
+	mkdir -p extra/tools/fmi/build/stage/examples/fmimodelc/sim
+	touch extra/tools/fmi/build/stage/lib32/.nop
+	@if [ ${PACKAGE_ARCH} = "linux-amd64" ]; then \
+		cp dse/build/_out/fmimodelc/lib/libfmi2modelcfmu.so extra/tools/fmi/build/stage/lib/fmi2modelcfmu.so ;\
+		cp -r licenses -t extra/tools/fmi/build/stage ;\
+		cp -r dse/build/_out/fmimodelc/examples/network_fmu/fmu/resources/sim -t extra/tools/fmi/build/stage/examples/fmimodelc ;\
+	fi
+	@if [ ${PACKAGE_ARCH} = "linux-x86" ]; then \
+		cp dse/build/_out/fmimodelc/lib/libfmi2modelcfmu.so extra/tools/fmi/build/stage/lib32/fmi2modelcfmu_x86.so ;\
+	fi
+	@if [ ${PACKAGE_ARCH} = "linux-i386" ]; then \
+		cp dse/build/_out/fmimodelc/lib/libfmi2modelcfmu.so extra/tools/fmi/build/stage/lib32/fmi2modelcfmu_i386.so ;\
+	fi
+
 .PHONY: tools
 tools:
 	for d in $(TOOL_DIRS) ;\
 	do \
-		mkdir -p extra/tools/$$d/build/stage ;\
-		cp -r licenses -t extra/tools/$$d/build/stage ;\
 		docker build -f extra/tools/$$d/build/package/Dockerfile \
 				--tag $$d:test extra/tools/$$d ;\
 	done;
@@ -111,11 +140,11 @@ ifeq ($(PACKAGE_ARCH), linux-amd64)
 	do \
 		echo "Running E2E Test: $$t" ;\
 		docker run -i --rm \
-			-e ENTRYDIR=$$(pwd) \
+			-e ENTRYDIR=$(HOST_DOCKER_WORKSPACE) \
 			-v /var/run/docker.sock:/var/run/docker.sock \
-			-v $$(pwd):/repo \
+			-v $(HOST_DOCKER_WORKSPACE):/repo \
 			$(TESTSCRIPT_IMAGE) \
-				-e ENTRYDIR=$$(pwd) \
+				-e ENTRYDIR=$(HOST_DOCKER_WORKSPACE) \
 				-e SIMER=$(SIMER_IMAGE) \
 				$$t ;\
 	done;
@@ -139,6 +168,7 @@ cleanall:
 	docker ps --filter status=dead --filter status=exited -aq | xargs -r docker rm -v
 	docker images -qf dangling=true | xargs -r docker rmi
 	docker volume ls -qf dangling=true | xargs -r docker volume rm
+	docker images -q */*/$(NAMESPACE)-fmi | xargs -r docker rmi
 
 .PHONY: oss
 oss:
@@ -180,7 +210,7 @@ super-linter:
 		--env RUN_LOCAL=true \
 		--env DEFAULT_BRANCH=main \
 		--env IGNORE_GITIGNORED_FILES=true \
-		--env FILTER_REGEX_EXCLUDE="(doc/content/.*)" \
+		--env FILTER_REGEX_EXCLUDE="(doc/content/.*|extra/tools/fmi/vendor/.*)" \
 		--env VALIDATE_CPP=true \
 		--env VALIDATE_DOCKERFILE=true \
 		--env VALIDATE_MARKDOWN=true \
