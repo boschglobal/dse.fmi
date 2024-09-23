@@ -37,6 +37,7 @@ stdout 'Importer:   \[9\] F8u:'
 SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
 docker run --name simer -i --rm \
     -v $ENTRYDIR/$SIM:/sim \
+    --env SIMBUS_LOGLEVEL=4 \
     --entrypoint="" $SIMER \
     bash -c "cd fmu; valgrind -q --leak-check=yes --error-exitcode=808 \
         ../bin/fmi2importer lib/linux-amd64/libfmi2modelcfmu.so"
