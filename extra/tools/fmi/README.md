@@ -14,7 +14,7 @@ Containerised DSE FMI toolset.
 ```bash
 # Using a local build `dse-fmi` container.
 $ export FMI_IMAGE=fmi
-$ FMI_TAG=test
+$ export FMI_TAG=test
 
 # List the toolchains available:
 $ task -l
@@ -82,14 +82,6 @@ $ make build fmi
 
 # Build the DSE FMI Toolset container (from repo root).
 $ make tools
-
-# Generate an FMU:
-$ cd extra/tools/fmi
-$ bin/fmi gen-fmu \
-    -sim build/stage/examples/fmimodelc/sim \
-    -name TestFmu \
-    -outdir out \
-    -libroot build/stage
 ```
 
 

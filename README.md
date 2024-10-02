@@ -13,53 +13,111 @@ SPDX-License-Identifier: Apache-2.0
 
 ## Introduction
 
-FMI Libraries of the Dynamic Simulation Environment (DSE) Core Platform.
+FMI Libraries of the Dynamic Simulation Environment (DSE) Core Platform provide various solutions for working with FMUs and FMI based simulation environments. Included are:
 
-<!-- Overview diagram, PlantUML generated, see Network for example. -->
+* FMI Model Compatability Library (MCL) - for loading FMUs into a DSE simulation.
+* FMI ModelC FMU - for packaging a DSE simulation as an FMU.
+* FMI Gateway FMU - for bridging between a remote simulation and a DSE simulation.
 
-<dl>
-  <dt><b>FMI Model Compatibility Layer</b></dt>
-  <dd>Load FMUs into a Dynamic Simulation Environment (i.e. using ModelC/SimBus).</dd>
+The DSE FMI libraries operate in Co-simulation environments and support both scalar and binary variables. 
+Virtual networks (e.g. CAN) are implemented using [Network Codecs](https://github.com/boschglobal/dse.standards/tree/main/dse/ncodec) and supported via FMI Binary variables, or in the case of FMI 2, by using encoded [FMI String variables](https://github.com/boschglobal/dse.standards/tree/main/modelica/fmi-ls-binary-to-text).
 
-  <dt><b>FMI ModelC FMU</b></dt>
-  <dd>FMU capable of running a DSE Simulation (i.e. ModelC based Simulation Stack).</dd>
-</dl>
 
-The FMI Library is implemented with support of:
-* [DSE Model C Library](https://github.com/boschglobal/dse.modelc)
-* [DSE C Library](https://github.com/boschglobal/dse.clib)
-* [DSE Network Codec](https://github.com/boschglobal/dse.standards/tree/main/dse/ncodec)
+### FMI Model Compatibility Library (MCL)
+
+![FMI MCL](doc/static/ki_fmimcl.png)
+
+* Multi platform (Linux, Windows) and multi architecture (x64, x86, i386) simulation environment.
+* Native FMU support for Co-simulation.
+* Virtual Networks (CAN etc.) using [Network Codecs](https://github.com/boschglobal/dse.standards/tree/main/dse/ncodec) and Binary Streams. Includes support for FMI 2 (via String variables).
+
+
+### FMI ModelC FMU
+
+![FMI ModelC](doc/static/ki_fmimodelc.png)
+
+* FMU with embedded Model Runtime and SimBus from the [ModelC](https://github.com/boschglobal/dse.modelc/blob/main/dse/modelc/runtime.h) project.
+* Packages [DSE Simer](https://boschglobal.github.io/dse.doc/docs/user/simer/) simulation as an FMU.
+* FMU interface supports Codec based Binary Streams (e.g. CAN Virtual Bus). Includes support for FMI 2 (via String variables).
+
+
+### FMI Gateway FMU
+
+![FMI MCL](doc/static/ki_fmigateway.png)
+
+* Bridge simulaiton environments using a Gateway FMU.
+* Gateway FMU interface supports Codec based Binary Streams, including FMI 2 support.
+* Manages the Co-simulation time-domain between the bridged simulation environments.
+* Simple lifecycle which can be customised to support automation of simulation environments (e.g. session management).
 
 
 ### Project Structure
 
 ```text
 L- dse
-  L- dse/fmimcl     FMI MCL source code.
-  L- dse/fmimodelc  FMI ModelC FMU source code.
-L- extra            Build infrastructure.
-  L- tools          Containerised tools.
-L- licenses         Third Party Licenses.
-L- tests            Unit and E2E tests.
+  L- fmigateway  FMI Gateway FMU source code.
+  L- fmimcl      FMI MCL source code.
+  L- fmimodelc   FMI ModelC FMU source code.
+L- extra         Build infrastructure.
+  L- tools/fmi   Containerised tools.
+L- licenses      Third Party Licenses.
+L- tests         Unit and E2E tests.
 ```
 
 
 ## Usage
 
-### FMI Model Compatibility Layer
+### DSE FMI Toolchains
 
-<!-- Usage example showing all steps, see Network for example. -->
+```bash
+# Build the examples.
+$ make
+
+# List the toolchains available:
+$ task -l
+task: Available tasks for this project:
+* generate-fmimcl:          Generate an FMI MCL from an existing FMU.
+* generate-fmimodelc:       Generate a FMI ModelC FMU from an existing (DSE/ModelC) Simer simulation.
+* generate-fmigateway:      Generate a FMI Gateway FMU.
 
 
-### FMI ModelC FMU
-
-<!-- Usage example showing all steps, see Network for example. -->
+# FMI MCL with the generate-fmimcl command:
 
 
-#### Example: Network FMU with CAN Network Topology
+# FMI ModelC FMU with the generate-fmimodelc command:
+$ task generate-fmimodelc \
+    SIM=extra/tools/fmi/build/stage/examples/fmimodelc/sim \
+    FMU_NAME=fubar \
+    VERSION=1.0.0
+Running FMI Toolset command: gen-fmu
+Options:
+  libroot        : /usr/local
+  log            : 4
+  name           : fubar
+  outdir         : out
+  platform       : linux-amd64
+  signalgroups   :
+  sim            : extra/tools/fmi/build/stage/examples/fmimodelc/sim
+  uuid           : 11111111-2222-3333-4444-555555555555
+  version        : 1.0.0
+Scanning simulation (extra/tools/fmi/build/stage/examples/fmimodelc/sim) ...
+Build the FMU file layout (out/fubar) ...
+Create FMU Model Description (out/fubar/modelDescription.xml) ...
+Adding SignalGroup: scalar_vector (extra/tools/fmi/build/stage/examples/fmimodelc/sim/data/model.yaml)
+Adding SignalGroup: network_vector (extra/tools/fmi/build/stage/examples/fmimodelc/sim/data/model.yaml)
+Create FMU Package (out/fubar.fmu) ...
+
+
+# FMI Gateway FMU with the generate-fmigateway:
+
+
+```
+
+
+### Example: Network FMU with CAN Network Topology
 
 The FMI ModelC FMU includes an example Network FMU which demonstrates how a
-CAN Network Topology can be realised using FMI2 String variables and a wrapped
+CAN Network Topology can be realised using FMI 2 String variables and a wrapped
 ModelC Simulation Stack with models which implement a [Network Codec](https://github.com/boschglobal/dse.standards/tree/main/dse/ncodec).
 
 
@@ -127,8 +185,8 @@ $ make
 # Run tests.
 $ make test
 
-# Build containerised tools.
-$ make tools
+# Build containerised tools (more details in the extra/tools/fmi directory).
+$ make build fmi tools
 
 # Remove (clean) temporary build artifacts.
 $ make clean
@@ -153,6 +211,19 @@ used as follows:
 ```bash
 $ export GCC_BUILDER_IMAGE=ghcr.io/boschglobal/dse-gcc-builder:main
 ```
+
+
+## Additional Resources
+
+The FMI Library is implemented using the following related repositories:
+
+* [DSE Model C Library](https://github.com/boschglobal/dse.modelc)
+* [DSE C Library](https://github.com/boschglobal/dse.clib)
+* [DSE Network Codec](https://github.com/boschglobal/dse.standards/tree/main/dse/ncodec)
+* [DSE Standareds Extensions](https://github.com/boschglobal/dse.standards)
+  * [Binary Codec specification for FMI 2/3](https://github.com/boschglobal/dse.standards/tree/main/modelica/fmi-ls-binary-codec)
+  * [String encoding for binary data, for FMI 2/3](https://github.com/boschglobal/dse.standards/tree/main/modelica/fmi-ls-binary-to-text)
+  * [Bus Topologies and Virtual Bus/Networks, for FMI 2/3](https://github.com/boschglobal/dse.standards/tree/main/modelica/fmi-ls-bus-topology)
 
 
 ## Contribute
