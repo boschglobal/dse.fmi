@@ -8,7 +8,7 @@
 : "${FMI_EXE:=/usr/local/bin/fmi}"
 
 function print_usage () {
-    echo "Fmi Tools"
+    echo "FMI Tools"
     echo ""
     echo "  fmi <command> [command options,]"
     echo ""
@@ -23,11 +23,11 @@ function print_usage () {
 if [ $# -eq 0 ]; then print_usage; fi
 
 
-echo "Command is $1"
+#echo "Command is $1"
 CMD="$FMI_EXE $1"
 
 # Run the command
 if [ -z ${CMD+x} ]; then print_usage; fi
 shift
-echo $CMD "$@"
+#echo $CMD "$@"
 $CMD "$@"

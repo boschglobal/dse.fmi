@@ -10,7 +10,7 @@ super-linter.log
 extra/tools/*/bin
 !extra/tools/*/build
 extra/tools/*/build/stage
-
+.task/
 
 # Prerequisites
 *.d

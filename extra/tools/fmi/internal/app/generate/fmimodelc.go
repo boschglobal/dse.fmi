@@ -47,7 +47,7 @@ func NewFmiModelcCommand(name string) *GenFmiModelcCommand {
 	c.fs.StringVar(&c.name, "name", "", "Name of the FMU")
 	c.fs.StringVar(&c.version, "version", "0.0.1", "Version to assign to the FMU")
 	c.fs.StringVar(&c.uuid, "uuid", "11111111-2222-3333-4444-555555555555", "UUID to assign to the FMU, set to '' to generate a new UUID")
-	c.fs.StringVar(&c.outdir, "outdir", "", "Output directory for the FMU file")
+	c.fs.StringVar(&c.outdir, "outdir", "out", "Output directory for the FMU file")
 	c.fs.IntVar(&c.logLevel, "log", 4, "Loglevel")
 
 	// Supports unit testing.
@@ -77,6 +77,7 @@ func (c *GenFmiModelcCommand) Run() error {
 	// Index the simulation files, layout is partly fixed:
 	//	<simpath>/data/simulation.yaml
 	//	<simpath>/...
+	fmt.Fprintf(flag.CommandLine.Output(), "Scanning simulation (%s) ...\n", c.simpath)
 	var index = index.NewYamlFileIndex()
 	index.Scan(c.simpath)
 	if len(index.DocMap["Stack"]) != 1 {
@@ -89,10 +90,12 @@ func (c *GenFmiModelcCommand) Run() error {
 	}
 
 	// Build the FMU file layout.
-	if err := os.RemoveAll(filepath.Join(c.outdir, c.name)); err != nil {
+	fmuOutDir := filepath.Join(c.outdir, c.name)
+	fmt.Fprintf(flag.CommandLine.Output(), "Build the FMU file layout (%s) ...\n", fmuOutDir)
+	if err := os.RemoveAll(fmuOutDir); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Join(c.outdir, c.name, "resources", "sim"), os.ModePerm); err != nil {
+	if err := os.MkdirAll(filepath.Join(fmuOutDir, "resources", "sim"), os.ModePerm); err != nil {
 		return err
 	}
 
@@ -100,7 +103,7 @@ func (c *GenFmiModelcCommand) Run() error {
 	if fmuBinDir == "" {
 		return fmt.Errorf("Platform not supported (%s)", c.platform)
 	}
-	fmuBinPath := filepath.Join(c.outdir, c.name, "binaries", fmuBinDir)
+	fmuBinPath := filepath.Join(fmuOutDir, "binaries", fmuBinDir)
 	if err := os.MkdirAll(fmuBinPath, os.ModePerm); err != nil {
 		return fmt.Errorf("Could not create FMU binaries directory (%v)", err)
 	}
@@ -109,22 +112,26 @@ func (c *GenFmiModelcCommand) Run() error {
 		return fmt.Errorf("Could not copy FMU binary (%v)", err)
 	}
 
-	if err := operations.CopyDirectory(c.simpath, filepath.Join(c.outdir, c.name, "resources", "sim")); err != nil {
+	if err := operations.CopyDirectory(c.simpath, filepath.Join(fmuOutDir, "resources", "sim")); err != nil {
 		return fmt.Errorf("Could not copy FMU resources (%v)", err)
 	}
 
-	if err := operations.CopyDirectory(getFmuLicensesPath(c.libRootPath), filepath.Join(c.outdir, c.name, "resources/licenses")); err != nil {
+	if err := operations.CopyDirectory(getFmuLicensesPath(c.libRootPath), filepath.Join(fmuOutDir, "resources/licenses")); err != nil {
 		return fmt.Errorf("Could not copy licenses (%v)", err)
 	}
 
 	// Construct the FMU Model Description.
+	fmuModelDescriptionFilename := filepath.Join(fmuOutDir, "modelDescription.xml")
+	fmt.Fprintf(flag.CommandLine.Output(), "Create FMU Model Description (%s) ...\n", fmuModelDescriptionFilename)
 	fmuXml := createFmuXml(c.name, c.uuid, c.version, c.signalGroups, index)
-	if err := writeXml(fmuXml, filepath.Join(c.outdir, c.name, "modelDescription.xml")); err != nil {
+	if err := writeXml(fmuXml, fmuModelDescriptionFilename); err != nil {
 		return fmt.Errorf("Could not generate the FMU Model Description (%v)", err)
 	}
 
 	// Produce the FMU.
-	if err := operations.Zip(filepath.Join(c.outdir, c.name), filepath.Join(c.outdir, c.name+".fmu")); err != nil {
+	fmuFilename := fmuOutDir + ".fmu"
+	fmt.Fprintf(flag.CommandLine.Output(), "Create FMU Package (%s) ...\n", fmuFilename)
+	if err := operations.Zip(fmuOutDir, fmuFilename); err != nil {
 		return fmt.Errorf("Could not create FMU (%v)", err)
 	}
 
@@ -204,13 +211,15 @@ func createFmuXml(name string, uuid string, version string, signalGroups string,
 	fmuXml := fmi2.FmiModelDescription{}
 	setGeneralFmuXmlFields(name, uuid, version, &fmuXml)
 	if signalGroupDocs, ok := index.DocMap["SignalGroup"]; ok {
-		filter := strings.Split(signalGroups, ",")
+		filter := []string{}
+		if len(signalGroups) > 0 {
+			filter = strings.Split(signalGroups, ",")
+		}
 		for _, doc := range signalGroupDocs {
 			if len(filter) > 0 && !slices.Contains(filter, doc.Metadata.Name) {
 				continue
 			}
-
-			slog.Info(fmt.Sprintf("Reading Signals from: %s", doc.File))
+			fmt.Fprintf(flag.CommandLine.Output(), "Adding SignalGroup: %s (%s)\n", doc.Metadata.Name, doc.File)
 			signalGroupSpec := doc.Spec.(*schema_kind.SignalGroupSpec)
 			if doc.Metadata.Annotations["vector_type"] == "binary" {
 				if err := fmi2.BinarySignal(*signalGroupSpec, &fmuXml); err != nil {

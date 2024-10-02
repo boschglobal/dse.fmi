@@ -4,15 +4,64 @@ Copyright 2024 Robert Bosch GmbH
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# FmiMCL Toolset
+# DSE FMI Toolset
 
-Containerised FmiMCL toolset.
+Containerised DSE FMI toolset.
 
 
 ## Usage
 
 ```bash
+# Using a local build `dse-fmi` container.
+$ export FMI_IMAGE=fmi
+$ FMI_TAG=test
+
+# List the toolchains available:
+$ task -l
+task: Available tasks for this project:
+* generate-fmimcl:          Generate an FMI MCL from an existing FMU.
+* generate-fmimodelc:       Generate a FMI ModelC FMU from an existing (DSE/ModelC) Simer simulation.
+
+# Construct the examples:
+$ make build fmi
+
+# Build an FMU from the staged example:
+$ task generate-fmimodelc \
+    SIM=extra/tools/fmi/build/stage/examples/fmimodelc/sim \
+    FMU_NAME=fubar \
+    VERSION=1.0.0
+Running FMI Toolset command: gen-fmu
+Options:
+  libroot        : /usr/local
+  log            : 4
+  name           : fubar
+  outdir         : out
+  platform       : linux-amd64
+  signalgroups   :
+  sim            : extra/tools/fmi/build/stage/examples/fmimodelc/sim
+  uuid           : 11111111-2222-3333-4444-555555555555
+  version        : 1.0.0
+Scanning simulation (extra/tools/fmi/build/stage/examples/fmimodelc/sim) ...
+Build the FMU file layout (out/fubar) ...
+Create FMU Model Description (out/fubar/modelDescription.xml) ...
+Adding SignalGroup: scalar_vector (extra/tools/fmi/build/stage/examples/fmimodelc/sim/data/model.yaml)
+Adding SignalGroup: network_vector (extra/tools/fmi/build/stage/examples/fmimodelc/sim/data/model.yaml)
+Create FMU Package (out/fubar.fmu) ...
+
+$ ls out out/fubar out/fubar/binaries out/fubar/resources
+out:
+fubar/  fubar.fmu*
+
+out/fubar:
+binaries/  modelDescription.xml*  resources/
+
+out/fubar/binaries:
+linux64/
+
+out/fubar/resources:
+licenses/  sim/
 ```
+
 
 ## Integration Testing
 
@@ -31,7 +80,7 @@ $ PACKAGE_ARCH=linux-i386 make build fmi
 $ make cleanall
 $ make build fmi
 
-# Build the FmiMCL Toolset container (from repo root).
+# Build the DSE FMI Toolset container (from repo root).
 $ make tools
 
 # Generate an FMU:

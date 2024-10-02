@@ -12,7 +12,7 @@ import (
 )
 
 var usage = `
-FMI Tool
+FMI Toolset
 
   fmi <command> [command options,]
 
@@ -31,7 +31,7 @@ Examples:
   	-input data/sample.xml \
 	-output ./signalgroup.yaml \
 	-log 4
-	
+
   fmi gen-annotations \
   	-input data/signalgroup.yaml \
 	-output ./signalgroup_modified.yaml \
@@ -120,10 +120,14 @@ func DispatchCommand(name string) error {
 	}
 
 	if cmd.Name() != "help" {
-		fmt.Fprintf(flag.CommandLine.Output(), "Running command %s ...\n", cmd.Name())
+		fmt.Fprintf(flag.CommandLine.Output(), "Running FMI Toolset command: %s\n", cmd.Name())
 	}
 	if err := cmd.Parse(os.Args[2:]); err != nil {
 		return err
 	}
+	fmt.Fprintf(flag.CommandLine.Output(), "Options:\n")
+	cmd.FlagSet().VisitAll(func(f *flag.Flag) {
+		fmt.Fprintf(flag.CommandLine.Output(), "  %-15s: %s\n", f.Name, f.Value)
+	})
 	return cmd.Run()
 }
