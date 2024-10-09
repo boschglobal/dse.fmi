@@ -60,6 +60,32 @@ linux64/
 
 out/fubar/resources:
 licenses/  sim/
+
+# Configure and FMI MCL from the example FMU:
+$ task generate-fmimcl \
+    FMU_DIR=dse/build/_out/fmimcl/examples/fmu \
+    MCL_PATH=dse/build/_out/fmimcl/lib/libfmimcl.so
+Running FMI Toolset command: gen-mcl
+Options:
+  channels       : [{"alias": "fmu_channel", "selector":{"channel":"fmu_channel"}}]
+  fmu            : dse/build/_out/fmimcl/examples/fmu
+  log            : 4
+  mcl            : dse/build/_out/fmimcl/lib/libfmimcl.so
+  outdir         : out/model
+  platform       : linux-amd64
+Reading FMU Desciption (dse/build/_out/fmimcl/examples/fmu/modelDescription.xml)
+Creating Model YAML: fmi2fmu (out/model/model.yaml)
+Running FMI Toolset command: gen-signalgroup
+Options:
+  input          : dse/build/_out/fmimcl/examples/fmu/modelDescription.xml
+  log            : 4
+  output         : out/model/signalgroup.yaml
+Reading file: dse/build/_out/fmimcl/examples/fmu/modelDescription.xml
+Appending file: out/model/signalgroup.yaml
+
+$ ls  out/model
+model.yaml*  signalgroup.yaml*
+
 ```
 
 

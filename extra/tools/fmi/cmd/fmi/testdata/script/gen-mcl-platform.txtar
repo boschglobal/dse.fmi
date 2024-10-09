@@ -1,0 +1,88 @@
+env FMUXML=$REPO_DIR/extra/tools/fmi/test/testdata/fmimcl/fmimcl.xml
+
+# Create the simulation folder (Simer layout)
+env
+mkdir sim/lib
+exec touch sim/lib/libfmimcl.so
+mkdir sim/fmu/fmi2fmu
+mkdir sim/fmu/fmi2fmu/binaries/linux64
+mkdir sim/fmu/fmi2fmu/resources
+cp $FMUXML sim/fmu/fmi2fmu/modelDescription.xml
+exec touch sim/fmu/fmi2fmu/binaries/linux64/libfmi2fmu.so
+exec touch sim/fmu/fmi2fmu/binaries/linux64/libfmi2fmu.dll
+exec ls -R $WORK/sim
+
+# Generate for platform linux-amd64
+rm $WORK/sim/model
+cd sim
+exec fmi gen-mcl -fmu fmu/fmi2fmu -outdir model/fmi2fmu -mcl lib/libfmimcl.so -platform linux-amd64
+cd ..
+exec ls -R $WORK/sim
+exists sim/model/fmi2fmu/model.yaml
+exec cat sim/model/fmi2fmu/model.yaml
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].arch amd64
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].os linux
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].path lib/libfmimcl.so
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].arch amd64
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].os linux
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].path fmu/fmi2fmu/binaries/linux64/target.so
+
+# Generate for platform linux-x86
+rm $WORK/sim/model
+cd sim
+exec fmi gen-mcl -fmu fmu/fmi2fmu -outdir model/fmi2fmu -mcl lib/libfmimcl.so -platform linux-x86
+cd ..
+exec ls -R $WORK/sim
+exists sim/model/fmi2fmu/model.yaml
+exec cat sim/model/fmi2fmu/model.yaml
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].arch x86
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].os linux
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].path lib/libfmimcl.so
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].arch x86
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].os linux
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].path fmu/fmi2fmu/binaries/linux32/target.so
+
+# Generate for platform linux-i386
+rm $WORK/sim/model
+cd sim
+exec fmi gen-mcl -fmu fmu/fmi2fmu -outdir model/fmi2fmu -mcl lib/libfmimcl.so -platform linux-i386
+cd ..
+exec ls -R $WORK/sim
+exists sim/model/fmi2fmu/model.yaml
+exec cat sim/model/fmi2fmu/model.yaml
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].arch i386
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].os linux
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].path lib/libfmimcl.so
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].arch i386
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].os linux
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].path fmu/fmi2fmu/binaries/linux32/target.so
+
+# Generate for platform windows-x64
+rm $WORK/sim/model
+cd sim
+exec fmi gen-mcl -fmu fmu/fmi2fmu -outdir model/fmi2fmu -mcl lib/libfmimcl.dll -platform windows-x64
+cd ..
+exec ls -R $WORK/sim
+exists sim/model/fmi2fmu/model.yaml
+exec cat sim/model/fmi2fmu/model.yaml
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].arch x64
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].os windows
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].path lib/libfmimcl.dll
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].arch x64
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].os windows
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].path fmu/fmi2fmu/binaries/win64/target.dll
+
+# Generate for platform windows-x86
+rm $WORK/sim/model
+cd sim
+exec fmi gen-mcl -fmu fmu/fmi2fmu -outdir model/fmi2fmu -mcl lib/libfmimcl.dll -platform windows-x86
+cd ..
+exec ls -R $WORK/sim
+exists sim/model/fmi2fmu/model.yaml
+exec cat sim/model/fmi2fmu/model.yaml
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].arch x86
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].os windows
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].path lib/libfmimcl.dll
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].arch x86
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].os windows
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].path fmu/fmi2fmu/binaries/win32/target.dll

@@ -137,7 +137,6 @@ func (h *XmlFmuHandler) Detect(file string) *FmiModelDescription {
 		fmt.Println("could not read FMU XML from file")
 		return nil
 	}
-	fmt.Println("  Handler: ", "XML/FMU")
 	return &fmiMD
 }
 

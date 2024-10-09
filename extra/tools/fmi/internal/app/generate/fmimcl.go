@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/fmi/fmi2"
 	"github.com/boschglobal/dse.schemas/code/go/dse/kind"
@@ -19,14 +20,12 @@ type FmiMclCommand struct {
 	commandName string
 	fs          *flag.FlagSet
 
-	inputFile  string
-	outputFile string
-	channels   string
-	arch       string
-	os         string
-	fmu        string
-	dynlib     string
-	resource   string
+	fmupath  string
+	mcl      string
+	platform string
+	channels string
+	outdir   string
+	logLevel int
 }
 
 type channel []struct {
@@ -37,14 +36,13 @@ type channel []struct {
 
 func NewFmiMclCommand(name string) *FmiMclCommand {
 	c := &FmiMclCommand{commandName: name, fs: flag.NewFlagSet(name, flag.ExitOnError)}
-	c.fs.StringVar(&c.inputFile, "input", "", "modelDescription to be converted")
-	c.fs.StringVar(&c.outputFile, "output", "", "Model.yaml to be generated")
-	c.fs.StringVar(&c.channels, "channels", "", "[optional] channels to be generated")
-	c.fs.StringVar(&c.arch, "arch", "", "Architecture of the binaries")
-	c.fs.StringVar(&c.os, "os", "", "Operating system of the binaries")
-	c.fs.StringVar(&c.fmu, "fmu", "", "relative path to FMU binary")
-	c.fs.StringVar(&c.dynlib, "dynlib", "", "relative path to the FMIMCL binary")
-	c.fs.StringVar(&c.resource, "resource", "./", "path to the resource dir")
+	c.fs.StringVar(&c.fmupath, "fmu", "", "Path to FMU")
+	c.fs.StringVar(&c.mcl, "mcl", "", "Path to the FMI MCL library")
+	c.fs.StringVar(&c.platform, "platform", "linux-amd64", "Platform of Model to generate")
+	c.fs.StringVar(&c.channels, "channels", `[{"alias": "fmu_channel", "selector":{"channel":"fmu_channel"}}]`, "Channels to be generated")
+	c.fs.StringVar(&c.outdir, "outdir", "./", "Output directory for the Model files")
+	c.fs.IntVar(&c.logLevel, "log", 4, "Loglevel")
+
 	return c
 }
 
@@ -61,11 +59,13 @@ func (c *FmiMclCommand) Parse(args []string) error {
 }
 
 func (c *FmiMclCommand) Run() error {
-	fmt.Fprintf(flag.CommandLine.Output(), "Reading file: %s\n", c.inputFile)
+
+	fmuModelDescriptionFilename := filepath.Join(c.fmupath, "modelDescription.xml")
+	fmt.Fprintf(flag.CommandLine.Output(), "Reading FMU Desciption (%s)\n", fmuModelDescriptionFilename)
 	h := fmi2.XmlFmuHandler{}
 	var fmiMD *fmi2.FmiModelDescription
-	if fmiMD = h.Detect(c.inputFile); fmiMD == nil {
-		return fmt.Errorf("Could not read input file!")
+	if fmiMD = h.Detect(fmuModelDescriptionFilename); fmiMD == nil {
+		return fmt.Errorf("Could not read FMU Model Description file!")
 	}
 	if err := c.generateModel(*fmiMD); err != nil {
 		return err
@@ -74,18 +74,6 @@ func (c *FmiMclCommand) Run() error {
 }
 
 func _generateChannels(channelJson string) ([]kind.Channel, error) {
-	/* Default. */
-	if channelJson == "" {
-		channels := make([]kind.Channel, 1)
-		channels[0].Alias = stringPtr("fmu_channel")
-		channels[0].Selectors = &kind.Labels{
-			"channel": "fmu_vector",
-		}
-
-		return channels, nil
-	}
-
-	/* Customized channels and selectors. */
 	data := channel{}
 	if err := json.Unmarshal([]byte(channelJson), &data); err != nil {
 		return nil, err
@@ -104,15 +92,47 @@ func _generateChannels(channelJson string) ([]kind.Channel, error) {
 	return channels, nil
 }
 
-func (c *FmiMclCommand) generateModel(fmiMD fmi2.FmiModelDescription) error {
+func (c *FmiMclCommand) getFmuBinaryPath(modelIdentifier string) string {
+	dir := "linux64"
+	extension := "so"
+	os, arch, found := strings.Cut(c.platform, "-")
+	if found {
+		switch os {
+		case "linux":
+			switch arch {
+			case "amd64":
+				dir = "linux64"
+			case "x86", "i386":
+				dir = "linux32"
+			}
+		case "windows":
+			extension = "dll"
+			switch arch {
+			case "x64":
+				dir = "win64"
+			case "x86":
+				dir = "win32"
+			}
+		}
+	}
+	return filepath.Join(c.fmupath, "binaries", dir, fmt.Sprintf("%s.%s", modelIdentifier, extension))
+}
 
+func (c *FmiMclCommand) generateModel(fmiMD fmi2.FmiModelDescription) error {
+	// Construct various parameters.
+	platformOs, platformArch, found := strings.Cut(c.platform, "-")
+	if !found {
+		return fmt.Errorf("Could not decode platform: (%s)", c.platform)
+	}
+	fmuResourceDir := filepath.Join(c.fmupath, "resources")
+
+	// Build the model.xml
 	nodeExists := func(Node any) string {
 		if Node != nil {
 			return "true"
 		}
 		return "false"
 	}
-
 	model := kind.Model{
 		Kind: "Model",
 		Metadata: &kind.ObjectMetadata{
@@ -124,28 +144,24 @@ func (c *FmiMclCommand) generateModel(fmiMD fmi2.FmiModelDescription) error {
 				"fmi_model_version": fmiMD.Version,
 				"fmi_stepsize":      fmiMD.DefaultExperiment.StepSize,
 				"fmi_guid":          fmiMD.Guid,
-				"fmi_resource_dir":  c.resource,
+				"fmi_resource_dir":  fmuResourceDir,
 			},
 		},
 	}
-
 	mcl := []kind.LibrarySpec{
 		{
-			Arch: stringPtr(c.arch),
-			Os:   stringPtr(c.os),
-			Path: c.fmu,
+			Arch: stringPtr(platformArch),
+			Os:   stringPtr(platformOs),
+			Path: c.getFmuBinaryPath(fmiMD.CoSimulation.ModelIdentifier),
 		},
 	}
-
 	dynlib := []kind.LibrarySpec{
-		{Arch: stringPtr(c.arch), Os: stringPtr(c.os), Path: c.dynlib},
+		{Arch: stringPtr(platformArch), Os: stringPtr(platformOs), Path: c.mcl},
 	}
-
 	channels, err := _generateChannels(c.channels)
 	if err != nil {
 		return fmt.Errorf("Could not generate channels: (%v)", err)
 	}
-
 	spec := kind.ModelSpec{
 		Channels: &channels,
 		Runtime: &struct {
@@ -161,12 +177,12 @@ func (c *FmiMclCommand) generateModel(fmiMD fmi2.FmiModelDescription) error {
 	model.Spec = spec
 
 	// Write the Model
-	fmt.Fprintf(flag.CommandLine.Output(), "Creating file: %s\n", c.outputFile)
-	if err := os.MkdirAll(filepath.Dir(c.outputFile), 0755); err != nil {
+	if err := os.MkdirAll(c.outdir, 0755); err != nil {
 		return fmt.Errorf("Error Creating Directory for Yaml output: %v", err)
 	}
-
-	if err := writeYaml(&model, c.outputFile, false); err != nil {
+	modelYamlPath := filepath.Join(c.outdir, "model.yaml")
+	fmt.Fprintf(flag.CommandLine.Output(), "Creating Model YAML: %s (%s)\n", *model.Metadata.Name, modelYamlPath)
+	if err := writeYaml(&model, modelYamlPath, false); err != nil {
 		return fmt.Errorf("Error writing YAML: %v", err)
 	}
 

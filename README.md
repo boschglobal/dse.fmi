@@ -82,6 +82,15 @@ task: Available tasks for this project:
 
 
 # FMI MCL with the generate-fmimcl command:
+$ task generate-fmimcl \
+    FMU_DIR=dse/build/_out/fmimcl/examples/fmu \
+    MCL_PATH=dse/build/_out/fmimcl/lib/libfmimcl.so
+Running FMI Toolset command: gen-mcl
+Reading FMU Desciption (dse/build/_out/fmimcl/examples/fmu/modelDescription.xml)
+Creating Model YAML: fmi2fmu (out/model/model.yaml)
+Running FMI Toolset command: gen-signalgroup
+Reading file: dse/build/_out/fmimcl/examples/fmu/modelDescription.xml
+Appending file: out/model/signalgroup.yaml
 
 
 # FMI ModelC FMU with the generate-fmimodelc command:
@@ -90,16 +99,6 @@ $ task generate-fmimodelc \
     FMU_NAME=fubar \
     VERSION=1.0.0
 Running FMI Toolset command: gen-fmu
-Options:
-  libroot        : /usr/local
-  log            : 4
-  name           : fubar
-  outdir         : out
-  platform       : linux-amd64
-  signalgroups   :
-  sim            : extra/tools/fmi/build/stage/examples/fmimodelc/sim
-  uuid           : 11111111-2222-3333-4444-555555555555
-  version        : 1.0.0
 Scanning simulation (extra/tools/fmi/build/stage/examples/fmimodelc/sim) ...
 Build the FMU file layout (out/fubar) ...
 Create FMU Model Description (out/fubar/modelDescription.xml) ...
@@ -169,7 +168,7 @@ Load YAML File: resources/sim/data/model.yaml
 
 ## Build
 
-> Note : see the following section on configuring toolchains.
+> Note : See the following section on configuring toolchains.
 
 ```bash
 # Get the repo.

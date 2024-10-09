@@ -7,13 +7,14 @@ package generate
 import (
 	"flag"
 	"fmt"
-	"github.com/google/uuid"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/file/index"
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/file/operations"
@@ -42,7 +43,7 @@ type GenFmiModelcCommand struct {
 func NewFmiModelcCommand(name string) *GenFmiModelcCommand {
 	c := &GenFmiModelcCommand{commandName: name, fs: flag.NewFlagSet(name, flag.ExitOnError)}
 	c.fs.StringVar(&c.simpath, "sim", "", "Path to simulation (Simer layout)")
-	c.fs.StringVar(&c.platform, "platform", "linux-amd64", "Platform of FMU to generate (e.g. linux-amd64)")
+	c.fs.StringVar(&c.platform, "platform", "linux-amd64", "Platform of FMU to generate")
 	c.fs.StringVar(&c.signalGroups, "signalgroups", "", "Signal Groups to export as FMU variables, default is all, specify with comma-separated-list")
 	c.fs.StringVar(&c.name, "name", "", "Name of the FMU")
 	c.fs.StringVar(&c.version, "version", "0.0.1", "Version to assign to the FMU")

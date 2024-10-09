@@ -29,3 +29,16 @@ install(
     LIBRARY DESTINATION
         ${MODEL_PATH}/lib
 )
+
+install(
+    TARGETS
+        fmi2fmu
+    LIBRARY DESTINATION
+        ${MODEL_PATH}/fmu/binaries/linux64
+)
+install(
+    FILES
+        modelDescription.xml
+    DESTINATION
+         ${MODEL_PATH}/fmu
+)

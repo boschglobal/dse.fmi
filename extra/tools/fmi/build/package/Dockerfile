@@ -6,7 +6,7 @@
 
 # Fmi Builder
 # ===========
-FROM golang:bullseye as fmi
+FROM golang:bullseye AS fmi
 ADD . /src
 RUN cd /src && make build
 
