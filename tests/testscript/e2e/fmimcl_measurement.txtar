@@ -22,10 +22,10 @@ stdout 'Measurement File: /sim/examples/data/measurement.mf4'
 
 -- test.sh --
 SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
-docker run --name simer -i --rm -v $ENTRYDIR/$SIM:/sim \
-    $SIMER -valgrind $NAME \
+docker run --name simer -i --rm -v $ENTRYHOSTDIR/$SIM:/sim \
+    $SIMER -valgrind $NAME -logger 2 \
         -env simbus:SIMBUS_LOGLEVEL=5 \
         -env extended_inst:SIMBUS_LOGLEVEL=5 \
         -env $NAME:SIMBUS_LOGLEVEL=4 \
-        -env $NAME:FMU_INST_MEASUREMENT_FILE=/sim/$MEASUREMENT_FILE \
+        -env $NAME:MEASUREMENT_FILE=/sim/$MEASUREMENT_FILE \
         -stepsize 0.0005 -endtime 0.005

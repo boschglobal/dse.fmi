@@ -16,7 +16,7 @@ function print_usage () {
     echo "  [fmi]  (fmi commands)"
     echo ""
     echo "Example:"
-    echo "  docker run --rm -v $(pwd):/workdir fmi"
+    echo "  docker run --rm -v $(pwd):/sim fmi"
     exit 1
 }
 

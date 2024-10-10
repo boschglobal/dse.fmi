@@ -1,11 +1,41 @@
-env NAME=fmu_inst
-env SIM=dse/build/_out/fmimcl
+# Operate from the WORKDIR (allocated by caller, i.e. docker command).
+cd $WORKDIR
+env SIM=sim
+env NAME=fmi2fmu
+env SIM_YAML=$REPODIR/dse/build/_out/fmimcl/examples/data/simulation.yaml
+env FMU=$REPODIR/dse/build/_out/fmimcl/examples/fmu
+env MCL=$REPODIR/dse/build/_out/fmimcl/lib/libfmimcl.so
 
+
+# Create the simulation folder (Simer layout)
+exec ls -R $WORK
+mkdir $SIM/data $SIM/lib
+cp $WORK/simulation.yaml $SIM/data/simulation.yaml
+cp $MCL $SIM/lib/libfmimcl.so
+
+mkdir $SIM/fmu
+exec cp -r $FMU $SIM/fmu/fmi2fmu
+mkdir $SIM/fmu/fmi2fmu/resources
+
+mkdir $SIM/model/input/data $SIM/model/input/lib
+cp $WORK/input_model.yaml $SIM/model/input/data/model.yaml
+cp $REPODIR/dse/build/_out/fmimcl/examples/lib/libinput.so $SIM/model/input/lib/libinput.so
+
+
+# Run the toolchains
+env
+exec ls -R $SIM
+exec sh -e $WORK/generate.sh
+
+exists $SIM/model/fmi2fmu/data/model.yaml
+exists $SIM/model/fmi2fmu/data/signalgroup.yaml
 
 # TEST: FMI MCL with CoSim FMU using FMIv2
 exec sh -e $WORK/test.sh
 
-stdout 'Load YAML File: examples/data/simulation.yaml'
+stdout 'Load YAML File: data/simulation.yaml'
+stdout 'Load YAML File: model/fmi2fmu/data/model.yaml'
+stdout 'Load YAML File: model/fmi2fmu/data/signalgroup.yaml'
 stdout 'Loading symbol: model_create ... ok'
 stdout 'Loading symbol: model_step ... ok'
 stdout 'Loading symbol: model_destroy ... ok'
@@ -23,15 +53,98 @@ stdout 'uid=1343595106, val=20.000000, final_val=20.000000, name=integer_3_rx'
 stdout 'uid=1955499220, val=0.000000, final_val=0.000000, name=bool_1_rx'
 stdout 'uid=3382072605, val=0.000000, final_val=0.000000, name=bool_2_tx'
 stdout 'uid=3194481060, val=30.000000, final_val=30.000000, name=real_A_rx'
-stdout 'uid=750647789, val=37.000000, final_val=37.000000, name=real_B_tx'
-stdout 'uid=3054208972, val=127.000000, final_val=127.000000, name=real_C_tx'
-stdout 'uid=3471121503, val=127.000000, final_val=127.000000, name=real_D_tx'
+stdout 'uid=3261297346, val=37.000000, final_val=37.000000, name=real_A_tx'
+stdout 'uid=750647789, val=100.000000, final_val=100.000000, name=real_B_tx'
+! stdout 'name=local_var'
+
+
+
+-- generate.sh --
+# All paths relative to $SIM (triggered by setting $SIM). See Taskfile for details.
+task -t /$REPODIR/Taskfile.yml generate-fmimcl \
+    FMU_DIR=fmu/fmi2fmu \
+    MCL_PATH=lib/libfmimcl.so \
+    OUT_DIR=model/fmi2fmu/data
 
 -- test.sh --
 SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
-docker run --name simer -i --rm -v $ENTRYDIR/$SIM:/sim \
+docker run --name simer -i --rm -v $ENTRYWORKDIR/$SIM:/sim \
     $SIMER -valgrind $NAME \
         -env simbus:SIMBUS_LOGLEVEL=1 \
-        -env extended_inst:SIMBUS_LOGLEVEL=5 \
+        -env input_inst:SIMBUS_LOGLEVEL=5 \
         -env $NAME:SIMBUS_LOGLEVEL=2 \
         -stepsize 0.0005 -endtime 0.005
+
+-- input_model.yaml --
+---
+kind: Model
+metadata:
+  name: Input
+spec:
+  runtime:
+    dynlib:
+      - os: linux
+        arch: amd64
+        path: model/input/lib/libinput.so
+  channels:
+    - alias: input_channel
+      selectors:
+        channel: input_vector
+---
+kind: SignalGroup
+metadata:
+  name: VARIABLES
+  labels:
+    model: Input
+    channel: input_vector
+spec:
+  signals:
+    - signal: real_3_rx
+    - signal: integer_3_rx
+    - signal: real_A_rx
+
+-- simulation.yaml --
+---
+kind: Stack
+metadata:
+  name: stack
+spec:
+  runtime:
+    env:
+      SIMBUS_LOGLEVEL: 2
+  connection:
+    transport:
+      redis:
+        uri: redis://localhost:6379
+        timeout: 60
+  models:
+    - name: simbus
+      model:
+        name: simbus
+      channels:
+        - name: signal
+          expectedModelCount: 2
+    - name: fmu_inst
+      uid: 42
+      model:
+        name: fmi2fmu
+      runtime:
+        files:
+          - model/fmi2fmu/data/signalgroup.yaml
+      channels:
+        - name: signal
+          alias: signal_channel
+          selectors:
+            model: fmi2fmu
+            channel: signal_vector
+    - name: input_inst
+      uid: 21
+      model:
+        name: Input
+      channels:
+        - name: signal
+          alias: input_channel
+---
+kind: Model
+metadata:
+  name: simbus

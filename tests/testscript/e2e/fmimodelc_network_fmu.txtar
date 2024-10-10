@@ -35,8 +35,7 @@ stdout 'Importer:   \[9\] F8u:'
 
 -- test.sh --
 SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
-docker run --name simer -i --rm \
-    -v $ENTRYDIR/$SIM:/sim \
+docker run --name simer -i --rm -v $ENTRYHOSTDIR/$SIM:/sim \
     --env SIMBUS_LOGLEVEL=4 \
     --entrypoint="" $SIMER \
     bash -c "cd fmu; valgrind -q --leak-check=yes --error-exitcode=808 \

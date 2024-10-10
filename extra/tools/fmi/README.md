@@ -67,7 +67,6 @@ $ task generate-fmimcl \
     MCL_PATH=dse/build/_out/fmimcl/lib/libfmimcl.so
 Running FMI Toolset command: gen-mcl
 Options:
-  channels       : [{"alias": "fmu_channel", "selector":{"channel":"fmu_channel"}}]
   fmu            : dse/build/_out/fmimcl/examples/fmu
   log            : 4
   mcl            : dse/build/_out/fmimcl/lib/libfmimcl.so

@@ -1,29 +1,126 @@
-<fmiModelDescription fmiVersion="2.0" modelName="fmi2fmu" guid="{11111111-1111-1111-1111-111111111111}"
-    description="" author="" version="1.1" generationTool="" generationDateAndTime=""
-    variableNamingConvention="" numberOfEventIndicators="">
+<fmiModelDescription 
+        fmiVersion="2.0" 
+        modelName="fmi2fmu" 
+        guid="{11111111-1111-1111-1111-111111111111}"
+        description="" 
+        author="" 
+        version="1.1" 
+        generationTool="" 
+        generationDateAndTime=""
+        variableNamingConvention="" 
+        numberOfEventIndicators="">
     <CoSimulation modelIdentifier="libfmi2fmu" canHandleVariableCommunicationStepSize=""
         canInterpolateInputs=""></CoSimulation>
     <DefaultExperiment startTime="0" stopTime="42" stepSize="0.0005"></DefaultExperiment>
+    
     <ModelVariables>
-        <ScalarVariable name="scalar_1" valueReference="1" causality="input" initial=""
-            variability="">
-            <Real start="42" reinit="" derivative=""></Real>
-        </ScalarVariable>
-        <ScalarVariable name="scalar_2" valueReference="2" causality="output" initial=""
-            variability="">
+        <ScalarVariable
+                name="real_3_rx" 
+                valueReference="0"
+                causality="input"
+                initial="" 
+                variability="">
             <Real></Real>
         </ScalarVariable>
-        <ScalarVariable name="scalar_3" valueReference="3" initial="" variability="">
+        <ScalarVariable
+                name="real_1_tx" 
+                valueReference="1"
+                causality="output" 
+                initial="" 
+                variability="">
             <Real></Real>
         </ScalarVariable>
-        <ScalarVariable name="boolean_1" valueReference="4" causality="input" variability="discrete">
-            <Boolean start="false"></Boolean>
+        
+        <ScalarVariable
+                name="integer_3_rx" 
+                valueReference="2"
+                causality="input" 
+                initial="" 
+                variability="">
+            <Integer></Integer>
         </ScalarVariable>
-        <ScalarVariable name="boolean_2" valueReference="5" causality="output" variability="">
+        <ScalarVariable
+                name="integer_2_tx" 
+                valueReference="3"
+                causality="output" 
+                initial="" 
+                variability="">
+            <Integer></Integer>
+        </ScalarVariable>
+        <ScalarVariable
+                name="integer_1_tx" 
+                valueReference="4"
+                causality="output" 
+                initial="" 
+                variability="">
+            <Integer></Integer>
+        </ScalarVariable>
+        
+        <ScalarVariable
+                name="real_2_rx" 
+                valueReference="5"
+                causality="input"
+                initial="" 
+                variability="">
+            <Real></Real>
+        </ScalarVariable>
+        
+        <ScalarVariable
+                name="bool_1_rx" 
+                valueReference="6"
+                causality="input" 
+                initial="" 
+                variability="">
             <Boolean></Boolean>
         </ScalarVariable>
-        <ScalarVariable name="scalar_4" valueReference="6" causality="local" initial=""
-            variability="">
+        <ScalarVariable
+                name="bool_2_tx" 
+                valueReference="7"
+                causality="output" 
+                initial="" 
+                variability="">
+            <Boolean></Boolean>
+        </ScalarVariable>
+
+        <ScalarVariable
+                name="real_A_rx" 
+                valueReference="8"
+                causality="input" 
+                initial="" 
+                variability="">
+            <Real></Real>
+        </ScalarVariable>
+        <ScalarVariable
+                name="real_B_rx" 
+                valueReference="9"
+                causality="input" 
+                initial="" 
+                variability="">
+            <Real></Real>
+        </ScalarVariable>
+        <ScalarVariable
+                name="real_A_tx" 
+                valueReference="10"
+                causality="output" 
+                initial="" 
+                variability="">
+            <Real></Real>
+        </ScalarVariable>
+        <ScalarVariable
+                name="real_B_tx" 
+                valueReference="11"
+                causality="output" 
+                initial="" 
+                variability="">
+            <Real></Real>
+        </ScalarVariable>
+        
+        <ScalarVariable
+                name="local_var" 
+                valueReference="12"
+                causality="local" 
+                initial="" 
+                variability="">
             <Real></Real>
         </ScalarVariable>
     </ModelVariables>

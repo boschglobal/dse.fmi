@@ -50,8 +50,8 @@ COPY build/stage/licenses /usr/local/licenses
 
 # Setup the entry conditions
 # ==========================
-# Run docker with --volume parameter to map the simulation folder into /workdir.
-WORKDIR /workdir
+# Run docker with --volume parameter to map the simulation folder into /sim.
+WORKDIR /sim
 COPY build/package/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]

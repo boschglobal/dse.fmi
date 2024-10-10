@@ -62,7 +62,7 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.FmiModelDescript
 		Metadata: &kind.ObjectMetadata{
 			Name: stringPtr(fmiMD.ModelName),
 			Labels: &kind.Labels{
-				"channel": "fmu_vector",
+				"channel": "signal_vector",
 				"model":   fmiMD.ModelName,
 			},
 		},
@@ -75,7 +75,6 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.FmiModelDescript
 		case "":
 			s.Causality = "local"
 		default:
-			break
 		}
 
 		var variable_type string
@@ -89,14 +88,26 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.FmiModelDescript
 			variable_type = "Boolean"
 		}
 
+		//annotations := map[string]interface{}{
+		annotations := kind.Annotations{
+			"fmi_variable_causality": s.Causality,
+			"fmi_variable_id":        s.ValueReference,
+			"fmi_variable_type":      variable_type,
+			"fmi_variable_name":      s.Name,
+		}
+		if s.Causality == "local" {
+			annotations["internal"] = true
+		}
+
 		signal := kind.Signal{
-			Signal: s.Name,
-			Annotations: &kind.Annotations{
-				"fmi_variable_causality": s.Causality,
-				"fmi_variable_id":        s.ValueReference,
-				"fmi_variable_type":      variable_type,
-				"fmi_variable_name":      s.Name,
-			},
+			Signal:      s.Name,
+			Annotations: &annotations,
+			// Annotations: &kind.Annotations{
+			// 	"fmi_variable_causality": s.Causality,
+			// 	"fmi_variable_id":        s.ValueReference,
+			// 	"fmi_variable_type":      variable_type,
+			// 	"fmi_variable_name":      s.Name,
+			// },
 		}
 		signals = append(signals, signal)
 	}

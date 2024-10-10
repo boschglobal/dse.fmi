@@ -10,7 +10,7 @@ export DSE_CLIB_VERSION ?= 1.0.18
 
 ###############
 ## DSE Model C Library
-export DSE_MODELC_VERSION ?= 2.1.1
+export DSE_MODELC_VERSION ?= 2.1.4
 
 
 ###############
@@ -41,6 +41,7 @@ TOOL_DIRS = fmi
 ## Test Parameters.
 export HOST_DOCKER_WORKSPACE ?= $(shell pwd -P)
 export TESTSCRIPT_E2E_DIR ?= tests/testscript/e2e
+TESTSCRIPT_E2E_TEMPDIR := $(shell pwd -P)/$(NAMESPACE)/build/_tmp
 TESTSCRIPT_E2E_FILES = $(wildcard $(TESTSCRIPT_E2E_DIR)/*.txtar)
 FMI_IMAGE ?= $(NAMESPACE)-$(MODULE)
 FMI_TAG ?= test
@@ -136,16 +137,26 @@ test_e2e: do-test_testscript-e2e
 do-test_testscript-e2e:
 # Test debug; add '-v' to Testscript command (e.g. $(TESTSCRIPT_IMAGE) -v \).
 ifeq ($(PACKAGE_ARCH), linux-amd64)
+	mkdir -p $(TESTSCRIPT_E2E_TEMPDIR)
+	@-docker kill simer
 	@set -eu; for t in $(TESTSCRIPT_E2E_FILES) ;\
 	do \
 		echo "Running E2E Test: $$t" ;\
+		export ENTRYWORKDIR=$$(mktemp -d -p $(TESTSCRIPT_E2E_TEMPDIR)) ;\
 		docker run -i --rm \
-			-e ENTRYDIR=$(HOST_DOCKER_WORKSPACE) \
+			-e ENTRYHOSTDIR=$(HOST_DOCKER_WORKSPACE) \
+			-e ENTRYWORKDIR=$${ENTRYWORKDIR} \
 			-v /var/run/docker.sock:/var/run/docker.sock \
 			-v $(HOST_DOCKER_WORKSPACE):/repo \
+			-v $${ENTRYWORKDIR}:/workdir \
 			$(TESTSCRIPT_IMAGE) \
-				-e ENTRYDIR=$(HOST_DOCKER_WORKSPACE) \
+				-e ENTRYHOSTDIR=$(HOST_DOCKER_WORKSPACE) \
+				-e ENTRYWORKDIR=$${ENTRYWORKDIR} \
+				-e REPODIR=/repo \
+				-e WORKDIR=/workdir \
 				-e SIMER=$(SIMER_IMAGE) \
+				-e FMI_IMAGE=$(FMI_IMAGE) \
+				-e FMI_TAG=$(FMI_TAG) \
 				$$t ;\
 	done;
 endif

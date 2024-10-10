@@ -72,7 +72,7 @@ func TestSignalGrpAnnotations(t *testing.T) {
 	assert.Equal(t, string(generatedYAML.Kind), "SignalGroup", "kind should match")
 
 	assert.Equal(t, *generatedYAML.Metadata.Name, "Test", "metadata/name should match")
-	assert.Equal(t, (*generatedYAML.Metadata.Labels)["channel"], "fmu_vector", "metadata/labels/channel should match")
+	assert.Equal(t, (*generatedYAML.Metadata.Labels)["channel"], "signal_vector", "metadata/labels/channel should match")
 	assert.Equal(t, (*generatedYAML.Metadata.Labels)["model"], "Test", "metadata/labels/model should match")
 }
 
@@ -138,6 +138,7 @@ func TestSignalGrpSignals(t *testing.T) {
 			"fmi_variable_id":        "6",
 			"fmi_variable_type":      "Real",
 			"fmi_variable_name":      "scalar_4",
+			"internal":               true,
 		},
 	}
 

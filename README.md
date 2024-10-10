@@ -76,9 +76,9 @@ $ make
 # List the toolchains available:
 $ task -l
 task: Available tasks for this project:
+* generate-fmigateway:      Generate a FMI Gateway FMU.
 * generate-fmimcl:          Generate an FMI MCL from an existing FMU.
 * generate-fmimodelc:       Generate a FMI ModelC FMU from an existing (DSE/ModelC) Simer simulation.
-* generate-fmigateway:      Generate a FMI Gateway FMU.
 
 
 # FMI MCL with the generate-fmimcl command:
@@ -105,11 +105,6 @@ Create FMU Model Description (out/fubar/modelDescription.xml) ...
 Adding SignalGroup: scalar_vector (extra/tools/fmi/build/stage/examples/fmimodelc/sim/data/model.yaml)
 Adding SignalGroup: network_vector (extra/tools/fmi/build/stage/examples/fmimodelc/sim/data/model.yaml)
 Create FMU Package (out/fubar.fmu) ...
-
-
-# FMI Gateway FMU with the generate-fmigateway:
-
-
 ```
 
 

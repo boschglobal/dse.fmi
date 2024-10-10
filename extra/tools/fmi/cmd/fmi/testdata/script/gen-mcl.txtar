@@ -32,8 +32,9 @@ yamlcontains sim/model/fmi2fmu/model.yaml $.metadata.annotations.fmi_stepsize 0.
 yamlcontains sim/model/fmi2fmu/model.yaml $.metadata.annotations.mcl_adapter fmi
 yamlcontains sim/model/fmi2fmu/model.yaml $.metadata.annotations.mcl_version 2.0
 
-yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[0].alias fmu_channel
-yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[0].selectors.channel fmu_channel
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[0].alias signal_channel
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[0].selectors.model Test
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[0].selectors.channel signal_vector
 
 yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].arch amd64
 yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].os linux

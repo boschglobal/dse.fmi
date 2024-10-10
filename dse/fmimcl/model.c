@@ -19,11 +19,7 @@
 
 char* _get_measurement_file_name(ModelDesc* model)
 {
-    char var[VARNAME_MAXLEN] = {};
-    snprintf(var, VARNAME_MAXLEN, "${%s_MEASUREMENT_FILE:-}", model->mi->name);
-    for (char* p = var; *p; p++)
-        *p = toupper(*p);
-    char* value = dse_expand_vars(var);
+    char* value = model_expand_vars(model, "${MEASUREMENT_FILE:-}");
     if (strlen(value)) {
         return value;
     } else {

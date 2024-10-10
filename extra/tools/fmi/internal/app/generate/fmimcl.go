@@ -5,7 +5,6 @@
 package generate
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -23,7 +22,6 @@ type FmiMclCommand struct {
 	fmupath  string
 	mcl      string
 	platform string
-	channels string
 	outdir   string
 	logLevel int
 }
@@ -39,8 +37,7 @@ func NewFmiMclCommand(name string) *FmiMclCommand {
 	c.fs.StringVar(&c.fmupath, "fmu", "", "Path to FMU")
 	c.fs.StringVar(&c.mcl, "mcl", "", "Path to the FMI MCL library")
 	c.fs.StringVar(&c.platform, "platform", "linux-amd64", "Platform of Model to generate")
-	c.fs.StringVar(&c.channels, "channels", `[{"alias": "fmu_channel", "selector":{"channel":"fmu_channel"}}]`, "Channels to be generated")
-	c.fs.StringVar(&c.outdir, "outdir", "./", "Output directory for the Model files")
+	c.fs.StringVar(&c.outdir, "outdir", "out", "Output directory for the Model files")
 	c.fs.IntVar(&c.logLevel, "log", 4, "Loglevel")
 
 	return c
@@ -73,21 +70,15 @@ func (c *FmiMclCommand) Run() error {
 	return nil
 }
 
-func _generateChannels(channelJson string) ([]kind.Channel, error) {
-	data := channel{}
-	if err := json.Unmarshal([]byte(channelJson), &data); err != nil {
-		return nil, err
-	}
-
-	channels := make([]kind.Channel, len(data))
-	for i := range data {
-		channels[i].Name = &data[i].Name
-		channels[i].Alias = &data[i].Alias
-		selectors := kind.Labels{}
-		for k, v := range data[i].Selector {
-			selectors[k] = v
-		}
-		channels[i].Selectors = &selectors
+func _generateChannels(fmiMD fmi2.FmiModelDescription) ([]kind.Channel, error) {
+	channels := []kind.Channel{
+		{
+			Alias: stringPtr("signal_channel"),
+			Selectors: &kind.Labels{
+				"model":   fmiMD.ModelName,
+				"channel": "signal_vector",
+			},
+		},
 	}
 	return channels, nil
 }
@@ -158,7 +149,7 @@ func (c *FmiMclCommand) generateModel(fmiMD fmi2.FmiModelDescription) error {
 	dynlib := []kind.LibrarySpec{
 		{Arch: stringPtr(platformArch), Os: stringPtr(platformOs), Path: c.mcl},
 	}
-	channels, err := _generateChannels(c.channels)
+	channels, err := _generateChannels(fmiMD)
 	if err != nil {
 		return fmt.Errorf("Could not generate channels: (%v)", err)
 	}
