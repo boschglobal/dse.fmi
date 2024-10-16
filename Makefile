@@ -49,8 +49,6 @@ PACKAGE_PATH = $(NAMESPACE)/dist
 export HOST_DOCKER_WORKSPACE ?= $(shell pwd -P)
 export TESTSCRIPT_E2E_DIR ?= tests/testscript/e2e
 TESTSCRIPT_E2E_FILES = $(wildcard $(TESTSCRIPT_E2E_DIR)/*.txtar)
-FMI_IMAGE ?= $(NAMESPACE)-$(MODULE)
-FMI_TAG ?= test
 
 
 
