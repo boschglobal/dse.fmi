@@ -19,7 +19,7 @@ FMI Libraries of the Dynamic Simulation Environment (DSE) Core Platform provide 
 * FMI ModelC FMU - for packaging a DSE simulation as an FMU.
 * FMI Gateway FMU - for bridging between a remote simulation and a DSE simulation.
 
-The DSE FMI libraries operate in Co-simulation environments and support both scalar and binary variables. 
+The DSE FMI libraries operate in Co-simulation environments and support both scalar and binary variables.
 Virtual networks (e.g. CAN) are implemented using [Network Codecs](https://github.com/boschglobal/dse.standards/tree/main/dse/ncodec) and supported via FMI Binary variables, or in the case of FMI 2, by using encoded [FMI String variables](https://github.com/boschglobal/dse.standards/tree/main/modelica/fmi-ls-binary-to-text).
 
 
