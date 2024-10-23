@@ -381,11 +381,11 @@ void test_mcl__marshalling(void** state)
             assert_string_equal(msm->name, tc[i].expect_msm[msm_count].name);
             assert_non_null(msm->signal.scalar);
             assert_ptr_equal(
-                *(msm->signal.scalar), model_desc.sv[msm_count].scalar);
+                msm->signal.scalar, model_desc.sv[msm_count].scalar);
             assert_non_null(msm->source.scalar);
-            assert_ptr_equal(*(msm->source.scalar), *(fm->mcl.source.scalar));
+            assert_ptr_equal(msm->source.scalar, fm->mcl.source.scalar);
 
-            double* src_scalar = *(msm->source.scalar);
+            double* src_scalar = msm->source.scalar;
             for (size_t j = 0; j > msm->count; j++) {
                 assert_double_equal(src_scalar[msm->source.index[j]], 0.0, 0.0);
             }
@@ -399,8 +399,8 @@ void test_mcl__marshalling(void** state)
         assert_int_equal(rc, 43);
 
         for (MarshalSignalMap* msm = fm->mcl.msm; msm && msm->name; msm++) {
-            double* src_scalar = *(msm->source.scalar);
-            double* sig_scalar = *(msm->signal.scalar);
+            double* src_scalar = msm->source.scalar;
+            double* sig_scalar = msm->signal.scalar;
             for (size_t j = 0; j < msm->count; j++) {
                 assert_double_equal(src_scalar[msm->source.index[j]],
                     sig_scalar[msm->signal.index[j]], 0.0);
@@ -413,7 +413,7 @@ void test_mcl__marshalling(void** state)
 
         msm_count = 0;
         for (MarshalSignalMap* msm = fm->mcl.msm; msm && msm->name; msm++) {
-            double* src_scalar = *(msm->source.scalar);
+            double* src_scalar = msm->source.scalar;
             for (size_t j = 0; j < msm->count; j++) {
                 assert_double_equal(src_scalar[msm->source.index[j]],
                     tc[i].expect_msm[msm_count].result[j], 0.0);
@@ -425,8 +425,8 @@ void test_mcl__marshalling(void** state)
         assert_int_equal(rc, 0);
 
         for (MarshalSignalMap* msm = fm->mcl.msm; msm && msm->name; msm++) {
-            double* src_scalar = *(msm->source.scalar);
-            double* sig_scalar = *(msm->signal.scalar);
+            double* src_scalar = msm->source.scalar;
+            double* sig_scalar = msm->signal.scalar;
             for (size_t j = 0; j < msm->count; j++) {
                 assert_double_equal(src_scalar[msm->source.index[j]],
                     sig_scalar[msm->signal.index[j]], 0.0);

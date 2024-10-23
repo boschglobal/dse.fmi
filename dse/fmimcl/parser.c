@@ -61,6 +61,19 @@ static void _sort_by_marshal_group(HashList* signal_list)
 }
 
 
+static MarshalKind _decode_var_kind(const char* t)
+{
+    if (t == NULL) return MARSHAL_KIND_NONE;
+
+    if (strcmp(t, "Real") == 0) return MARSHAL_KIND_PRIMITIVE;
+    if (strcmp(t, "Integer") == 0) return MARSHAL_KIND_PRIMITIVE;
+    if (strcmp(t, "Boolean") == 0) return MARSHAL_KIND_PRIMITIVE;
+    if (strcmp(t, "String") == 0) return MARSHAL_KIND_BINARY;
+
+    return MARSHAL_KIND_NONE;
+}
+
+
 static MarshalType _decode_var_type(const char* t)
 {
     if (t == NULL) return MARSHAL_TYPE_NONE;
@@ -68,6 +81,7 @@ static MarshalType _decode_var_type(const char* t)
     if (strcmp(t, "Real") == 0) return MARSHAL_TYPE_DOUBLE;
     if (strcmp(t, "Integer") == 0) return MARSHAL_TYPE_INT32;
     if (strcmp(t, "Boolean") == 0) return MARSHAL_TYPE_BOOL;
+    if (strcmp(t, "String") == 0) return MARSHAL_TYPE_STRING;
 
     return MARSHAL_TYPE_NONE;
 }
@@ -97,13 +111,17 @@ static void* _fmu_signal_generator(ModelInstanceSpec* mi, void* data)
         const char* v_dir = NULL;
 
         s->name = n->scalar;
-        // clang-format off
-        dse_yaml_get_uint(data, "annotations/fmi_variable_id", &s->variable_vref);
-        dse_yaml_get_string(data, "annotations/fmi_variable_name", &s->variable_name);
+        dse_yaml_get_uint(
+            data, "annotations/fmi_variable_id", &s->variable_vref);
+        dse_yaml_get_string(
+            data, "annotations/fmi_variable_name", &s->variable_name);
         dse_yaml_get_string(data, "annotations/fmi_variable_type", &v_type);
         dse_yaml_get_string(data, "annotations/fmi_variable_causality", &v_dir);
-        // clang-format on
-        s->variable_kind = MARSHAL_KIND_PRIMITIVE;
+        dse_yaml_get_string(data,
+            "annotations/fmi_annotations/"
+            "dse.standards.fmi-ls-binary-to-text.encoding",
+            &s->variable_annotation_encoding);
+        s->variable_kind = _decode_var_kind(v_type);
         s->variable_type = _decode_var_type(v_type);
         s->variable_dir = _decode_var_dir(v_dir);
 
@@ -115,41 +133,23 @@ static void* _fmu_signal_generator(ModelInstanceSpec* mi, void* data)
 
 static int _variable_match_handler(ModelInstanceSpec* mi, SchemaObject* o)
 {
-    FmuModel* m = o->data;
-    m->v_doc = o->doc;
-
-    /* Logging. */
-    log_notice("FMU Variables:");
+    HashList* s_list = o->data;
 
     /* Enumerate over the variables (signals). */
     uint32_t   index = 0;
     FmuSignal* s;
-    HashList   s_list;
-    hashlist_init(&s_list, 100);
     do {
         s = schema_object_enumerator(
             mi, o, "spec/signals", &index, _fmu_signal_generator);
         if (s == NULL) break;
         if (s->name) {
-            log_notice("  %s (vref = %u, name = %s, type = %u)", s->name,
+            log_error("  %s (vref = %u, name = %s, type = %u)", s->name,
                 s->variable_vref, s->variable_name, s->variable_type);
-            hashlist_append(&s_list, s);
+            hashlist_append(s_list, s);
         } else {
             free(s);
         }
     } while (1);
-
-    /* Sort the signals by marshal grouping. */
-    _sort_by_marshal_group(&s_list);
-
-    /* Convert to a NTL. */
-    size_t count = hashlist_length(&s_list);
-    m->signals = calloc(count + 1, sizeof(FmuSignal));
-    for (uint32_t i = 0; i < count; i++) {
-        memcpy(&m->signals[i], hashlist_at(&s_list, i), sizeof(FmuSignal));
-        free(hashlist_at(&s_list, i));
-    }
-    hashlist_destroy(&s_list);
 
     /* Stop parsing after first match. */
     return 1;
@@ -225,14 +225,45 @@ void fmimcl_parse(FmuModel* m)
     schema_object_search(m->mcl.model.mi, &m_sel, _model_match_handler);
 
     /* Parse the FMU Variables. */
-    SchemaLabel v_labels[] = {
+    log_error("FMU Variables:");
+    HashList s_list;
+    hashlist_init(&s_list, 1000);
+
+    SchemaLabel scalar_v_labels[] = {
         { .name = "model", .value = m->name },
+        { .name = "channel", .value = "signal_vector" },
     };
-    SchemaObjectSelector v_sel = {
+    SchemaObjectSelector scalar_v_sel = {
         .kind = "SignalGroup",
-        .labels = v_labels,
-        .labels_len = ARRAY_SIZE(v_labels),
-        .data = m,
+        .labels = scalar_v_labels,
+        .labels_len = ARRAY_SIZE(scalar_v_labels),
+        .data = &s_list,
     };
-    schema_object_search(m->mcl.model.mi, &v_sel, _variable_match_handler);
+    schema_object_search(
+        m->mcl.model.mi, &scalar_v_sel, _variable_match_handler);
+
+    SchemaLabel network_v_labels[] = {
+        { .name = "model", .value = m->name },
+        { .name = "channel", .value = "network_vector" },
+    };
+    SchemaObjectSelector network_v_sel = {
+        .kind = "SignalGroup",
+        .labels = network_v_labels,
+        .labels_len = ARRAY_SIZE(network_v_labels),
+        .data = &s_list,
+    };
+    schema_object_search(
+        m->mcl.model.mi, &network_v_sel, _variable_match_handler);
+
+    /* Sort the signals by marshal grouping. */
+    _sort_by_marshal_group(&s_list);
+
+    /* Convert to a NTL. */
+    size_t count = hashlist_length(&s_list);
+    m->signals = calloc(count + 1, sizeof(FmuSignal));
+    for (uint32_t i = 0; i < count; i++) {
+        memcpy(&m->signals[i], hashlist_at(&s_list, i), sizeof(FmuSignal));
+        free(hashlist_at(&s_list, i));
+    }
+    hashlist_destroy(&s_list);
 }

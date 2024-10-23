@@ -120,6 +120,7 @@ set(DSE_FMIMCL_SOURCE_FILES
     ${DSE_FMIMCL_SOURCE_DIR}/fmimcl.c
     ${DSE_FMIMCL_SOURCE_DIR}/parser.c
     ${DSE_FMIMCL_SOURCE_DIR}/adapter/fmi2mcl.c
+    ${DSE_FMIMCL_SOURCE_DIR}/../fmimodelc/ascii85.c
 )
 set(DSE_FMIMCL_INCLUDE_DIR "${DSE_FMIMCL_SOURCE_DIR}/../..")
 

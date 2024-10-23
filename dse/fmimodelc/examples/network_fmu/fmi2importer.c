@@ -92,8 +92,8 @@ int main(int argc, char** argv)
     /* fmi2Instantiate */
     fmi2Instantiate instantiate = dlsym(handle, "fmi2Instantiate");
     if (instantiate == NULL) return EINVAL;
-    fmu = instantiate(
-        "network_fmu", fmi2CoSimulation, "guid", "resources", NULL, true, false);
+    fmu = instantiate("network_fmu", fmi2CoSimulation, "guid", "resources",
+        NULL, true, false);
     if (fmu == NULL) return EINVAL;
 
     /* fmi2ExitInitializationMode */

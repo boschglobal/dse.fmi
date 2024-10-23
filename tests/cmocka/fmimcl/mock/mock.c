@@ -43,7 +43,7 @@ int32_t mock_mcl_step(MclDesc* mcl, double* model_time, double end_time)
     FmuModel*        m = (FmuModel*)mcl;
     MockAdapterDesc* a = m->adapter;
     for (MarshalSignalMap* msm = m->mcl.msm; msm && msm->name; msm++) {
-        double* src_scalar = *(msm->source.scalar);
+        double* src_scalar = msm->source.scalar;
         for (size_t j = 0; j < msm->count; j++) {
             src_scalar[msm->source.index[j]] += 1;
         }

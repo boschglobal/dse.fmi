@@ -200,13 +200,13 @@ void fmimodelc_index_text_encoding(
 
             for (uint32_t i = 0; i < sv->count; i++) {
                 /* Value Reference. */
-                const char* _ = signal_annotation(
-                    sv, i, "fmi_value_reference", NULL);
+                const char* _ =
+                    signal_annotation(sv, i, "fmi_value_reference", NULL);
                 if (_ == NULL) continue;
 
                 /* Encoding. */
-                const char* encoding = signal_annotation(
-                    sv, i, "dse.standards.fmi-ls-binary-to-text.encoding", NULL);
+                const char* encoding = signal_annotation(sv, i,
+                    "dse.standards.fmi-ls-binary-to-text.encoding", NULL);
                 if (strcmp(encoding, "ascii85") != 0) continue;
 
                 /* Index, all with same encoding (for now). */

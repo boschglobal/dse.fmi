@@ -63,7 +63,7 @@ DLL_PRIVATE void fmimodelc_index_text_encoding(
 DLL_PRIVATE void fmimodelc_reset_binary_signals(RuntimeModelDesc* m);
 
 
-/* ascii85.h */
+/* ascii85.c */
 DLL_PRIVATE char* ascii85_encode(const char* source, size_t len);
 DLL_PRIVATE char* ascii85_decode(const char* source, size_t* len);
 

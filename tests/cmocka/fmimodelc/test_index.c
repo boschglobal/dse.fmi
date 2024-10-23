@@ -58,8 +58,8 @@ void test_index__scalar(void** state)
     m = model_runtime_create(m);
 
     /* Locate the SimBus scalar SV. */
-    SimbusVectorIndex index = simbus_vector_lookup(
-        m->model.sim, "scalar", "counter");
+    SimbusVectorIndex index =
+        simbus_vector_lookup(m->model.sim, "scalar", "counter");
     assert_non_null(index.sbv);
 
     /* Index the scalar signals. */
@@ -90,8 +90,8 @@ void test_index__binary(void** state)
     m = model_runtime_create(m);
 
     /* Locate the SimBus network SV. */
-    SimbusVectorIndex index = simbus_vector_lookup(
-        m->model.sim, "network", "can");
+    SimbusVectorIndex index =
+        simbus_vector_lookup(m->model.sim, "network", "can");
     assert_non_null(index.sbv);
 
     /* Index the network signals. */

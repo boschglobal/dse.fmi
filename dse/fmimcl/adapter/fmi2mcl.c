@@ -184,6 +184,8 @@ static int32_t fmi2mcl_marshal_in(FmuModel* m)
             };
             break;
         }
+        // FIXME support string, should be copy of provided fmu string (check
+        // spec again for ownership)
         default:
             break;
         }
@@ -224,6 +226,7 @@ static int32_t fmi2mcl_marshal_out(FmuModel* m)
                 return EBADMSG;
             };
         }
+        // FIXME support string, fmu must copy string.
         default:
             break;
         }

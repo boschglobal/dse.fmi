@@ -79,8 +79,10 @@ void fmimcl_destroy(FmuModel* fmu_model)
     if (fmu_model == NULL) return;
 
     if (fmu_model->signals) free(fmu_model->signals);
-    if (fmu_model->data.scalar) free(fmu_model->data.scalar);
     if (fmu_model->data.name) free(fmu_model->data.name);
+    if (fmu_model->data.scalar) free(fmu_model->data.scalar);
+    if (fmu_model->data.binary_len) free(fmu_model->data.binary_len);
+    if (fmu_model->data.kind) free(fmu_model->data.kind);
 
     marshal_group_destroy(fmu_model->data.mg_table);
 }
@@ -128,8 +130,7 @@ MclDesc* mcl_create(ModelDesc* model)
         return NULL;
     }
 
-    fmimcl_allocate_scalar_source(m);
-
+    fmimcl_allocate_source(m);
     fmimcl_generate_marshal_table(m);
 
     return (MclDesc*)m;

@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+
+################
+## DSE Projects.
+export DSE_CLIB_VERSION ?= 1.0.21
+export DSE_MODELC_VERSION ?= 2.1.6
+
+
 ###############
 ## Docker Images.
 GCC_BUILDER_IMAGE ?= ghcr.io/boschglobal/dse-gcc-builder:main
@@ -12,12 +19,6 @@ SIMER_IMAGE ?= ghcr.io/boschglobal/dse-simer:$(DSE_MODELC_VERSION)
 ###############
 ## Tools (Container Images).
 TOOL_DIRS = fmi
-
-
-################
-## DSE Projects.
-export DSE_CLIB_VERSION ?= 1.0.18
-export DSE_MODELC_VERSION ?= 2.1.4
 
 
 ###############

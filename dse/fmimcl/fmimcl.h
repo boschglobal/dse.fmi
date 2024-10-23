@@ -214,9 +214,16 @@ Example
 
 
 typedef struct FmuData {
-    size_t        count;
-    const char**  name;
-    double*       scalar;
+    /* Signal storage (i.e. "source"). */
+    size_t       count;
+    const char** name;
+    union {
+        double* scalar;
+        void**  binary;
+    };
+    uint32_t*     binary_len;
+    MarshalKind*  kind;
+    /* Marshalling tables. */
     MarshalGroup* mg_table; /* NULL terminated list. */
 } FmuData;
 
@@ -229,6 +236,8 @@ typedef struct FmuSignal {
     MarshalKind variable_kind;
     MarshalDir  variable_dir;
     MarshalType variable_type;
+    /* Annotations. */
+    const char* variable_annotation_encoding;
 } FmuSignal;
 
 
@@ -246,7 +255,6 @@ typedef struct FmuModel {
     FmuSignal*  signals; /* NULL terminated list. */
     /* Internal data objects (YamlNode). */
     void*       m_doc;
-    void*       v_doc;
     /* Adapter/Instance data. */
     void*       adapter;
     /* Data marshalling support. */
@@ -269,10 +277,9 @@ DLL_PRIVATE void fmimcl_parse(FmuModel* fmu_model);
 DLL_PRIVATE void fmimcl_load(FmuModel* fmu_model);
 
 /* engine.c */
-DLL_PRIVATE void fmimcl_allocate_scalar_source(FmuModel* m);
-
-/* engine.c */
+DLL_PRIVATE void fmimcl_allocate_source(FmuModel* m);
 DLL_PRIVATE void fmimcl_generate_marshal_table(FmuModel* m);
+DLL_PRIVATE void fmimcl_load_encoder_funcs(FmuModel* m);
 
 
 #endif  // DSE_FMIMCL_FMIMCL_H_

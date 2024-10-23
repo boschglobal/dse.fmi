@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 GDB_CMD = valgrind -q --leak-check=full --track-origins=yes --error-exitcode=808
-# GDB_CMD ?= gdb -q -ex='set confirm on' -ex=run -ex=quit
+# GDB_CMD = gdb -q -ex='set confirm on' -ex=run -ex=quit
 
 default: build
 

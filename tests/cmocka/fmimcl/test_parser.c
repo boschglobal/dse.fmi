@@ -158,6 +158,41 @@ void test_parser__fmu_signal(void** state)
             .variable_dir = MARSHAL_DIRECTION_TXRX,
             .variable_type = MARSHAL_TYPE_BOOL,
         },
+
+        {
+            .name = "string_tx",
+            .variable_name = "string_tx",
+            .variable_vref = 4,
+            .variable_kind = MARSHAL_KIND_BINARY,
+            .variable_dir = MARSHAL_DIRECTION_RXONLY,
+            .variable_type = MARSHAL_TYPE_STRING,
+        },
+        {
+            .name = "string_ascii85_tx",
+            .variable_name = "string_ascii85_tx",
+            .variable_vref = 6,
+            .variable_kind = MARSHAL_KIND_BINARY,
+            .variable_dir = MARSHAL_DIRECTION_RXONLY,
+            .variable_type = MARSHAL_TYPE_STRING,
+            .variable_annotation_encoding = "ascii85",
+        },
+        {
+            .name = "string_rx",
+            .variable_name = "string_rx",
+            .variable_vref = 5,
+            .variable_kind = MARSHAL_KIND_BINARY,
+            .variable_dir = MARSHAL_DIRECTION_TXONLY,
+            .variable_type = MARSHAL_TYPE_STRING,
+        },
+        {
+            .name = "string_ascii85_rx",
+            .variable_name = "string_ascii85_rx",
+            .variable_vref = 7,
+            .variable_kind = MARSHAL_KIND_BINARY,
+            .variable_dir = MARSHAL_DIRECTION_TXONLY,
+            .variable_type = MARSHAL_TYPE_STRING,
+            .variable_annotation_encoding = "ascii85",
+        },
     };
 
     // Run parser.
@@ -165,12 +200,10 @@ void test_parser__fmu_signal(void** state)
     assert_null(fmu_model->path);
     assert_null(fmu_model->handle);
     assert_null(fmu_model->m_doc);
-    assert_null(fmu_model->v_doc);
     fmimcl_parse(fmu_model);
 
     // Check FMU Model properties.
     assert_non_null(fmu_model->m_doc);
-    assert_non_null(fmu_model->v_doc);
     assert_non_null(fmu_model->name);
     assert_string_equal(fmu_model->name, "FMU");
     assert_non_null(fmu_model->path);
@@ -192,6 +225,13 @@ void test_parser__fmu_signal(void** state)
         assert_int_equal(signal->variable_kind, check->variable_kind);
         assert_int_equal(signal->variable_dir, check->variable_dir);
         assert_int_equal(signal->variable_type, check->variable_type);
+        if (check->variable_annotation_encoding) {
+            assert_non_null(signal->variable_annotation_encoding);
+            assert_string_equal(signal->variable_annotation_encoding,
+                check->variable_annotation_encoding);
+        } else {
+            assert_null(signal->variable_annotation_encoding);
+        }
     }
 
     // Unload parser objects.

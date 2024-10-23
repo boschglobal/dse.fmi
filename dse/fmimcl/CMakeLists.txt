@@ -28,6 +28,7 @@ add_library(fmimcl SHARED
     model.c
     parser.c
     adapter/fmi2mcl.c
+    ../fmimodelc/ascii85.c
 )
 target_include_directories(fmimcl
     PRIVATE

@@ -25,8 +25,8 @@ static size_t _count_signals(FmuModel* m)
 
 
 /**
-fmimcl_allocate_scalar_source
-=============================
+fmimcl_allocate_source
+======================
 
 For each Signal parsed from the Signalgroup, this function creates an
 intermediate signal object for mapping between SignalVector and FMU Variable.
@@ -36,18 +36,25 @@ Parameters
 fmu_model (FmuModel*)
 : FMU Model descriptor object.
 */
-void fmimcl_allocate_scalar_source(FmuModel* m)
+void fmimcl_allocate_source(FmuModel* m)
 {
     size_t count = _count_signals(m);
-    m->data.scalar = calloc(count, sizeof(double));
     m->data.count = count;
     m->data.name = calloc(count, sizeof(char*));
+    m->data.scalar = calloc(count, sizeof(double));  // Also binary (union).
+    m->data.binary_len = calloc(count, sizeof(uint32_t));
+    m->data.kind = calloc(count, sizeof(MarshalKind));
     for (size_t i = 0; i < count; i++) {
         m->data.name[i] = m->signals[i].name;
+        m->data.kind[i] = m->signals[i].variable_kind;
     }
-    m->mcl.source.scalar = &(m->data.scalar);
-    m->mcl.source.count = &m->data.count;
+
+    /* Set references in the MCL. */
+    m->mcl.source.count = m->data.count;
     m->mcl.source.signal = m->data.name;
+    m->mcl.source.scalar = m->data.scalar;
+    m->mcl.source.binary_len = m->data.binary_len;
+    m->mcl.source.kind = m->data.kind;
 }
 
 
@@ -58,6 +65,7 @@ static MarshalGroup* _create_mg(MarshalKind kind, MarshalDir dir,
     static char name[STR_BUFFER];
     snprintf(name, STR_BUFFER, "mg-%d-%d-%d", kind, dir, type);
 
+    /* Target `ref` */
     assert(count == hashlist_length(ref_list));
     uint32_t* ref = calloc(count, marshal_type_size(type));
     for (size_t i = 0; i < count; i++) {
@@ -65,6 +73,21 @@ static MarshalGroup* _create_mg(MarshalKind kind, MarshalDir dir,
     }
     hashmap_clear(&ref_list->hash_map);
 
+    /* Target `_binary_lan` */
+    uint32_t* binary_len = NULL;
+    if (kind == MARSHAL_KIND_BINARY) {
+        binary_len = calloc(count, sizeof(uint32_t));
+    }
+
+    /* Functions */
+    MarshalStringEncode* string_encode = NULL;
+    MarshalStringDecode* string_decode = NULL;
+    if (kind == MARSHAL_KIND_BINARY) {
+        string_encode = calloc(count, sizeof(MarshalStringEncode));
+        string_decode = calloc(count, sizeof(MarshalStringDecode));
+    }
+
+    /* Construct the MarshalGroup. */
     MarshalGroup* mg = malloc(sizeof(MarshalGroup));
     *mg = (MarshalGroup){
         .name = strdup(name),
@@ -74,8 +97,12 @@ static MarshalGroup* _create_mg(MarshalKind kind, MarshalDir dir,
         .count = count,
         .target.ref = ref,
         .target.ptr = calloc(count, marshal_type_size(type)),
+        .target._binary_len = binary_len,
         .source.offset = offset,
         .source.scalar = m->data.scalar,
+        .source.binary_len = m->data.binary_len,
+        .functions.string_encode = string_encode,
+        .functions.string_decode = string_decode,
     };
     return mg;
 }
@@ -135,17 +162,52 @@ void fmimcl_generate_marshal_table(FmuModel* m)
         hashlist_append(
             &mg_list, _create_mg(kind, dir, type, count, offset, m, &ref_list));
     }
-
     /* Convert to a NTL. */
-    count = hashlist_length(&mg_list);
-    m->data.mg_table = calloc(count + 1, sizeof(MarshalGroup));
-    for (uint32_t i = 0; i < count; i++) {
-        memcpy(&m->data.mg_table[i], hashlist_at(&mg_list, i),
-            sizeof(MarshalGroup));
-        free(hashlist_at(&mg_list, i));
-    }
-    hashlist_destroy(&mg_list);
+    m->data.mg_table = hashlist_ntl(&mg_list, sizeof(MarshalGroup), true);
 
     /* Cleanup. */
     hashlist_destroy(&ref_list);
+}
+
+
+extern char* ascii85_encode(const char* source, size_t len);
+extern char* ascii85_decode(const char* source, size_t* len);
+
+/**
+fmimcl_load_encoder_funcs
+=========================
+
+Parse the MarshalGroup NTL and for each Kind which supports an encoder
+function attempt to load the configured encoder functions to:
+
+*    .functions.string_encode
+*    .functions.string_decode
+
+Parameters
+----------
+fmu_model (FmuModel*)
+: FMU Model descriptor object.
+*/
+void fmimcl_load_encoder_funcs(FmuModel* m)
+{
+    for (MarshalGroup* mg = m->data.mg_table; mg && mg->name; mg++) {
+        switch (mg->kind) {
+        case MARSHAL_KIND_BINARY:
+            if (mg->functions.string_encode == NULL) continue;
+            if (mg->functions.string_decode == NULL) continue;
+            for (size_t i = 0; i < mg->count; i++) {
+                FmuSignal* s = &m->signals[mg->source.offset + i];
+                if (s->variable_annotation_encoding) {
+                    if (strcmp("ascii85", s->variable_annotation_encoding) ==
+                        0) {
+                        mg->functions.string_encode[i] = ascii85_encode;
+                        mg->functions.string_decode[i] = ascii85_decode;
+                    }
+                }
+            }
+            break;
+        default:
+            break;
+        }
+    }
 }

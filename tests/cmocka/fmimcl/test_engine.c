@@ -62,7 +62,7 @@ int test_engine_teardown(void** state)
 }
 
 
-void test_engine__allocate_scalar_source(void** state)
+void test_engine__allocate_source(void** state)
 {
     FmimclMock* mock = *state;
     FmuModel*   fmu_model = &mock->model;
@@ -74,7 +74,7 @@ void test_engine__allocate_scalar_source(void** state)
     assert_int_equal(fmu_model->data.count, 0);
 
     // Allocate storage for scalar signals.
-    fmimcl_allocate_scalar_source(fmu_model);
+    fmimcl_allocate_source(fmu_model);
     assert_non_null(fmu_model->data.scalar);
     assert_non_null(fmu_model->data.name);
     assert_int_equal(fmu_model->data.count, 9);
@@ -167,7 +167,7 @@ void test_engine__create_marshal_tables(void** state)
 
     // Parse the config.
     fmimcl_parse(fmu_model);
-    fmimcl_allocate_scalar_source(fmu_model);
+    fmimcl_allocate_source(fmu_model);
 
     // Generate the marshal tables.
     fmimcl_generate_marshal_table(fmu_model);
@@ -212,7 +212,7 @@ void test_engine__marshal_to_adapter(void** state)
 
     // Parse the config.
     fmimcl_parse(fmu_model);
-    fmimcl_allocate_scalar_source(fmu_model);
+    fmimcl_allocate_source(fmu_model);
 
     // Generate the marshal tables.
     fmimcl_generate_marshal_table(fmu_model);
@@ -258,7 +258,7 @@ void test_engine__marshal_from_adapter(void** state)
 
     // Parse the config.
     fmimcl_parse(fmu_model);
-    fmimcl_allocate_scalar_source(fmu_model);
+    fmimcl_allocate_source(fmu_model);
 
     // Generate the marshal tables.
     fmimcl_generate_marshal_table(fmu_model);
@@ -310,8 +310,7 @@ int run_engine_tests(void)
     void* t = test_engine_teardown;
 
     const struct CMUnitTest tests[] = {
-        cmocka_unit_test_setup_teardown(
-            test_engine__allocate_scalar_source, s, t),
+        cmocka_unit_test_setup_teardown(test_engine__allocate_source, s, t),
         cmocka_unit_test_setup_teardown(
             test_engine__create_marshal_tables, s, t),
         cmocka_unit_test_setup_teardown(test_engine__marshal_to_adapter, s, t),

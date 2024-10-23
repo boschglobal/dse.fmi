@@ -77,7 +77,7 @@ void test_mstep(void** state)
 
     TC_MSTEP tc[] = {
         { // FMU runs 1 time
-            .init_value = { 0.0, 0.0, 1.0, 1},
+            .init_value = { 0.0, 0.0, 1.0, 1 },
             .vr_input = { real_3_tx, integer_3_tx, real_A_tx, bool_1_tx },
             .expected_value = { 1.0, 1.0, 11.0, 101.0, 101.0, 1 },
             .vr_output = { real_1_rx, integer_2_rx, real_B_rx, real_C_rx,
