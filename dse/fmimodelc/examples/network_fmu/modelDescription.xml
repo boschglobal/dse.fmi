@@ -8,7 +8,7 @@
         <String start=""></String>
             <Annotations>
                 <Tool name="dse.standards.fmi-ls-binary-codec">
-                    <Annotation name="mimetype">ascii85</Annotation>
+                    <Annotation name="mimetype">application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; interface_id=3</Annotation>
                 </Tool>
                 <Tool name="dse.standards.fmi-ls-binary-to-text">
                     <Annotation name="encoding">ascii85</Annotation>
