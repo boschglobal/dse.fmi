@@ -59,11 +59,17 @@ int test_mcl_setup(void** state)
     mock->model_desc.mi = &mock->model_instance;
     mock->model.mcl.model.sim = &mock->simulation_spec;
     mock->model_desc.sim = &mock->simulation_spec;
+    // Allocate 2 binary SV.
     for (size_t i = 0; i < 2; i++) {
-        mock->model_desc.sv[i].scalar = calloc(3, sizeof(double));
-        mock->model_desc.sv[i].signal = calloc(3, sizeof(char*));
+        mock->model_desc.sv[i].signal = calloc(10, sizeof(char*));
+        mock->model_desc.sv[i].scalar = calloc(10, sizeof(double));
+        mock->model_desc.sv[i].binary = calloc(10, sizeof(void*));
+        mock->model_desc.sv[i].length = calloc(10, sizeof(uint32_t));
+        mock->model_desc.sv[i].buffer_size = calloc(10, sizeof(uint32_t));
+        mock->model_desc.sv[i].mime_type = calloc(10, sizeof(char*));
+        mock->model_desc.sv[i].ncodec = calloc(10, sizeof(void*));
+        mock->model_desc.sv[i].reset_called = calloc(10, sizeof(bool));
     }
-
 
     /* Return the mock. */
     *state = mock;
@@ -80,6 +86,17 @@ int test_mcl_teardown(void** state)
         for (SignalVector* sv = mock->model_desc.sv; sv && sv->scalar; sv++) {
             free(sv->scalar);
             free(sv->signal);
+            if (sv->binary) {
+                for (size_t i = 0; i < sv->count; i++) {
+                    free(sv->binary[i]);
+                }
+            }
+            free(sv->binary);
+            free(sv->length);
+            free(sv->buffer_size);
+            free(sv->mime_type);
+            free(sv->ncodec);
+            free(sv->reset_called);
         }
         free(mock->model_desc.sv);
         free(mock);
@@ -263,18 +280,21 @@ typedef struct MCLC_TC {
         size_t      count;
         double      scalar[10];
         bool        is_binary;
+        void*       binary[10];
+        uint32_t    length[10];
+        uint32_t    buffer_size[10];
     } sv[10];
     struct {
         int         count;
         const char* name;
         double      result[10];
+        void*       result_binary[10];
     } expect_msm[10];
     size_t steps;
     double sim_stepsize;
 } MCLC_TC;
 
-/* Test create here or later in mstep? */
-void test_mcl__marshalling(void** state)
+void test_mcl__marshalling_scalar(void** state)
 {
     FmimclMock* mock = *state;
     ModelDesc   model_desc = mock->model_desc;
@@ -320,29 +340,32 @@ void test_mcl__marshalling(void** state)
             .steps = 10,
             .sim_stepsize = 0.00001  // model stepsize is 0.0001
         },
-        { .sv = { {
-              .name = "double_sv",
-              .signal = { "real_1_tx", "real_3_rx", "real_2_rx" },
-              .scalar = { 1.0, 2.0, 3.0 },
-              .count = 3,
-          } },
+        { //
+            .sv = { {
+                .name = "double_sv",
+                .signal = { "real_1_tx", "real_3_rx", "real_2_rx" },
+                .scalar = { 1.0, 2.0, 3.0 },
+                .count = 3,
+            } },
             .expect_msm = { { .count = 3,
                 .name = "double_sv",
                 .result = { 11.0, 12.0, 13.0 } } },
             .steps = 10,
             .sim_stepsize = 0.0001 },
-        { .sv = { {
-                      .name = "double_sv",
-                      .signal = { "real_1_tx", "real_3_rx", "real_2_rx" },
-                      .scalar = { 1.0, 2.0, 3.0 },
-                      .count = 3,
-                  },
-              {
-                  .name = "integer_sv",
-                  .signal = { "integer_1_tx", "integer_3_rx", "integer_2_tx" },
-                  .scalar = { 4.0, 5.0, 6.0 },
-                  .count = 3,
-              } },
+        { //
+            .sv = { {
+                        .name = "double_sv",
+                        .signal = { "real_1_tx", "real_3_rx", "real_2_rx" },
+                        .scalar = { 1.0, 2.0, 3.0 },
+                        .count = 3,
+                    },
+                {
+                    .name = "integer_sv",
+                    .signal = { "integer_1_tx", "integer_3_rx",
+                        "integer_2_tx" },
+                    .scalar = { 4.0, 5.0, 6.0 },
+                    .count = 3,
+                } },
             .expect_msm = { { .count = 3,
                                 .name = "double_sv",
                                 .result = { 2.0, 3.0, 4.0 } },
@@ -355,6 +378,7 @@ void test_mcl__marshalling(void** state)
 
     // Check the test cases.
     for (size_t i = 0; i < ARRAY_SIZE(tc); i++) {
+        // Set the initial condition.
         size_t count = 0;
         for (SignalVector* sv = model_desc.sv; sv && sv->scalar; sv++) {
             sv->name = tc[i].sv[count].name;
@@ -368,6 +392,7 @@ void test_mcl__marshalling(void** state)
         }
         model_desc.sim->step_size = tc[i].sim_stepsize;
 
+        // Setup the MCL.
         FmuModel*        fm = (FmuModel*)mcl_create(&model_desc);
         MockAdapterDesc* adapter = fm->adapter;
         adapter->expect_rc = 40;
@@ -375,6 +400,7 @@ void test_mcl__marshalling(void** state)
         rc = mcl_load((void*)fm);
         assert_int_equal(rc, 41);
 
+        // Check the expected MSM.
         size_t msm_count = 0;
         for (MarshalSignalMap* msm = fm->mcl.msm; msm && msm->name; msm++) {
             assert_int_equal(msm->count, tc[i].expect_msm[msm_count].count);
@@ -395,9 +421,10 @@ void test_mcl__marshalling(void** state)
 
         rc = mcl_init((void*)fm);
         assert_int_equal(rc, 42);
+
+        // Signal -> Source, check equal.
         rc = mcl_marshal_out((void*)fm);
         assert_int_equal(rc, 43);
-
         for (MarshalSignalMap* msm = fm->mcl.msm; msm && msm->name; msm++) {
             double* src_scalar = msm->source.scalar;
             double* sig_scalar = msm->signal.scalar;
@@ -407,10 +434,10 @@ void test_mcl__marshalling(void** state)
             }
         }
 
+        // Steps, Source modified by MCL each step, check as expected.
         for (size_t j = 1; j <= tc[i].steps; j++) {
             rc = mcl_step((void*)fm, tc[i].sim_stepsize * j);
         }
-
         msm_count = 0;
         for (MarshalSignalMap* msm = fm->mcl.msm; msm && msm->name; msm++) {
             double* src_scalar = msm->source.scalar;
@@ -421,9 +448,9 @@ void test_mcl__marshalling(void** state)
             msm_count++;
         }
 
+        // Source -> Signal, check equal.
         rc = mcl_marshal_in((void*)fm);
         assert_int_equal(rc, 0);
-
         for (MarshalSignalMap* msm = fm->mcl.msm; msm && msm->name; msm++) {
             double* src_scalar = msm->source.scalar;
             double* sig_scalar = msm->signal.scalar;
@@ -441,6 +468,158 @@ void test_mcl__marshalling(void** state)
     }
 }
 
+void test_mcl__marshalling_binary(void** state)
+{
+    FmimclMock* mock = *state;
+    ModelDesc   model_desc = mock->model_desc;
+    int32_t     rc = 0;
+
+    MCLC_TC tc[] = {
+        { .sv = { {
+              .name = "string_sv",
+              .signal = { "string_tx", "string_rx" },
+              .binary = { strdup("foo"), strdup("bar") },
+              .length = { 4, 4 },
+              .buffer_size = { 4, 4 },
+              .count = 2,
+          } },
+            .expect_msm = { { .count = 2,
+                .name = "string_sv",
+                .result_binary = { strdup("oof"), strdup("rab") } } },
+            .steps = 1,
+            .sim_stepsize = 0.0001 },
+    };
+
+    // Check the test cases.
+    for (size_t i = 0; i < ARRAY_SIZE(tc); i++) {
+        // Set the initial condition.
+        size_t count = 0;
+        for (SignalVector* sv = model_desc.sv; sv && sv->scalar; sv++) {
+            sv->name = tc[i].sv[count].name;
+            sv->is_binary = true;
+            sv->count = tc[i].sv[count].count;
+            for (size_t j = 0; j < sv->count; j++) {
+                sv->signal[j] = tc[i].sv[count].signal[j];
+                sv->binary[j] = tc[i].sv[count].binary[j];
+                sv->length[j] = tc[i].sv[count].length[j];
+                sv->buffer_size[j] = tc[i].sv[count].buffer_size[j];
+            }
+            count++;
+        }
+        model_desc.sim->step_size = tc[i].sim_stepsize;
+
+        // Setup the MCL.
+        FmuModel*        fm = (FmuModel*)mcl_create(&model_desc);
+        MockAdapterDesc* adapter = fm->adapter;
+        adapter->expect_rc = 40;
+
+        rc = mcl_load((void*)fm);
+        assert_int_equal(rc, 41);
+
+        // Check the expected MSM.
+        size_t msm_count = 0;
+        for (MarshalSignalMap* msm = fm->mcl.msm; msm && msm->name; msm++) {
+            assert_int_equal(msm->count, tc[i].expect_msm[msm_count].count);
+            assert_string_equal(msm->name, tc[i].expect_msm[msm_count].name);
+            assert_non_null(msm->signal.binary);
+            assert_non_null(msm->signal.binary_len);
+            assert_non_null(msm->signal.binary_buffer_size);
+            assert_ptr_equal(msm->signal.binary, model_desc.sv[msm_count].binary);
+            assert_non_null(msm->source.binary);
+            assert_non_null(msm->source.binary_len);
+            assert_ptr_equal(msm->source.binary, &fm->mcl.source.binary[6]);
+
+            // Check source initial conditions (i.e. empty).
+            void** src_binary = msm->source.binary;
+            uint32_t* src_binary_len = msm->source.binary_len;
+            for (size_t j = 0; j > msm->count; j++) {
+                assert_null(src_binary[msm->source.index[j]]);
+                assert_int_equal(src_binary_len[msm->source.index[j]], 0);
+            }
+
+            msm_count++;
+        }
+
+        rc = mcl_init((void*)fm);
+        assert_int_equal(rc, 42);
+
+        // Signal -> Source, check equal.
+        rc = mcl_marshal_out((void*)fm);
+        assert_int_equal(rc, 43);
+        for (MarshalSignalMap* msm = fm->mcl.msm; msm && msm->name; msm++) {
+            void** src_binary = msm->source.binary;
+            void** sig_binary = msm->signal.binary;
+            uint32_t* src_binary_len = msm->source.binary_len;
+            uint32_t* sig_binary_len = msm->signal.binary_len;
+            for (size_t j = 0; j < msm->count; j++) {
+                assert_memory_equal(src_binary[msm->source.index[j]],
+                    sig_binary[msm->signal.index[j]], sig_binary_len[msm->signal.index[j]]);
+                assert_int_equal(src_binary_len[msm->source.index[j]],
+                    sig_binary_len[msm->signal.index[j]]);
+                assert_int_not_equal(src_binary_len[msm->source.index[j]], 0);
+                assert_int_not_equal(sig_binary_len[msm->source.index[j]], 0);
+            }
+        }
+
+        // Steps, Source modified by MCL each step, check as expected.
+        for (size_t j = 1; j <= tc[i].steps; j++) {
+            rc = mcl_step((void*)fm, tc[i].sim_stepsize * j);
+        }
+        msm_count = 0;
+        for (MarshalSignalMap* msm = fm->mcl.msm; msm && msm->name; msm++) {
+            void** src_binary = msm->source.binary;
+            for (size_t j = 0; j < msm->count; j++) {
+                assert_memory_equal(src_binary[msm->source.index[j]],
+                    tc[i].expect_msm[msm_count].result_binary[j], strlen(tc[i].expect_msm[msm_count].result_binary[j])+1);
+            }
+            msm_count++;
+        }
+
+        // Source -> Signal, check equal.
+        for (SignalVector* sv = model_desc.sv; sv && sv->binary; sv++) {
+            for (size_t i = 0; i < sv->count; i++) {
+                sv->binary[i] = NULL;
+                sv->length[i] = 0;
+                sv->buffer_size[i] = 0;
+                if (sv->vtable.release) {
+                    sv->vtable.release(sv, i);
+                }
+            }
+        }
+        rc = mcl_marshal_in((void*)fm);
+        assert_int_equal(rc, 0);
+        for (MarshalSignalMap* msm = fm->mcl.msm; msm && msm->name; msm++) {
+            void** src_binary = msm->source.binary;
+            void** sig_binary = msm->signal.binary;
+            uint32_t* src_binary_len = msm->source.binary_len;
+            uint32_t* sig_binary_len = msm->signal.binary_len;
+            for (size_t j = 0; j < msm->count; j++) {
+                assert_memory_equal(src_binary[msm->source.index[j]],
+                    sig_binary[msm->signal.index[j]], sig_binary_len[msm->signal.index[j]]);
+                assert_int_equal(src_binary_len[msm->source.index[j]],
+                    sig_binary_len[msm->signal.index[j]]);
+                assert_int_not_equal(src_binary_len[msm->source.index[j]], 0);
+                assert_int_not_equal(sig_binary_len[msm->source.index[j]], 0);
+            }
+        }
+
+        rc = mcl_unload((void*)fm);
+        assert_int_equal(rc, 437);
+
+        mcl_destroy((void*)fm);
+        free(fm);
+    }
+
+    // Release allocated memory.
+    for (size_t i = 0; i < ARRAY_SIZE(tc); i++) {
+        for (size_t j = 0; j < 10; j++) {
+            for (size_t k = 0; k < 10; k++) {
+                free(tc[i].expect_msm[j].result_binary[k]);
+            }
+        }
+    }
+}
+
 
 int run_mcl_tests(void)
 {
@@ -448,11 +627,12 @@ int run_mcl_tests(void)
     void* t = test_mcl_teardown;
 
     const struct CMUnitTest tests[] = {
-        cmocka_unit_test_setup_teardown(test_mcl__marshalling, s, t),
         cmocka_unit_test_setup_teardown(test_mcl__create_adapter, s, t),
         cmocka_unit_test_setup_teardown(test_mcl__create_no_adapter, s, t),
         cmocka_unit_test_setup_teardown(test_mcl__api, s, t),
         cmocka_unit_test_setup_teardown(test_mcl__api_partial, s, t),
+        cmocka_unit_test_setup_teardown(test_mcl__marshalling_scalar, s, t),
+        cmocka_unit_test_setup_teardown(test_mcl__marshalling_binary, s, t),
     };
 
     return cmocka_run_group_tests_name("MCL", tests, NULL, NULL);

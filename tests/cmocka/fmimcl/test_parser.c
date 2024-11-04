@@ -160,34 +160,34 @@ void test_parser__fmu_signal(void** state)
         },
 
         {
-            .name = "string_tx",
-            .variable_name = "string_tx",
-            .variable_vref = 4,
-            .variable_kind = MARSHAL_KIND_BINARY,
-            .variable_dir = MARSHAL_DIRECTION_RXONLY,
-            .variable_type = MARSHAL_TYPE_STRING,
-        },
-        {
-            .name = "string_ascii85_tx",
-            .variable_name = "string_ascii85_tx",
-            .variable_vref = 6,
-            .variable_kind = MARSHAL_KIND_BINARY,
-            .variable_dir = MARSHAL_DIRECTION_RXONLY,
-            .variable_type = MARSHAL_TYPE_STRING,
-            .variable_annotation_encoding = "ascii85",
-        },
-        {
             .name = "string_rx",
             .variable_name = "string_rx",
             .variable_vref = 5,
             .variable_kind = MARSHAL_KIND_BINARY,
-            .variable_dir = MARSHAL_DIRECTION_TXONLY,
+            .variable_dir = MARSHAL_DIRECTION_RXONLY,
             .variable_type = MARSHAL_TYPE_STRING,
         },
         {
             .name = "string_ascii85_rx",
             .variable_name = "string_ascii85_rx",
             .variable_vref = 7,
+            .variable_kind = MARSHAL_KIND_BINARY,
+            .variable_dir = MARSHAL_DIRECTION_RXONLY,
+            .variable_type = MARSHAL_TYPE_STRING,
+            .variable_annotation_encoding = "ascii85",
+        },
+        {
+            .name = "string_tx",
+            .variable_name = "string_tx",
+            .variable_vref = 4,
+            .variable_kind = MARSHAL_KIND_BINARY,
+            .variable_dir = MARSHAL_DIRECTION_TXONLY,
+            .variable_type = MARSHAL_TYPE_STRING,
+        },
+        {
+            .name = "string_ascii85_tx",
+            .variable_name = "string_ascii85_tx",
+            .variable_vref = 6,
             .variable_kind = MARSHAL_KIND_BINARY,
             .variable_dir = MARSHAL_DIRECTION_TXONLY,
             .variable_type = MARSHAL_TYPE_STRING,
@@ -300,6 +300,31 @@ void test_parser__fmu_signal_sorting(void** state)
             .variable_dir = MARSHAL_DIRECTION_TXONLY,
             .variable_type = MARSHAL_TYPE_BOOL,
         },
+
+        {
+            .name = "string_rx",
+            .variable_kind = MARSHAL_KIND_BINARY,
+            .variable_dir = MARSHAL_DIRECTION_RXONLY,
+            .variable_type = MARSHAL_TYPE_STRING,
+        },
+        {
+            .name = "string_ascii85_rx",
+            .variable_kind = MARSHAL_KIND_BINARY,
+            .variable_dir = MARSHAL_DIRECTION_RXONLY,
+            .variable_type = MARSHAL_TYPE_STRING,
+        },
+        {
+            .name = "string_tx",
+            .variable_kind = MARSHAL_KIND_BINARY,
+            .variable_dir = MARSHAL_DIRECTION_TXONLY,
+            .variable_type = MARSHAL_TYPE_STRING,
+        },
+        {
+            .name = "string_ascii85_tx",
+            .variable_kind = MARSHAL_KIND_BINARY,
+            .variable_dir = MARSHAL_DIRECTION_TXONLY,
+            .variable_type = MARSHAL_TYPE_STRING,
+        },
     };
 
     // Run parser.
@@ -315,6 +340,7 @@ void test_parser__fmu_signal_sorting(void** state)
     for (size_t i = 0; i < ARRAY_SIZE(signals); i++) {
         FmuSignal* signal = &fmu_model->signals[i];
         FmuSignal* check = &signals[i];
+        log_trace("Signal: %s", signal->name);
         assert_string_equal(signal->name, check->name);
         assert_int_equal(signal->variable_kind, check->variable_kind);
         assert_int_equal(signal->variable_dir, check->variable_dir);

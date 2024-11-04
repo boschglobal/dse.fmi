@@ -66,6 +66,9 @@ fmi2Component fmi2Instantiate(fmi2String instance_name, fmi2Type fmu_type,
     hashmap_set_double(&fmu_inst->var, "11", 0);
     /* Local variable. */
     hashmap_set_double(&fmu_inst->var, "12", 0);
+    /* String (to "NULL"). */
+    hashmap_remove(&fmu_inst->var, "100");
+    hashmap_remove(&fmu_inst->var, "101");
 
     return (fmi2Component)fmu_inst;
 }
@@ -110,13 +113,6 @@ fmi2Status fmi2ExitInitializationMode(fmi2Component c)
 
 /**
  *  FMI 2 Variable GET Interface.
- *
- *  Mapping of FMI Types to storage types:
- *
- *      fmi2Real -> STORAGE_DOUBLE
- *      fmi2Integer -> STORAGE_INT
- *      fmi2Boolean -> STORAGE_INT
- *      fmi2String -> STORAGE_STRING
  */
 fmi2Status fmi2GetReal(fmi2Component c, const fmi2ValueReference vr[],
     size_t nvr, fmi2Real value[])
@@ -165,21 +161,18 @@ fmi2Status fmi2GetString(fmi2Component c, const fmi2ValueReference vr[],
     for (size_t i = 0; i < nvr; i++) {
         char key[64];
         snprintf(key, sizeof(key), "%d", vr[i]);
-        char** val = hashmap_get(&fmu_inst->var, key);
-        value[i] = *val;
+        char* val = hashmap_get(&fmu_inst->var, key);
+        if (val && strlen(val)) {
+            value[i] = val;
+        } else {
+            value[i] = NULL;
+        }
     }
     return fmi2OK;
 }
 
 /**
  *  FMI 2 Variable SET Interface.
- *
- *  Mapping of FMI Types to storage types:
- *
- *      fmi2Real -> STORAGE_DOUBLE
- *      fmi2Integer -> STORAGE_INT
- *      fmi2Boolean -> STORAGE_INT
- *      fmi2String -> STORAGE_STRING
  */
 fmi2Status fmi2SetReal(fmi2Component c, const fmi2ValueReference vr[],
     size_t nvr, const fmi2Real value[])
@@ -224,7 +217,11 @@ fmi2Status fmi2SetString(fmi2Component c, const fmi2ValueReference vr[],
     for (size_t i = 0; i < nvr; i++) {
         char key[64];
         snprintf(key, sizeof(key), "%d", vr[i]);
-        hashmap_set_string(&fmu_inst->var, key, (char*)value[i]);
+        if (value[i]) {
+            hashmap_set_string(&fmu_inst->var, key, (char*)value[i]);
+        } else {
+            hashmap_remove(&fmu_inst->var, key);
+        }
     }
     return fmi2OK;
 }
@@ -270,6 +267,13 @@ fmi2Status fmi2DoStep(fmi2Component c, fmi2Real currentCommunicationPoint,
     /* Local vars too. */
     double* vr_12 = hashmap_get(&fmu_inst->var, "12");
     *vr_12 = 12000 + *vr_4;  // Offset step count.
+
+    /* Strings; "move" input -> ouput. */
+    char* vr_100 = hashmap_get(&fmu_inst->var, "100");
+    if (vr_100) {
+        hashmap_set_string(&fmu_inst->var, "101", vr_100);
+        hashmap_remove(&fmu_inst->var, "100");
+    }
 
     return fmi2OK;
 }

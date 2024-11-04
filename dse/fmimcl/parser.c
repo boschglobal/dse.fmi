@@ -143,7 +143,7 @@ static int _variable_match_handler(ModelInstanceSpec* mi, SchemaObject* o)
             mi, o, "spec/signals", &index, _fmu_signal_generator);
         if (s == NULL) break;
         if (s->name) {
-            log_error("  %s (vref = %u, name = %s, type = %u)", s->name,
+            log_trace("  %s (vref = %u, name = %s, type = %u)", s->name,
                 s->variable_vref, s->variable_name, s->variable_type);
             hashlist_append(s_list, s);
         } else {
@@ -225,7 +225,7 @@ void fmimcl_parse(FmuModel* m)
     schema_object_search(m->mcl.model.mi, &m_sel, _model_match_handler);
 
     /* Parse the FMU Variables. */
-    log_error("FMU Variables:");
+    log_trace("FMU Variables:");
     HashList s_list;
     hashlist_init(&s_list, 1000);
 

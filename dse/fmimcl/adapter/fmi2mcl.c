@@ -184,8 +184,14 @@ static int32_t fmi2mcl_marshal_in(FmuModel* m)
             };
             break;
         }
-        // FIXME support string, should be copy of provided fmu string (check
-        // spec again for ownership)
+        case MARSHAL_TYPE_STRING: {
+            if (a->vtable.get_string(a->fmi2_inst, mg->target.ref, mg->count,
+                    mg->target._string) > 0) {
+                return EBADMSG;
+            };
+            break;
+        }
+
         default:
             break;
         }
@@ -225,8 +231,15 @@ static int32_t fmi2mcl_marshal_out(FmuModel* m)
                     mg->target._int32) > 0) {
                 return EBADMSG;
             };
+            break;
         }
-        // FIXME support string, fmu must copy string.
+        case MARSHAL_TYPE_STRING: {
+            if (a->vtable.set_string(a->fmi2_inst, mg->target.ref, mg->count,
+                    mg->target._string) > 0) {
+                return EBADMSG;
+            };
+            break;
+        }
         default:
             break;
         }

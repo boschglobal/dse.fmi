@@ -138,12 +138,15 @@ typedef struct FMI2_TC {
     union {
         double _double[2];
         int    _int[2];
+        const char*  _string[2];
     } check;
     union {
         double _double[2];
         int    _int[2];
+        const char*  _string[2];
     } init;
 } FMI2_TC;
+
 
 void test_fmi2__api(void** state)
 {
@@ -251,7 +254,45 @@ void test_fmi2__api(void** state)
             .ref = {6, 7},
             .init._int = {1, 0},
             .check._int = {1, 1}
-        }
+        },
+
+
+        {
+            .mg = {
+                {
+                    .name = (char*)"string_tx", // input
+                    .kind = MARSHAL_KIND_BINARY,
+                    .dir = MARSHAL_DIRECTION_TXONLY,
+                    .type = MARSHAL_TYPE_STRING,
+                    .count = 1,
+                    .target = {
+                        .ref = calloc(1, sizeof(uint32_t)),
+                        ._string = calloc(1, sizeof(char*))
+                    },
+                    .source.offset = 0,
+                },
+                {
+                    .name = (char*)"string_rx", // output
+                    .kind = MARSHAL_KIND_BINARY,
+                    .dir = MARSHAL_DIRECTION_RXONLY,
+                    .type = MARSHAL_TYPE_STRING,
+                    .count = 1,
+                    .target = {
+                        .ref = calloc(1, sizeof(uint32_t)),
+                        ._string = calloc(1, sizeof(char*))
+                    },
+                    .source.offset = 1,
+                },
+                {NULL}
+            },
+            .ref = {100, 101},
+            .init._string = {"foo", "bar"},
+            .check._string = {"foo", "foo"}
+        },
+
+        // TODO add testcase for encoded string.
+        // FIXME add testcase for encoded string.
+
     };
 
     // Check the test cases.
@@ -261,6 +302,8 @@ void test_fmi2__api(void** state)
         tc[i].mg[0].target.ref[0] = tc[i].ref[0];
         tc[i].mg[1].target.ref[0] = tc[i].ref[1];
         double* ptr_d = calloc(2, sizeof(double));
+        char**  ptr_s = calloc(2, sizeof(char*));
+        uint32_t*  ptr_l = calloc(2, sizeof(uint32_t));
 
         switch (tc[i].mg[0].type) {
         case MARSHAL_TYPE_UINT64:
@@ -292,6 +335,17 @@ void test_fmi2__api(void** state)
         case MARSHAL_TYPE_INT8:
         case MARSHAL_TYPE_BYTE1:
             break;
+        case MARSHAL_TYPE_STRING: {
+            tc[i].mg[0].source.binary = (void**)ptr_s;
+            tc[i].mg[1].source.binary = (void**)ptr_s;
+            tc[i].mg[0].source.binary_len = ptr_l;
+            tc[i].mg[1].source.binary_len = ptr_l;
+            ptr_s[0] = strdup(tc[i].init._string[0]);
+            ptr_s[1] = strdup(tc[i].init._string[1]);
+            if (ptr_s[0]) ptr_l[0] = strlen(ptr_s[0])+1;
+            if (ptr_s[1]) ptr_l[1] = strlen(ptr_s[1])+1;
+            break;
+        }
         default:
             break;
         };
@@ -348,6 +402,19 @@ void test_fmi2__api(void** state)
         case MARSHAL_TYPE_INT8:
         case MARSHAL_TYPE_BYTE1:
             break;
+        case MARSHAL_TYPE_STRING:
+            log_trace("    mg[0]: target=%s check=%s",
+                tc[i].mg[0].target._string[0], tc[i].check._string[0]);
+            log_trace("    mg[1]: target=%s check=%s",
+                tc[i].mg[1].target._string[0], tc[i].check._string[1]);
+            assert_string_equal(tc[i].mg[0].target._string[0], tc[i].check._string[0]);
+            if (tc[i].check._string[1]) {
+                assert_non_null(tc[i].mg[1].target._string[0]);
+                assert_string_equal(tc[i].mg[1].target._string[0], tc[i].check._string[1]);
+            } else {
+                assert_null(tc[i].mg[1].target._string[0]);
+            }
+            break;
         default:
             break;
         };
@@ -359,9 +426,17 @@ void test_fmi2__api(void** state)
         free(tc[i].mg[0].target.ref);
         free(tc[i].mg[1].target.ref);
         free(ptr_d);
+        free(ptr_s[0]);
+        free(ptr_s[1]);
+        free(ptr_s);
+        free(ptr_l);
         /* free union. */
-        free(tc[i].mg[0].target._double);
-        free(tc[i].mg[1].target._double);
+        if (tc[i].mg[0].type == MARSHAL_TYPE_STRING) {
+            free(tc[i].mg[0].target._string[0]);
+            // free(tc[i].mg[1].target._string[0]);  // FMU owns this and will free.
+        }
+        free(tc[i].mg[0].target.ptr);
+        free(tc[i].mg[1].target.ptr);
     }
 }
 

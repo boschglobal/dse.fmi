@@ -77,7 +77,7 @@ void test_engine__allocate_source(void** state)
     fmimcl_allocate_source(fmu_model);
     assert_non_null(fmu_model->data.scalar);
     assert_non_null(fmu_model->data.name);
-    assert_int_equal(fmu_model->data.count, 9);
+    assert_int_equal(fmu_model->data.count, 9+4);
 
     fmimcl_destroy(fmu_model);
 }
@@ -163,6 +163,25 @@ void test_engine__create_marshal_tables(void** state)
             .count = 1,
             .ref = { 6 },
         },
+
+        {
+            .name = "mg-2-2-16",
+            .kind = MARSHAL_KIND_BINARY,
+            .dir = MARSHAL_DIRECTION_RXONLY,
+            .type = MARSHAL_TYPE_STRING,
+            .offset = 9,
+            .count = 2,
+            .ref = { 101, 103 },
+        },
+        {
+            .name = "mg-2-3-16",
+            .kind = MARSHAL_KIND_BINARY,
+            .dir = MARSHAL_DIRECTION_TXONLY,
+            .type = MARSHAL_TYPE_STRING,
+            .offset = 11,
+            .count = 2,
+            .ref = { 100, 102 },
+        },
     };
 
     // Parse the config.
@@ -177,7 +196,7 @@ void test_engine__create_marshal_tables(void** state)
     MarshalGroup* mg;
     for (mg = fmu_model->data.mg_table; mg->name; mg++)
         count++;
-    assert_int_equal(count, 7);
+    assert_int_equal(count, 7+2);
     assert_int_equal(count, ARRAY_SIZE(tc));
 
     // Check the test cases.
@@ -222,30 +241,54 @@ void test_engine__marshal_to_adapter(void** state)
     MarshalGroup* mg;
     for (mg = fmu_model->data.mg_table; mg->name; mg++)
         count++;
-    assert_int_equal(count, 7);
+    assert_int_equal(count, 7+2);
 
     // Set the source signals to known values.
-    assert_int_equal(fmu_model->data.count, 9);
+    assert_int_equal(fmu_model->data.count, 9+4);
     for (size_t i = 0; i < fmu_model->data.count - 2; i++) {
         fmu_model->data.scalar[i] = i + 1;
     }
     fmu_model->data.scalar[7] = true;
     fmu_model->data.scalar[8] = true;
 
-    // Marshal out.
+    // This content is sorted on kind/dir, not order in YAML.
+    // 100(9), 102(10), 101(11), 103(12)
+    fmu_model->data.binary[9] = strdup("foo");
+    fmu_model->data.binary_len[9] = strlen("foo") + 1;
+    fmu_model->data.binary[10] = strdup("foo_85");
+    fmu_model->data.binary_len[10] = strlen("foo_85") + 1;
+    fmu_model->data.binary[11] = strdup("bar");
+    fmu_model->data.binary_len[11] = strlen("bar") + 1;
+    fmu_model->data.binary[12] = strdup("bar_85");
+    fmu_model->data.binary_len[12] = strlen("bar_85") + 1;
+
+
+    // Marshal out: source -> target.
     marshal_group_out(fmu_model->data.mg_table);
 
-    // Check the result (only RX should show change).
+
+    // Check the result (only RX should show change, i.e. input/parameter).
     mg = fmu_model->data.mg_table;
-    assert_int_equal(mg[0].target._int32[0], 0);
-    assert_int_equal(mg[0].target._int32[1], 0);
-    assert_int_equal(mg[1].target._int32[0], 3);
+    assert_int_equal(mg[0].target._int32[0], 0); // 3 output
+    assert_int_equal(mg[0].target._int32[1], 0); // 4
+    assert_int_equal(mg[1].target._int32[0], 3); // 2 input
     assert_double_equal(mg[2].target._double[0], 0.0, 0.0);
     assert_double_equal(mg[3].target._double[0], 0.0, 0.0);
     assert_double_equal(mg[4].target._double[0], 6.0, 0.0);
     assert_double_equal(mg[4].target._double[1], 7.0, 0.0);
-    assert_false(mg[5].target._int32[0]);
-    assert_true(mg[6].target._int32[0]);
+    assert_false(mg[5].target._int32[0]); // 7 output
+    assert_true(mg[6].target._int32[0]); // 6 input
+
+    assert_null(mg[7].target._string[0]); // 100 output (9)
+    assert_null(mg[7].target._string[1]); // 102 output (11)
+    assert_non_null(mg[8].target._string[0]); // 101 input (10)
+    assert_non_null(mg[8].target._string[1]); // 103 input (12)
+    assert_string_equal(mg[8].target._string[0], "bar");
+    assert_string_equal(mg[8].target._string[1], "bar_85");
+    assert_int_equal(mg[7].target._binary_len[0], 0);
+    assert_int_equal(mg[7].target._binary_len[1], 0);
+    assert_int_equal(mg[8].target._binary_len[0], 0); // Not set for strings.
+    assert_int_equal(mg[8].target._binary_len[1], 0); // Not set for strings.
 
     fmimcl_destroy(fmu_model);
 }
@@ -268,10 +311,10 @@ void test_engine__marshal_from_adapter(void** state)
     MarshalGroup* mg;
     for (mg = fmu_model->data.mg_table; mg->name; mg++)
         count++;
-    assert_int_equal(count, 7);
+    assert_int_equal(count, 7+2);
 
     // Set the target signals/variables to known values.
-    assert_int_equal(fmu_model->data.count, 9);
+    assert_int_equal(fmu_model->data.count, 9+4);
     mg = fmu_model->data.mg_table;
     mg[0].target._int32[0] = 10;
     mg[0].target._int32[1] = 20;
@@ -285,8 +328,17 @@ void test_engine__marshal_from_adapter(void** state)
     mg[5].target._int32[0] = true;
     mg[6].target._int32[0] = true;
 
-    // Marshal in.
+    // This content is sorted on kind/dir, not order in YAML.
+    // 7-0(9), 7-1(11), 8-0(10), 8-1(12)
+    mg[7].target._string[0]= strdup("foo");
+    mg[7].target._string[1] = strdup("foo_85");
+    mg[8].target._string[0] = strdup("bar");
+    mg[8].target._string[1] = strdup("bar_85");
+
+
+    // Marshal in: target -> source.
     marshal_group_in(fmu_model->data.mg_table);
+
 
     // Check the result (only TX should show change).
     assert_double_equal(fmu_model->data.scalar[0], 10.0, 0.0);
@@ -299,6 +351,16 @@ void test_engine__marshal_from_adapter(void** state)
     assert_true(fmu_model->data.scalar[7]);
     assert_false(fmu_model->data.scalar[8]);
 
+    assert_non_null(fmu_model->data.binary[9]); // 100 output (9)
+    assert_non_null(fmu_model->data.binary[10]); // 101 input (10)
+    assert_null(fmu_model->data.binary[11]); // 102 output (11)
+    assert_null(fmu_model->data.binary[12]); // 103 input (12)
+    assert_string_equal(fmu_model->data.binary[9], "foo");
+    assert_string_equal(fmu_model->data.binary[10], "foo_85");
+    assert_int_equal(fmu_model->data.binary_len[9], strlen("foo")+1);
+    assert_int_equal(fmu_model->data.binary_len[10], strlen("foo_85")+1);
+    assert_int_equal(fmu_model->data.binary_len[11], 0);
+    assert_int_equal(fmu_model->data.binary_len[12], 0);
 
     fmimcl_destroy(fmu_model);
 }
@@ -314,8 +376,8 @@ int run_engine_tests(void)
         cmocka_unit_test_setup_teardown(
             test_engine__create_marshal_tables, s, t),
         cmocka_unit_test_setup_teardown(test_engine__marshal_to_adapter, s, t),
-        cmocka_unit_test_setup_teardown(
-            test_engine__marshal_from_adapter, s, t),
+         cmocka_unit_test_setup_teardown(
+             test_engine__marshal_from_adapter, s, t),
     };
 
     return cmocka_run_group_tests_name("ENGINE", tests, NULL, NULL);

@@ -69,3 +69,26 @@ spec:
         fmi_variable_name: real_2_rx
         fmi_variable_type: Real
         fmi_variable_causality: input
+---
+kind: SignalGroup
+metadata:
+  name: BINARY_VARIABLES
+  labels:
+    model: FMU
+    channel: network_vector
+  annotations:
+    vector_type: binary
+spec:
+  signals:
+    - signal: string_tx
+      annotations:
+        fmi_variable_id: 100
+        fmi_variable_name: string_tx
+        fmi_variable_type: String
+        fmi_variable_causality: output
+    - signal: string_rx
+      annotations:
+        fmi_variable_id: 101
+        fmi_variable_name: string_rx
+        fmi_variable_type: String
+        fmi_variable_causality: input

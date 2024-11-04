@@ -79,6 +79,12 @@ void fmimcl_destroy(FmuModel* fmu_model)
     if (fmu_model == NULL) return;
 
     if (fmu_model->signals) free(fmu_model->signals);
+
+    for (size_t i = 0; i < fmu_model->data.count; i++) {
+        if (fmu_model->data.kind[i] == MARSHAL_KIND_BINARY) {
+            free(fmu_model->data.binary[i]);
+        }
+    }
     if (fmu_model->data.name) free(fmu_model->data.name);
     if (fmu_model->data.scalar) free(fmu_model->data.scalar);
     if (fmu_model->data.binary_len) free(fmu_model->data.binary_len);

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <stdlib.h>
+#include <string.h>
 #include <dse/fmimcl/fmimcl.h>
 #include <fmimcl/mock/mock.h>
 
@@ -43,9 +44,21 @@ int32_t mock_mcl_step(MclDesc* mcl, double* model_time, double end_time)
     FmuModel*        m = (FmuModel*)mcl;
     MockAdapterDesc* a = m->adapter;
     for (MarshalSignalMap* msm = m->mcl.msm; msm && msm->name; msm++) {
-        double* src_scalar = msm->source.scalar;
-        for (size_t j = 0; j < msm->count; j++) {
-            src_scalar[msm->source.index[j]] += 1;
+        if (msm->is_binary) {
+            for (size_t j = 0; j < msm->count; j++) {
+                // Reverse the source (string).
+                char* _str = strdup(msm->source.binary[j]);
+                size_t _len = strlen(_str);
+                for (size_t i = 0; i < _len; i++) {
+                    ((char**)msm->source.binary)[j][i] = _str[_len - i - 1];
+                }
+                free(_str);
+            }
+        } else {
+            double* src_scalar = msm->source.scalar;
+            for (size_t j = 0; j < msm->count; j++) {
+                src_scalar[msm->source.index[j]] += 1;
+            }
         }
     }
 
