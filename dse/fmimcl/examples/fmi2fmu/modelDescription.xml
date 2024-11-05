@@ -140,6 +140,32 @@
                 variability="">
             <String></String>
         </ScalarVariable>
+        <ScalarVariable
+                name="string_ascii85_tx"
+                valueReference="102"
+                causality="input"
+                initial=""
+                variability="">
+            <String></String>
+            <Annotations>
+                <Tool name="dse.standards.fmi-ls-binary-to-text">
+                    <Annotation name="encoding">ascii85</Annotation>
+                </Tool>
+            </Annotations>
+        </ScalarVariable>
+        <ScalarVariable
+                name="string_ascii85_rx"
+                valueReference="103"
+                causality="output"
+                initial=""
+                variability="">
+            <String></String>
+            <Annotations>
+                <Tool name="dse.standards.fmi-ls-binary-to-text">
+                    <Annotation name="encoding">ascii85</Annotation>
+                </Tool>
+            </Annotations>
+        </ScalarVariable>
     </ModelVariables>
     <ModelStructure>
         <Outputs></Outputs>

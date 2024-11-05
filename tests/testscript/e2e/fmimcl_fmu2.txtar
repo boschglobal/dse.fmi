@@ -1,7 +1,7 @@
 # Operate from the WORKDIR (allocated by caller, i.e. docker command).
 cd $WORKDIR
 env SIM=sim
-env NAME=fmi2fmu
+env NAME=fmu_inst
 env SIM_YAML=$REPODIR/dse/build/_out/fmimcl/examples/data/simulation.yaml
 env FMU=$REPODIR/dse/build/_out/fmimcl/examples/fmu
 env MCL=$REPODIR/dse/build/_out/fmimcl/lib/libfmimcl.so
@@ -30,6 +30,13 @@ exec sh -e $WORK/generate.sh
 exists $SIM/model/fmi2fmu/data/model.yaml
 exists $SIM/model/fmi2fmu/data/signalgroup.yaml
 
+
+exec cat $SIM/data/simulation.yaml
+exec cat $SIM/model/input/data/model.yaml
+exec cat $SIM/model/fmi2fmu/data/model.yaml
+exec cat $SIM/model/fmi2fmu/data/signalgroup.yaml
+
+
 # TEST: FMI MCL with CoSim FMU using FMIv2
 exec sh -e $WORK/test.sh
 
@@ -57,7 +64,7 @@ stdout 'uid=3261297346, val=37.000000, final_val=37.000000, name=real_A_tx'
 stdout 'uid=750647789, val=100.000000, final_val=100.000000, name=real_B_tx'
 ! stdout 'name=local_var'
 
-
+exists foo.bar
 
 -- generate.sh --
 # All paths relative to $SIM (triggered by setting $SIM). See Taskfile for details.
@@ -69,11 +76,11 @@ task -t /$REPODIR/Taskfile.yml generate-fmimcl \
 -- test.sh --
 SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
 docker run --name simer -i --rm -v $ENTRYWORKDIR/$SIM:/sim \
-    $SIMER -valgrind $NAME \
-        -env simbus:SIMBUS_LOGLEVEL=1 \
-        -env input_inst:SIMBUS_LOGLEVEL=5 \
-        -env $NAME:SIMBUS_LOGLEVEL=2 \
-        -stepsize 0.0005 -endtime 0.005
+    $SIMER -valgrind $NAME -logger 1 \
+        -env simbus:SIMBUS_LOGLEVEL=5 \
+        -env input_inst:SIMBUS_LOGLEVEL=3 \
+        -env $NAME:SIMBUS_LOGLEVEL=5 \
+        -stepsize 0.0005 -endtime 0.0020
 
 -- input_model.yaml --
 ---
@@ -90,6 +97,9 @@ spec:
     - alias: input_channel
       selectors:
         channel: input_vector
+    - alias: binary_channel
+      selectors:
+        channel: binary_vector
 ---
 kind: SignalGroup
 metadata:
@@ -102,6 +112,21 @@ spec:
     - signal: real_3_rx
     - signal: integer_3_rx
     - signal: real_A_rx
+---
+kind: SignalGroup
+metadata:
+  name: STRINGS
+  labels:
+    model: Input
+    channel: binary_vector
+  annotations:
+    vector_type: binary
+spec:
+  signals:
+    - signal: string_tx
+    - signal: string_rx
+    - signal: string_ascii85_tx
+    - signal: string_ascii85_rx
 
 -- simulation.yaml --
 ---
@@ -116,13 +141,15 @@ spec:
     transport:
       redis:
         uri: redis://localhost:6379
-        timeout: 60
+        timeout: 5
   models:
     - name: simbus
       model:
         name: simbus
       channels:
         - name: signal
+          expectedModelCount: 2
+        - name: network
           expectedModelCount: 2
     - name: fmu_inst
       uid: 42
@@ -137,6 +164,11 @@ spec:
           selectors:
             model: fmi2fmu
             channel: signal_vector
+        - name: network
+          alias: network_channel
+          selectors:
+            model: fmi2fmu
+            channel: network_vector
     - name: input_inst
       uid: 21
       model:
@@ -144,6 +176,8 @@ spec:
       channels:
         - name: signal
           alias: input_channel
+        - name: network
+          alias: binary_channel
 ---
 kind: Model
 metadata:

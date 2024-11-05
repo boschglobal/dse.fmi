@@ -477,7 +477,9 @@ void test_mcl__marshalling_binary(void** state)
     MCLC_TC tc[] = {
         { .sv = { {
               .name = "string_sv",
-              .signal = { "string_tx", "string_rx" },
+              .signal = { "string_rx",
+                  "string_tx" },  // Order opposite to signals xml (not sure
+                                  // why, MSM ordering).
               .binary = { strdup("foo"), strdup("bar") },
               .length = { 4, 4 },
               .buffer_size = { 4, 4 },
@@ -524,13 +526,14 @@ void test_mcl__marshalling_binary(void** state)
             assert_non_null(msm->signal.binary);
             assert_non_null(msm->signal.binary_len);
             assert_non_null(msm->signal.binary_buffer_size);
-            assert_ptr_equal(msm->signal.binary, model_desc.sv[msm_count].binary);
+            assert_ptr_equal(
+                msm->signal.binary, model_desc.sv[msm_count].binary);
             assert_non_null(msm->source.binary);
             assert_non_null(msm->source.binary_len);
             assert_ptr_equal(msm->source.binary, &fm->mcl.source.binary[6]);
 
             // Check source initial conditions (i.e. empty).
-            void** src_binary = msm->source.binary;
+            void**    src_binary = msm->source.binary;
             uint32_t* src_binary_len = msm->source.binary_len;
             for (size_t j = 0; j > msm->count; j++) {
                 assert_null(src_binary[msm->source.index[j]]);
@@ -547,17 +550,22 @@ void test_mcl__marshalling_binary(void** state)
         rc = mcl_marshal_out((void*)fm);
         assert_int_equal(rc, 43);
         for (MarshalSignalMap* msm = fm->mcl.msm; msm && msm->name; msm++) {
-            void** src_binary = msm->source.binary;
-            void** sig_binary = msm->signal.binary;
+            log_trace("msm name: %s", msm->name);
+            void**    src_binary = msm->source.binary;
+            void**    sig_binary = msm->signal.binary;
             uint32_t* src_binary_len = msm->source.binary_len;
             uint32_t* sig_binary_len = msm->signal.binary_len;
             for (size_t j = 0; j < msm->count; j++) {
-                assert_memory_equal(src_binary[msm->source.index[j]],
-                    sig_binary[msm->signal.index[j]], sig_binary_len[msm->signal.index[j]]);
+                log_trace("  binary_len[%d]: src=%d, sig=%d", j,
+                    src_binary_len[msm->source.index[j]],
+                    sig_binary_len[msm->signal.index[j]]);
                 assert_int_equal(src_binary_len[msm->source.index[j]],
                     sig_binary_len[msm->signal.index[j]]);
+                assert_memory_equal(src_binary[msm->source.index[j]],
+                    sig_binary[msm->signal.index[j]],
+                    sig_binary_len[msm->signal.index[j]]);
                 assert_int_not_equal(src_binary_len[msm->source.index[j]], 0);
-                assert_int_not_equal(sig_binary_len[msm->source.index[j]], 0);
+                assert_int_not_equal(sig_binary_len[msm->signal.index[j]], 0);
             }
         }
 
@@ -570,7 +578,8 @@ void test_mcl__marshalling_binary(void** state)
             void** src_binary = msm->source.binary;
             for (size_t j = 0; j < msm->count; j++) {
                 assert_memory_equal(src_binary[msm->source.index[j]],
-                    tc[i].expect_msm[msm_count].result_binary[j], strlen(tc[i].expect_msm[msm_count].result_binary[j])+1);
+                    tc[i].expect_msm[msm_count].result_binary[j],
+                    strlen(tc[i].expect_msm[msm_count].result_binary[j]) + 1);
             }
             msm_count++;
         }
@@ -589,17 +598,22 @@ void test_mcl__marshalling_binary(void** state)
         rc = mcl_marshal_in((void*)fm);
         assert_int_equal(rc, 0);
         for (MarshalSignalMap* msm = fm->mcl.msm; msm && msm->name; msm++) {
-            void** src_binary = msm->source.binary;
-            void** sig_binary = msm->signal.binary;
+            log_trace("msm name: %s", msm->name);
+            void**    src_binary = msm->source.binary;
+            void**    sig_binary = msm->signal.binary;
             uint32_t* src_binary_len = msm->source.binary_len;
             uint32_t* sig_binary_len = msm->signal.binary_len;
             for (size_t j = 0; j < msm->count; j++) {
-                assert_memory_equal(src_binary[msm->source.index[j]],
-                    sig_binary[msm->signal.index[j]], sig_binary_len[msm->signal.index[j]]);
+                log_trace("  binary_len[%d]: src=%d, sig=%d", j,
+                    src_binary_len[msm->source.index[j]],
+                    sig_binary_len[msm->signal.index[j]]);
                 assert_int_equal(src_binary_len[msm->source.index[j]],
                     sig_binary_len[msm->signal.index[j]]);
+                assert_memory_equal(src_binary[msm->source.index[j]],
+                    sig_binary[msm->signal.index[j]],
+                    sig_binary_len[msm->signal.index[j]]);
                 assert_int_not_equal(src_binary_len[msm->source.index[j]], 0);
-                assert_int_not_equal(sig_binary_len[msm->source.index[j]], 0);
+                assert_int_not_equal(sig_binary_len[msm->signal.index[j]], 0);
             }
         }
 
@@ -615,6 +629,11 @@ void test_mcl__marshalling_binary(void** state)
         for (size_t j = 0; j < 10; j++) {
             for (size_t k = 0; k < 10; k++) {
                 free(tc[i].expect_msm[j].result_binary[k]);
+            }
+        }
+        for (size_t j = 0; j < 10; j++) {
+            for (size_t k = 0; k < tc[i].sv[j].count; k++) {
+                free(tc[i].sv[j].binary[k]);
             }
         }
     }

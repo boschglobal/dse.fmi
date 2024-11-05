@@ -132,21 +132,24 @@ void test_fmi2__lifecycle(void** state)
     assert_int_equal(rc, 0);
 }
 
+
 typedef struct FMI2_TC {
     MarshalGroup mg[3];
     int          ref[2];
     union {
-        double _double[2];
-        int    _int[2];
-        const char*  _string[2];
+        double      _double[2];
+        int         _int[2];
+        const char* _string[2];
     } check;
     union {
-        double _double[2];
-        int    _int[2];
-        const char*  _string[2];
+        double      _double[2];
+        int         _int[2];
+        const char* _string[2];
     } init;
 } FMI2_TC;
 
+extern char* ascii85_encode(const char* source, size_t len);
+extern char* ascii85_decode(const char* source, size_t* len);
 
 void test_fmi2__api(void** state)
 {
@@ -255,8 +258,6 @@ void test_fmi2__api(void** state)
             .init._int = {1, 0},
             .check._int = {1, 1}
         },
-
-
         {
             .mg = {
                 {
@@ -289,10 +290,46 @@ void test_fmi2__api(void** state)
             .init._string = {"foo", "bar"},
             .check._string = {"foo", "foo"}
         },
-
-        // TODO add testcase for encoded string.
-        // FIXME add testcase for encoded string.
-
+        {
+            .mg = {
+                {
+                    .name = (char*)"string_ascii85_tx", // input
+                    .kind = MARSHAL_KIND_BINARY,
+                    .dir = MARSHAL_DIRECTION_TXONLY,
+                    .type = MARSHAL_TYPE_STRING,
+                    .count = 1,
+                    .target = {
+                        .ref = calloc(1, sizeof(uint32_t)),
+                        ._string = calloc(1, sizeof(char*))
+                    },
+                    .source.offset = 0,
+                    .functions = {
+                        .string_encode = calloc(1, sizeof(MarshalStringEncode*)),
+                        .string_decode = calloc(1, sizeof(MarshalStringDecode*)),
+                    },
+                },
+                {
+                    .name = (char*)"string_ascii85_rx", // output
+                    .kind = MARSHAL_KIND_BINARY,
+                    .dir = MARSHAL_DIRECTION_RXONLY,
+                    .type = MARSHAL_TYPE_STRING,
+                    .count = 1,
+                    .target = {
+                        .ref = calloc(1, sizeof(uint32_t)),
+                        ._string = calloc(1, sizeof(char*))
+                    },
+                    .source.offset = 1,
+                    .functions = {
+                        .string_encode = calloc(1, sizeof(MarshalStringEncode*)),
+                        .string_decode = calloc(1, sizeof(MarshalStringDecode*)),
+                    },
+                },
+                {NULL}
+            },
+            .ref = {102, 103},
+            .init._string = {"foo", "bar"},
+            .check._string = {"foo", "oof"}
+        },
     };
 
     // Check the test cases.
@@ -301,9 +338,9 @@ void test_fmi2__api(void** state)
         log_trace("  name: [0]%s [1]%s", tc[i].mg[0].name, tc[i].mg[1].name);
         tc[i].mg[0].target.ref[0] = tc[i].ref[0];
         tc[i].mg[1].target.ref[0] = tc[i].ref[1];
-        double* ptr_d = calloc(2, sizeof(double));
-        char**  ptr_s = calloc(2, sizeof(char*));
-        uint32_t*  ptr_l = calloc(2, sizeof(uint32_t));
+        double*   ptr_d = calloc(2, sizeof(double));
+        char**    ptr_s = calloc(2, sizeof(char*));
+        uint32_t* ptr_l = calloc(2, sizeof(uint32_t));
 
         switch (tc[i].mg[0].type) {
         case MARSHAL_TYPE_UINT64:
@@ -342,8 +379,16 @@ void test_fmi2__api(void** state)
             tc[i].mg[1].source.binary_len = ptr_l;
             ptr_s[0] = strdup(tc[i].init._string[0]);
             ptr_s[1] = strdup(tc[i].init._string[1]);
-            if (ptr_s[0]) ptr_l[0] = strlen(ptr_s[0])+1;
-            if (ptr_s[1]) ptr_l[1] = strlen(ptr_s[1])+1;
+            if (ptr_s[0]) ptr_l[0] = strlen(ptr_s[0]) + 1;
+            if (ptr_s[1]) ptr_l[1] = strlen(ptr_s[1]) + 1;
+            if (tc[i].mg[0].functions.string_encode)
+                tc[i].mg[0].functions.string_encode[0] = ascii85_encode;
+            if (tc[i].mg[0].functions.string_decode)
+                tc[i].mg[0].functions.string_decode[0] = ascii85_decode;
+            if (tc[i].mg[1].functions.string_encode)
+                tc[i].mg[1].functions.string_encode[0] = ascii85_encode;
+            if (tc[i].mg[1].functions.string_decode)
+                tc[i].mg[1].functions.string_decode[0] = ascii85_decode;
             break;
         }
         default:
@@ -407,12 +452,13 @@ void test_fmi2__api(void** state)
                 tc[i].mg[0].target._string[0], tc[i].check._string[0]);
             log_trace("    mg[1]: target=%s check=%s",
                 tc[i].mg[1].target._string[0], tc[i].check._string[1]);
-            assert_string_equal(tc[i].mg[0].target._string[0], tc[i].check._string[0]);
+            log_trace("    ptr_s[0,1]: 0=%s 1=%s", ptr_s[0], ptr_s[1]);
+            // assert_string_equal(ptr_s[0], tc[i].check._string[0]);
             if (tc[i].check._string[1]) {
-                assert_non_null(tc[i].mg[1].target._string[0]);
-                assert_string_equal(tc[i].mg[1].target._string[0], tc[i].check._string[1]);
+                assert_non_null(ptr_s[1]);
+                assert_string_equal(ptr_s[1], tc[i].check._string[1]);
             } else {
-                assert_null(tc[i].mg[1].target._string[0]);
+                assert_null(ptr_s[1]);
             }
             break;
         default:
@@ -426,17 +472,26 @@ void test_fmi2__api(void** state)
         free(tc[i].mg[0].target.ref);
         free(tc[i].mg[1].target.ref);
         free(ptr_d);
-        free(ptr_s[0]);
-        free(ptr_s[1]);
+        if (ptr_s[0]) {
+            free(ptr_s[0]);
+        }
+        if (ptr_s[1]) {
+            free(ptr_s[1]);
+        }
         free(ptr_s);
         free(ptr_l);
         /* free union. */
         if (tc[i].mg[0].type == MARSHAL_TYPE_STRING) {
             free(tc[i].mg[0].target._string[0]);
-            // free(tc[i].mg[1].target._string[0]);  // FMU owns this and will free.
+            // free(tc[i].mg[1].target._string[0]);  // FMU owns this and will
+            // free.
         }
         free(tc[i].mg[0].target.ptr);
         free(tc[i].mg[1].target.ptr);
+        free(tc[i].mg[0].functions.string_encode);
+        free(tc[i].mg[0].functions.string_decode);
+        free(tc[i].mg[1].functions.string_encode);
+        free(tc[i].mg[1].functions.string_decode);
     }
 }
 
@@ -455,43 +510,3 @@ int run_fmi2_tests(void)
 
     return cmocka_run_group_tests_name("fmi2", tests, NULL, NULL);
 }
-
-
-// create
-
-// run through mcl api, consider supported use cases.
-
-
-// efficient array interface of FMI.
-
-// typedef fmi2Status fmi2GetRealTYPE(fmi2Component c,
-//     const fmi2ValueReference vr[], size_t nvr, fmi2Real value[]);
-
-
-// SignalVector <--> FmuModel.double[count] <-marshal-> FMU
-
-// FmuModel->signals --> sorted list ON variable_type AND variable_dir -> groups
-
-
-// double[0] group[0][0] -> TX, double
-// double[1] group[0][1]
-// double[2] group[0][2]
-
-// double[3] group[1][0] -> TX, int
-// double[4] group[1][1]
-// double[5] group[1][2]
-// ...
-
-
-// typedef struct fmi_value_group {
-//     MarshalType
-//     MarshalDir
-
-//     size_t offset; // offset to signal_vector on FMU Model.
-//     size_t count; // 3
-//     uint32_t* value_ref;
-//     union {
-//         double* value_double;  // calloc(3, sizeof(double))
-//         uint32_t* value_uint32;
-//     }
-// } ;

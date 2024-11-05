@@ -28,10 +28,13 @@ spec:
     - alias: signal_channel
       selectors:
         channel: signal_vector
+    - alias: network_channel
+      selectors:
+        channel: network_vector
 ---
 kind: Model
 metadata:
-  name: Extended
+  name: Input
 spec:
   runtime:
     dynlib:
@@ -51,3 +54,6 @@ spec:
     - alias: input_channel
       selectors:
         channel: input_vector
+    - alias: binary_channel
+      selectors:
+        channel: binary_vector

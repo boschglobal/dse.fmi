@@ -59,6 +59,24 @@ ModelDesc* model_create(ModelDesc* model)
 }
 
 
+static void __trace_sv(SignalVector* sv_save)
+{
+    for (SignalVector* sv = sv_save; sv && sv->name; sv++) {
+        log_trace("SV Trace: name=%s (binary=%d)", sv->name, sv->is_binary);
+        for (uint32_t i = 0; i < sv->count; i++) {
+            if (sv->is_binary) {
+                log_trace("  signal[%d] %s (len=%d,blen=%d,reset=%d)", i,
+                    sv->signal[i], sv->length[i], sv->buffer_size[i],
+                    sv->reset_called[i]);
+            } else {
+                log_trace(
+                    "  signal[%d] %s: %f", i, sv->signal[i], sv->scalar[i]);
+            }
+        }
+    }
+}
+
+
 int model_step(ModelDesc* model, double* model_time, double stop_time)
 {
     int32_t  rc;
@@ -66,6 +84,7 @@ int model_step(ModelDesc* model, double* model_time, double stop_time)
 
     // TODO call measurement interface
 
+    __trace_sv(model->sv);
     rc = mcl_marshal_out(m);
     if (rc != 0) return rc;
 
@@ -73,6 +92,7 @@ int model_step(ModelDesc* model, double* model_time, double stop_time)
     if (rc != 0) return rc;
 
     rc = mcl_marshal_in(m);
+    __trace_sv(model->sv);
     if (rc != 0) return rc;
 
     /* Advance the model time. */

@@ -207,6 +207,73 @@ $ export GCC_BUILDER_IMAGE=ghcr.io/boschglobal/dse-gcc-builder:main
 ```
 
 
+## Developer Notes
+
+### Debug using Simer and E2E Tests
+
+First run an E2E test via the Makefile with modified parameters in order to get
+a copy of the `sim` folder.
+
+```bash
+# Setup for running E2E tests.
+$ make build fmi tools
+$ export FMI_IMAGE=fmi
+$ export FMI_TAG=test
+
+# Clear out previous Testscript artefacts.
+$ sudo rm -rf /tmp/tmp.*
+
+# Run testscript with -work option (see Makefile target "do-test_testscript-e2e").
+$ make test_e2e
+$ ls /tmp/tmp.fM6mudCech
+$ sudo mv /tmp/tmp.fM6mudCech/sim test_sim
+
+# Run Simer with GDB to debug a crashing FMIMCL.
+$ cd test_sim
+$ docker run --name simer -it --rm \
+    -v $(pwd):/sim
+    ghcr.io/boschglobal/dse-simer:latest
+        -tmux
+        -logger 1
+        -gdb fmu_inst
+        -stepsize 0.0005
+        -endtime 0.0010
+
+# Tmux commands: Ctrl-b <n> (change window), Ctrl-b d (exit Tmux).
+```
+
+
+### Debug CLib Marshal Code
+
+There are a copious amount of `log_trace()` statements in the marshal code which is very helpful in identifing the cause
+of complex or unexpected behaviour. Code changes to the marshal code can also be tested productivly with the following process.
+
+```bash
+# Make changes to dse.clib/dse/clib/data/marshal.c.
+cd dse.clib
+make
+make test
+
+# Copy changes to the FMI Library for CMocka testing.
+cd ../dse.fmi
+sudo cp ../dse.clib/dse/clib/data/marshal.c /tmp/dse.fmi/dse.clib/dse/clib/data/marshal.c
+make
+make test_cmocka
+
+# Copy changes to the ModelC Library to build a local Simer image for E2E testing.
+cd ../dse.modelc
+sudo cp ../dse.clib/dse/clib/data/marshal.c dse/modelc/build/_deps/dse_clib-src/dse/clib/data/marshal.c
+make build simer tools
+
+cd ../dse.fmi
+make build fmi tools
+export SIMER=simer:test
+export FMI_IMAGE=fmi
+export FMI_TAG=test
+make test_e2e
+```
+
+
 ## Additional Resources
 
 The FMI Library is implemented using the following related repositories:

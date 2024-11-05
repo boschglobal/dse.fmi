@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <dse/logger.h>
 #include <dse/fmimcl/fmimcl.h>
 #include <fmimcl/mock/mock.h>
 
@@ -44,9 +45,11 @@ int32_t mock_mcl_step(MclDesc* mcl, double* model_time, double end_time)
     FmuModel*        m = (FmuModel*)mcl;
     MockAdapterDesc* a = m->adapter;
     for (MarshalSignalMap* msm = m->mcl.msm; msm && msm->name; msm++) {
+        log_trace("msm name: %s", msm->name);
         if (msm->is_binary) {
             for (size_t j = 0; j < msm->count; j++) {
                 // Reverse the source (string).
+                log_trace("  source: %s", msm->source.binary[j]);
                 char* _str = strdup(msm->source.binary[j]);
                 size_t _len = strlen(_str);
                 for (size_t i = 0; i < _len; i++) {

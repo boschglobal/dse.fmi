@@ -4,9 +4,24 @@
 
 #include <dse/testing.h>
 #include <dse/logger.h>
+#include <dse/modelc/model.h>
 
 
 uint8_t __log_level__; /* LOG_ERROR LOG_INFO LOG_DEBUG LOG_TRACE */
+
+
+inline int signal_reset(SignalVector* sv, uint32_t index)
+{
+    if (sv && index < sv->count && sv->is_binary) {
+        if (sv->vtable.reset) {
+            return sv->vtable.reset(sv, index);
+        } else {
+            return -ENOSYS;
+        }
+    } else {
+        return -EINVAL;
+    }
+}
 
 
 extern int run_parser_tests(void);

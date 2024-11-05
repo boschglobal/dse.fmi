@@ -262,10 +262,8 @@ void test_engine__marshal_to_adapter(void** state)
     fmu_model->data.binary[12] = strdup("bar_85");
     fmu_model->data.binary_len[12] = strlen("bar_85") + 1;
 
-
     // Marshal out: source -> target.
     marshal_group_out(fmu_model->data.mg_table);
-
 
     // Check the result (only RX should show change, i.e. input/parameter).
     mg = fmu_model->data.mg_table;
@@ -361,6 +359,10 @@ void test_engine__marshal_from_adapter(void** state)
     assert_int_equal(fmu_model->data.binary_len[10], strlen("foo_85")+1);
     assert_int_equal(fmu_model->data.binary_len[11], 0);
     assert_int_equal(fmu_model->data.binary_len[12], 0);
+
+    // Target variables (inwards) are owned by "FMU", so marshal code does not release.
+    free(mg[7].target._string[0]);
+    free(mg[7].target._string[1]);
 
     fmimcl_destroy(fmu_model);
 }
