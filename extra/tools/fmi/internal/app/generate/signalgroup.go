@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/fmi/fmi2"
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/log"
@@ -57,17 +58,10 @@ func (c *GenSignalGroupCommand) Run() error {
 
 func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.FmiModelDescription) error {
 	// Build the SignalGroup.
-	signalGroup := kind.SignalGroup{
-		Kind: "SignalGroup",
-		Metadata: &kind.ObjectMetadata{
-			Name: stringPtr(fmiMD.ModelName),
-			Labels: &kind.Labels{
-				"channel": "signal_vector",
-				"model":   fmiMD.ModelName,
-			},
-		},
-	}
-	signals := []kind.Signal{}
+
+	scalarSignals := []kind.Signal{}
+	binarySignals := []kind.Signal{}
+
 	for _, s := range fmiMD.ModelVariables.ScalarVariable {
 		switch s.Causality {
 		case "parameter":
@@ -88,7 +82,6 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.FmiModelDescript
 			variable_type = "Boolean"
 		}
 
-		//annotations := map[string]interface{}{
 		annotations := kind.Annotations{
 			"fmi_variable_causality": s.Causality,
 			"fmi_variable_id":        s.ValueReference,
@@ -98,22 +91,59 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.FmiModelDescript
 		if s.Causality == "local" {
 			annotations["internal"] = true
 		}
+		if s.Annotations != nil {
+			toolAnnotations := kind.Annotations{}
+			for _, tool := range s.Annotations.Tool {
+				for _, anno := range tool.Annotation {
+					name := fmt.Sprintf("%s.%s", tool.Name, anno.Name)
+					toolAnnotations[name] = anno.Text
+				}
+			}
+			annotations["fmi_annotations"] = toolAnnotations
+		}
 
 		signal := kind.Signal{
 			Signal:      s.Name,
 			Annotations: &annotations,
-			// Annotations: &kind.Annotations{
-			// 	"fmi_variable_causality": s.Causality,
-			// 	"fmi_variable_id":        s.ValueReference,
-			// 	"fmi_variable_type":      variable_type,
-			// 	"fmi_variable_name":      s.Name,
-			// },
 		}
-		signals = append(signals, signal)
+		if slices.Contains([]string{"String"}, variable_type) {
+			binarySignals = append(binarySignals, signal)
+		} else {
+			scalarSignals = append(scalarSignals, signal)
+		}
 	}
-	signalGroup.Spec.Signals = signals
 
-	// Write the SignalGroup.
+	signalVector := kind.SignalGroup{
+		Kind: "SignalGroup",
+		Metadata: &kind.ObjectMetadata{
+			Name: stringPtr(fmiMD.ModelName),
+			Labels: &kind.Labels{
+				"channel": "signal_vector",
+				"model":   fmiMD.ModelName,
+			},
+		},
+	}
+	signalVector.Spec.Signals = scalarSignals
+
+	networkVector := kind.SignalGroup{
+		Kind: "SignalGroup",
+		Metadata: &kind.ObjectMetadata{
+			Name: stringPtr(fmiMD.ModelName),
+			Labels: &kind.Labels{
+				"channel": "network_vector",
+				"model":   fmiMD.ModelName,
+			},
+			Annotations: &kind.Annotations{
+				"vector_type": "binary",
+			},
+		},
+	}
+	networkVector.Spec.Signals = binarySignals
+
+	// Write the SignalGroups.
 	fmt.Fprintf(flag.CommandLine.Output(), "Appending file: %s\n", c.outputFile)
-	return writeYaml(&signalGroup, c.outputFile, true)
+	writeYaml(&signalVector, c.outputFile, true)
+	writeYaml(&networkVector, c.outputFile, true)
+
+	return nil
 }

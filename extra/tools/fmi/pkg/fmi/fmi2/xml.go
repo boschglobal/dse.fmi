@@ -19,12 +19,12 @@ import (
 // ===================
 
 type Annotations struct {
-	Tool any `xml:",any"`
+	Tool []Tool `xml:"Tool"`
 }
 
 type Tool struct {
-	Name       string        `xml:"name,attr"`
-	Annotation *[]Annotation `xml:"Annotation,omitempty"`
+	Name       string       `xml:"name,attr"`
+	Annotation []Annotation `xml:"Annotation,omitempty"`
 }
 
 type Annotation struct {
@@ -51,17 +51,17 @@ type FmiBoolean struct {
 }
 
 type ScalarVariable struct {
-	Text           string         `xml:",chardata"`
-	Name           string         `xml:"name,attr"`
-	ValueReference string         `xml:"valueReference,attr"`
-	Causality      string         `xml:"causality,attr"`
-	Initial        string         `xml:"initial,attr"`
-	Variability    string         `xml:"variability,attr"`
-	Real           *FmiReal       `xml:"Real,omitempty"`
-	String         *FmiString     `xml:"String,omitempty"`
-	Boolean        *FmiBoolean    `xml:"Boolean,omitempty"`
-	Integer        *FmiInteger    `xml:"Integer,omitempty"`
-	Annotations    *[]Annotations `xml:"Annotations,omitempty"`
+	Text           string       `xml:",chardata"`
+	Name           string       `xml:"name,attr"`
+	ValueReference string       `xml:"valueReference,attr"`
+	Causality      string       `xml:"causality,attr"`
+	Initial        string       `xml:"initial,attr"`
+	Variability    string       `xml:"variability,attr"`
+	Real           *FmiReal     `xml:"Real,omitempty"`
+	String         *FmiString   `xml:"String,omitempty"`
+	Boolean        *FmiBoolean  `xml:"Boolean,omitempty"`
+	Integer        *FmiInteger  `xml:"Integer,omitempty"`
+	Annotations    *Annotations `xml:"Annotations,omitempty"`
 }
 
 // FmiModelDescription was generated 2023-05-23 07:27:35 by https://xml-to-go.github.io/ in Ukraine.
@@ -196,24 +196,24 @@ func buildBinarySignal(signal schema_kind.Signal, vref any, causality string, id
 	tool := []Tool{
 		{
 			Name: "dse.standards.fmi-ls-binary-codec",
-			Annotation: &[]Annotation{
+			Annotation: []Annotation{
 				{Name: "mimetype", Text: mime_type},
 			},
 		},
 		{
 			Name: "dse.standards.fmi-ls-binary-to-text",
-			Annotation: &[]Annotation{
+			Annotation: []Annotation{
 				{Name: "encoding", Text: encoding},
 			},
 		},
 		{
 			Name: "dse.standards.fmi-ls-bus-topology",
-			Annotation: &[]Annotation{
+			Annotation: []Annotation{
 				{Name: "bus_id", Text: strconv.Itoa(bus_id)},
 			},
 		},
 	}
-	ann := []Annotations{{Tool: &tool}}
+	ann := Annotations{Tool: tool}
 	ScalarVariable := ScalarVariable{
 		Name:           fmt.Sprintf("network_%d_%d_%s", bus_id, id, causality),
 		ValueReference: strconv.Itoa(vref.(int)),

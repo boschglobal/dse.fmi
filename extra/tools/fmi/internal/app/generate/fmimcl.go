@@ -79,6 +79,13 @@ func _generateChannels(fmiMD fmi2.FmiModelDescription) ([]kind.Channel, error) {
 				"channel": "signal_vector",
 			},
 		},
+		{
+			Alias: stringPtr("network_channel"),
+			Selectors: &kind.Labels{
+				"model":   fmiMD.ModelName,
+				"channel": "network_vector",
+			},
+		},
 	}
 	return channels, nil
 }
