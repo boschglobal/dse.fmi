@@ -46,6 +46,10 @@ Examples:
 	-version 1.1.0 \
 	-log 4
 
+  fmi patch-signalgroup \
+  	-signalgroup signalgroup.yaml \
+	-signal_patch patch.csv
+
 Commands:
 `
 

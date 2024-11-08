@@ -111,3 +111,22 @@ tasks:
             {{.UUID}}
     requires:
       vars: [SIM, FMU_NAME]
+
+  patch-signalgroup:
+    run: always
+    dir: '{{.USER_WORKING_DIR}}'
+    label: dse:fmi:patch-signalgroup
+    vars:
+      INPUT: '{{.INPUT | default "INPUT_NOT_SPECIFIED"}}'
+      PATCH: '{{.PATCH | default "PATCH_NOT_SPECIFIED"}}'
+      REMOVE_UNKNOWN: '{{if .REMOVE_UNKNOWN}}--remove-unknown{{else}}{{end}}'
+    cmds:
+      - docker run --rm
+          -v {{.ENTRYDIR}}:/sim
+          {{.FMI_IMAGE}}:{{.FMI_TAG}}
+          patch-signalgroup
+            --input {{.INPUT}}
+            --patch {{.PATCH}}
+            {{.REMOVE_UNKNOWN}}
+    requires:
+      vars: [INPUT, PATCH]

@@ -1,0 +1,66 @@
+# Patch Signal Names of SignalGroup Yaml
+env
+exec fmi patch-signalgroup -input $WORK/signalgroup.yaml -patch $WORK/patch.csv
+
+# Check the generated files
+exec ls -R $WORK
+exec cat signalgroup.yaml
+yamlcontains signalgroup.yaml $.kind SignalGroup
+
+yamlcontains signalgroup.yaml $.metadata.labels.channel E2M_M2E
+yamlcontains signalgroup.yaml $.metadata.name Test
+yamlcontains signalgroup.yaml $.metadata.labels.model Test
+
+yamlcontains signalgroup.yaml $.spec.signals[0].signal input_1_patched
+yamlcontains signalgroup.yaml $.spec.signals[0].annotations.softecu_access_function E2M+M2E
+yamlcontains signalgroup.yaml $.spec.signals[0].annotations.softecu_direction M2E
+
+yamlcontains signalgroup.yaml $.spec.signals[1].signal input_2_patched
+yamlcontains signalgroup.yaml $.spec.signals[1].annotations.softecu_access_function E2M+M2E
+yamlcontains signalgroup.yaml $.spec.signals[1].annotations.softecu_direction M2E
+
+yamlcontains signalgroup.yaml $.spec.signals[2].signal output_1_patched
+yamlcontains signalgroup.yaml $.spec.signals[2].annotations.softecu_access_function E2M+M2E
+yamlcontains signalgroup.yaml $.spec.signals[2].annotations.softecu_direction E2M
+
+! yamlcontains signalgroup.yaml $.spec.signals[3].signal output_2
+
+rm signalgroup.yaml
+rm patch.csv
+
+
+# Patch file containing the source signal to be replaced by target signal
+# Signals which are inactive will be removed from the Yaml
+-- patch.csv --
+source,target
+input_1,input_1_patched
+input_2,input_2_patched
+output_1,output_1_patched
+output_2,inactive
+
+-- signalgroup.yaml --
+---
+kind: SignalGroup
+metadata:
+  labels:
+    channel: E2M_M2E
+    model: Test
+  name: Test
+spec:
+  signals:
+    - annotations:
+        softecu_access_function: E2M+M2E
+        softecu_direction: M2E
+      signal: input_1
+    - annotations:
+        softecu_access_function: E2M+M2E
+        softecu_direction: M2E
+      signal: input_2
+    - annotations:
+        softecu_access_function: E2M+M2E
+        softecu_direction: E2M
+      signal: output_1
+    - annotations:
+        softecu_access_function: E2M+M2E
+        softecu_direction: E2M
+      signal: output_2

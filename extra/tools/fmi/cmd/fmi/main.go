@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/internal/app/generate"
+	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/patch"
 )
 
 var (
@@ -19,6 +20,7 @@ var (
 		generate.NewFmiMclCommand("gen-mcl"),
 		generate.NewGenSignalGroupCommand("gen-signalgroup"),
 		generate.NewGenFmuAnnotationCommand("gen-annotations"),
+		patch.NewPatchSignalGroupCommand("patch-signalgroup"),
 	}
 )
 
