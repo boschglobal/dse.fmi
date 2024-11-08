@@ -267,7 +267,7 @@ make build simer tools
 
 cd ../dse.fmi
 make build fmi tools
-export SIMER=simer:test
+export SIMER_IMAGE=simer:test
 export FMI_IMAGE=fmi
 export FMI_TAG=test
 make test_e2e
