@@ -9,6 +9,10 @@
 #include <dse/logger.h>
 
 
+extern char* ascii85_encode(const char* source, size_t source_len);
+extern char* ascii85_decode(const char* source, size_t* len);
+
+
 typedef struct {
     SignalVector* sv;
     uint32_t      index;
@@ -88,57 +92,69 @@ ModelDesc* model_create(ModelDesc* model)
 }
 
 
-static inline int _format_message(
-    BinarySignalDesc* b, const char* prefix, int v)
+static inline void _write_message(
+    BinarySignalDesc* b, const char* prefix, int v, bool encoded)
 {
-    return snprintf((char*)b->buffer, b->buffer_size, "%s %d", prefix, v);
+    char buffer[50];
+    snprintf(buffer, sizeof(buffer), "%s %d", prefix, v);
+    if (encoded) {
+        char* msg = ascii85_encode(buffer, strlen(buffer));
+        signal_append(b->sv, b->index, (uint8_t*)msg, strlen(msg) + 1);
+        free(msg);
+    } else {
+        signal_append(b->sv, b->index, (uint8_t*)buffer, strlen(buffer) + 1);
+    }
 }
+
+
+static inline void _log_message(BinarySignalDesc* b, bool encoded)
+{
+    uint8_t* buffer;
+    size_t   len;
+
+    signal_read(b->sv, b->index, &buffer, &len);
+    if (len) {
+        if (encoded) {
+            char* msg = ascii85_decode((char*)buffer, &len);
+            log_info("String (%s) : %s", b->sv->signal[b->index], msg);
+            free(msg);
+        } else {
+            log_info("String (%s) : %s", b->sv->signal[b->index], buffer);
+        }
+    }
+}
+
 
 int model_step(ModelDesc* model, double* model_time, double stop_time)
 {
     ExtendedModelDesc* m = (ExtendedModelDesc*)model;
 
     /* Print incomming strings. */
-    uint8_t* buffer;
-    size_t   len;
-    signal_read(
-        m->binary.string_tx.sv, m->binary.string_tx.index, &buffer, &len);
-    if (len)
-        log_info("String (%s) : %s",
-            m->binary.string_tx.sv->signal[m->binary.string_tx.index], buffer);
-    signal_read(
-        m->binary.string_rx.sv, m->binary.string_rx.index, &buffer, &len);
-    if (len)
-        log_info("String (%s) : %s",
-            m->binary.string_rx.sv->signal[m->binary.string_rx.index], buffer);
+    _log_message(&(m->binary.string_tx), false);
+    _log_message(&(m->binary.string_rx), false);
+    _log_message(&(m->binary.string_ascii85_tx), true);
+    _log_message(&(m->binary.string_ascii85_rx), true);
 
     /* Increment signals. */
     *(m->signals.real_3_rx) = *(m->signals.real_3_rx) + 1;
     *(m->signals.integer_3_rx) = *(m->signals.integer_3_rx) + 2;
     *(m->signals.real_A_rx) = *(m->signals.real_A_rx) + 3;
 
-    /* Generate strings. */
-    len = _format_message(
-        &(m->binary.string_tx), "foo", (int)*(m->signals.real_3_rx));
-    if (len >= (m->binary.string_tx.buffer_size - 1)) {
-        m->binary.string_tx.buffer =
-            realloc(m->binary.string_tx.buffer, len + 1);
-        m->binary.string_tx.buffer_size = len + 1;
-        _format_message(
-            &(m->binary.string_tx), "foo", (int)*(m->signals.real_3_rx));
-    }
+    /* Reset binary signals. */
     signal_reset(m->binary.string_tx.sv, m->binary.string_tx.index);
-    signal_append(m->binary.string_tx.sv, m->binary.string_tx.index,
-        m->binary.string_tx.buffer,
-        strlen((char*)m->binary.string_tx.buffer) + 1);
-
-
     signal_reset(m->binary.string_rx.sv, m->binary.string_rx.index);
     signal_reset(
         m->binary.string_ascii85_tx.sv, m->binary.string_ascii85_tx.index);
     signal_reset(
         m->binary.string_ascii85_rx.sv, m->binary.string_ascii85_rx.index);
 
+    /* Generate strings. */
+    _write_message(
+        &(m->binary.string_tx), "foo", (int)*(m->signals.real_3_rx), false);
+    _write_message(&(m->binary.string_ascii85_tx), "bar",
+        (int)*(m->signals.real_A_rx), true);
+
+    /* Complete the step. */
     *model_time = stop_time;
     return 0;
 }

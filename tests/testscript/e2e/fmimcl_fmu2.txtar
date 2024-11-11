@@ -1,0 +1,220 @@
+# Operate from the WORKDIR (allocated by caller, i.e. docker command).
+cd $WORKDIR
+env SIM=sim
+env NAME=fmu_inst
+env SIM_YAML=$REPODIR/dse/build/_out/fmimcl/examples/data/simulation.yaml
+env FMU=$REPODIR/dse/build/_out/fmimcl/examples/fmu
+env MCL=$REPODIR/dse/build/_out/fmimcl/lib/libfmimcl.so
+
+
+# Create the simulation folder (Simer layout)
+exec ls -R $WORK
+mkdir $SIM/data $SIM/lib
+cp $WORK/simulation.yaml $SIM/data/simulation.yaml
+cp $MCL $SIM/lib/libfmimcl.so
+
+mkdir $SIM/fmu
+exec cp -r $FMU $SIM/fmu/fmi2fmu
+mkdir $SIM/fmu/fmi2fmu/resources
+
+mkdir $SIM/model/input/data $SIM/model/input/lib
+cp $WORK/input_model.yaml $SIM/model/input/data/model.yaml
+cp $REPODIR/dse/build/_out/fmimcl/examples/lib/libinput.so $SIM/model/input/lib/libinput.so
+
+
+# Run the toolchains
+env
+exec ls -R $SIM
+exec sh -e $WORK/generate.sh
+
+exists $SIM/model/fmi2fmu/data/model.yaml
+exists $SIM/model/fmi2fmu/data/signalgroup.yaml
+
+
+exec cat $SIM/data/simulation.yaml
+exec cat $SIM/model/input/data/model.yaml
+exec cat $SIM/model/fmi2fmu/data/model.yaml
+exec cat $SIM/model/fmi2fmu/data/signalgroup.yaml
+
+
+# TEST: FMI MCL with CoSim FMU using FMIv2
+exec sh -e $WORK/test.sh
+
+stdout 'Load YAML File: data/simulation.yaml'
+stdout 'Load YAML File: model/fmi2fmu/data/model.yaml'
+stdout 'Load YAML File: model/fmi2fmu/data/signalgroup.yaml'
+stdout 'Loading symbol: model_create ... ok'
+stdout 'Loading symbol: model_step ... ok'
+stdout 'Run the Simulation ...'
+stdout 'Controller exit ...'
+stdout 'Transport: redis'
+! stdout 'Transport: redispubsub'
+
+stdout 'SignalVector <-> MCL mapping for: signal'
+stdout 'Signal: integer_2_tx \(3\) <-> integer_2_tx \(0\)'
+stdout 'Signal: integer_1_tx \(4\) <-> integer_1_tx \(1\)'
+stdout 'Signal: integer_3_rx \(2\) <-> integer_3_rx \(2\)'
+stdout 'Signal: real_1_tx \(1\) <-> real_1_tx \(4\)'
+stdout 'Signal: real_A_tx \(10\) <-> real_A_tx \(5\)'
+stdout 'Signal: real_B_tx \(11\) <-> real_B_tx \(6\)'
+stdout 'Signal: real_3_rx \(0\) <-> real_3_rx \(7\)'
+stdout 'Signal: real_2_rx \(5\) <-> real_2_rx \(8\)'
+stdout 'Signal: real_A_rx \(8\) <-> real_A_rx \(9\)'
+stdout 'Signal: real_B_rx \(9\) <-> real_B_rx \(10\)'
+stdout 'Signal: bool_2_tx \(7\) <-> bool_2_tx \(11\)'
+stdout 'Signal: bool_1_rx \(6\) <-> bool_1_rx \(12\)'
+
+stdout 'SignalVector <-> MCL mapping for: network'
+stdout 'Signal: string_rx \(1\) <-> integer_2_tx \(0\)'
+stdout 'Signal: string_ascii85_rx \(3\) <-> integer_1_tx \(1\)'
+stdout 'Signal: string_tx \(0\) <-> integer_3_rx \(2\)'
+stdout 'Signal: string_ascii85_tx \(2\) <-> local_var \(3\)'
+
+stdout 'uid=4130119698, val=54.000000, final_val=54.000000, name=real_1_tx'
+stdout 'uid=2274494661, val=99.000000, final_val=99.000000, name=integer_2_tx'
+stdout 'uid=2618602618, val=10.000000, final_val=10.000000, name=real_3_rx'
+stdout 'uid=1459318059, val=0.000000, final_val=0.000000, name=real_2_rx'
+stdout 'uid=490176922, val=9.000000, final_val=9.000000, name=integer_1_tx'
+stdout 'uid=1343595106, val=20.000000, final_val=20.000000, name=integer_3_rx'
+stdout 'uid=1955499220, val=0.000000, final_val=0.000000, name=bool_1_rx'
+stdout 'uid=3382072605, val=0.000000, final_val=0.000000, name=bool_2_tx'
+stdout 'uid=3194481060, val=30.000000, final_val=30.000000, name=real_A_rx'
+stdout 'uid=3261297346, val=37.000000, final_val=37.000000, name=real_A_tx'
+stdout 'uid=750647789, val=100.000000, final_val=100.000000, name=real_B_tx'
+! stdout 'name=local_var'
+
+stdout 'uid=750647789, val=100.000000, final_val=100.000000, name=real_B_tx'
+
+stdout 'String \(string_tx\) : foo 2'
+stdout 'String \(string_tx\) : foo 3'
+stdout 'String \(string_tx\) : foo 4'
+stdout 'String \(string_tx\) : foo 5'
+stdout 'String \(string_rx\) : foo 2'
+stdout 'String \(string_rx\) : foo 3'
+stdout 'String \(string_rx\) : foo 4'
+
+stdout 'String \(string_ascii85_tx\) : bar 6'
+stdout 'String \(string_ascii85_tx\) : bar 9'
+stdout 'String \(string_ascii85_rx\) : 6 rab'
+stdout 'String \(string_ascii85_tx\) : bar 12'
+stdout 'String \(string_ascii85_rx\) : 9 rab'
+stdout 'String \(string_ascii85_tx\) : bar 15'
+stdout 'String \(string_ascii85_rx\) : 21 rab'
+
+
+-- generate.sh --
+# All paths relative to $SIM (triggered by setting $SIM). See Taskfile for details.
+task -t /$REPODIR/Taskfile.yml generate-fmimcl \
+    FMU_DIR=fmu/fmi2fmu \
+    MCL_PATH=lib/libfmimcl.so \
+    OUT_DIR=model/fmi2fmu/data
+
+-- test.sh --
+SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
+docker run --name simer -i --rm -v $ENTRYWORKDIR/$SIM:/sim \
+    $SIMER -valgrind $NAME \
+        -env simbus:SIMBUS_LOGLEVEL=2 \
+        -env input_inst:SIMBUS_LOGLEVEL=3 \
+        -env $NAME:SIMBUS_LOGLEVEL=4 \
+        -stepsize 0.0005 -endtime 0.0050
+
+-- input_model.yaml --
+---
+kind: Model
+metadata:
+  name: Input
+spec:
+  runtime:
+    dynlib:
+      - os: linux
+        arch: amd64
+        path: model/input/lib/libinput.so
+  channels:
+    - alias: input_channel
+      selectors:
+        channel: input_vector
+    - alias: binary_channel
+      selectors:
+        channel: binary_vector
+---
+kind: SignalGroup
+metadata:
+  name: VARIABLES
+  labels:
+    model: Input
+    channel: input_vector
+spec:
+  signals:
+    - signal: real_3_rx
+    - signal: integer_3_rx
+    - signal: real_A_rx
+---
+kind: SignalGroup
+metadata:
+  name: STRINGS
+  labels:
+    model: Input
+    channel: binary_vector
+  annotations:
+    vector_type: binary
+spec:
+  signals:
+    - signal: string_tx
+    - signal: string_rx
+    - signal: string_ascii85_tx
+    - signal: string_ascii85_rx
+
+-- simulation.yaml --
+---
+kind: Stack
+metadata:
+  name: stack
+spec:
+  runtime:
+    env:
+      SIMBUS_LOGLEVEL: 2
+  connection:
+    transport:
+      redis:
+        uri: redis://localhost:6379
+        timeout: 5
+  models:
+    - name: simbus
+      model:
+        name: simbus
+      channels:
+        - name: signal
+          expectedModelCount: 2
+        - name: network
+          expectedModelCount: 2
+    - name: fmu_inst
+      uid: 42
+      model:
+        name: fmi2fmu
+      runtime:
+        files:
+          - model/fmi2fmu/data/signalgroup.yaml
+      channels:
+        - name: signal
+          alias: signal_channel
+          selectors:
+            model: fmi2fmu
+            channel: signal_vector
+        - name: network
+          alias: network_channel
+          selectors:
+            model: fmi2fmu
+            channel: network_vector
+    - name: input_inst
+      uid: 21
+      model:
+        name: Input
+      channels:
+        - name: signal
+          alias: input_channel
+        - name: network
+          alias: binary_channel
+---
+kind: Model
+metadata:
+  name: simbus

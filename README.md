@@ -223,14 +223,20 @@ $ export FMI_TAG=test
 # Clear out previous Testscript artefacts.
 $ sudo rm -rf /tmp/tmp.*
 
-# Run testscript with -work option (see Makefile target "do-test_testscript-e2e").
+# Run testscript with '-work' option (see Makefile target "do-test_testscript-e2e").
+# Locate the "ENTRYWORKDIR" in the output for subsequent commands.
 $ make test_e2e
-$ ls /tmp/tmp.fM6mudCech
-$ sudo mv /tmp/tmp.fM6mudCech/sim test_sim
+$ make test_e2e
+make: [Makefile:137: do-test_testscript-e2e] Error 1 (ignored)
+Running E2E Test: tests/testscript/e2e/fmimcl_fmu2.txtar
+ENTRYWORKDIR: /tmp/tmp.o37sWJbxKe
+...
+$ ls /tmp/tmp.o37sWJbxKe
+$ sudo mv /tmp/tmp.o37sWJbxKe/sim test_sim
 
 # Run Simer with GDB to debug a crashing FMIMCL.
 $ cd test_sim
-$ docker run --name simer -it --rm \
+$ docker run --name simer -it --rm
     -v $(pwd):/sim
     ghcr.io/boschglobal/dse-simer:latest
         -tmux
@@ -239,7 +245,11 @@ $ docker run --name simer -it --rm \
         -stepsize 0.0005
         -endtime 0.0010
 
-# Tmux commands: Ctrl-b <n> (change window), Ctrl-b d (exit Tmux).
+# Tmux commands:
+#   Ctrl-b <n> (change window)
+#   Ctrl-b d (exit Tmux)
+#   Ctrl+b [ (copy mode, VI movements)
+#   Ctrl+b PgUp (copy mode with scroll, VI movements)
 ```
 
 

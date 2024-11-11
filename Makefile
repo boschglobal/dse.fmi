@@ -130,13 +130,16 @@ endif
 test_e2e: do-test_testscript-e2e
 
 do-test_testscript-e2e:
-# Test debug; add '-v' to Testscript command (e.g. $(TESTSCRIPT_IMAGE) -v \).
+# Test debug;
+#   Additional logging: add '-v' to Testscript command (e.g. $(TESTSCRIPT_IMAGE) -v \).
+#   Retain work folder: add '-work' to Testscript command (e.g. $(TESTSCRIPT_IMAGE) -work \).
 ifeq ($(PACKAGE_ARCH), linux-amd64)
 	@-docker kill simer
 	@set -eu; for t in $(TESTSCRIPT_E2E_FILES) ;\
 	do \
 		echo "Running E2E Test: $$t" ;\
 		export ENTRYWORKDIR=$$(mktemp -d) ;\
+		echo "ENTRYWORKDIR: $${ENTRYWORKDIR}" ;\
 		docker run -i --rm \
 			-e ENTRYHOSTDIR=$(HOST_DOCKER_WORKSPACE) \
 			-e ENTRYWORKDIR=$${ENTRYWORKDIR} \

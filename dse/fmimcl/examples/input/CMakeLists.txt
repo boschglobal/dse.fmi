@@ -13,6 +13,7 @@ set(MODEL_PATH "${MODULE_LC}/examples")
 
 add_library(input SHARED
     model.c
+    ../../../fmimodelc/ascii85.c
 )
 target_include_directories(input
     PRIVATE
