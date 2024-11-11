@@ -2,6 +2,8 @@
 version: '3'
 
 vars:
+  # Supported Models (used by upstream tools).
+  SUPPORTED_MODELS: 'dse.fmi.mcl,dse.fmi.modelc,dse.fmi.gateway'
   # When running from E2E tests (i.e. Docker in Docker), the ENTRYDIR (for
   # Docker commands) must be set to the host relative path.
   ENTRYDIR: '{{if .SIM}}{{.ENTRYWORKDIR}}/{{.SIM}}{{else}}{{.PWD}}{{end}}'
