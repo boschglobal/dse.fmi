@@ -1,6 +1,6 @@
 ---
 title: "FMI ModelC FMU"
-linkTitle: "FMI ModelC"
+linkTitle: "ModelC FMU"
 weight: 600
 tags:
 - FMI

@@ -1,6 +1,6 @@
 ---
-title: FMI Model Compatibility Library API Reference
-linkTitle: FMI
+title: FMI MCL API Reference
+linkTitle: MCL
 ---
 ## FMI Model Compatibility Library
 

@@ -28,14 +28,14 @@ DOC_OUTPUT_index := doc/content/apis/fmi/_index.md
 DOC_INPUT_fmimcl := dse/fmimcl/fmimcl.h
 DOC_CDIR_fmimcl := dse/fmimcl/engine.c,dse/fmimcl/fmimcl.c,dse/fmimcl/model.c,dse/fmimcl/parser.c
 DOC_OUTPUT_fmimcl := doc/content/apis/fmi/fmimcl/index.md
-DOC_LINKTITLE_fmimcl := FMI MCL
-DOC_TITLE_fmimcl := "FMI Model Compatibility Library API Reference"
+DOC_LINKTITLE_fmimcl := MCL
+DOC_TITLE_fmimcl := "FMI MCL API Reference"
 
 # Module "fmimodelc"
 DOC_INPUT_fmimodelc := dse/fmimodelc/fmimodelc.h
 DOC_CDIR_fmimodelc := dse/fmimodelc/ascii85.c,dse/fmimodelc/fmi2fmu.c,dse/fmimodelc/runtime.c
 DOC_OUTPUT_fmimodelc := doc/content/apis/fmi/fmimodelc/index.md
-DOC_LINKTITLE_fmimodelc := FMI ModelC FMU
+DOC_LINKTITLE_fmimodelc := "ModelC FMU"
 DOC_TITLE_fmimodelc := "FMI ModelC FMU API Reference"
 
 # Targets

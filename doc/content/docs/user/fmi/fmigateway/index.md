@@ -1,6 +1,6 @@
 ---
 title: "FMI Gateway FMU"
-linkTitle: "FMI Gateway"
+linkTitle: "Gateway FMU"
 weight: 200
 tags:
 - FMI

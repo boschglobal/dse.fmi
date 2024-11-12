@@ -1,28 +1,7 @@
 ---
 title: FMI ModelC FMU API Reference
-linkTitle: FMI
+linkTitle: ModelC FMU
 ---
-## fmi2ExitInitializationMode
-
-
-Initialise the Model Runtime (of the ModelC library) and in the process
-establish the simulation that this ModelC FMU is wrapping/operating.
-
-This function will generate indexes to map between FMI Variables and ModelC
-Signals; both scaler signals (double) and binary signals (string/binary).
-
-### Parameters
-
-c (fmi2Component*)
-: An Fmu2InstanceData object representing an instance of this FMU.
-
-### Returns
-
-fmi2OK (fmi2Status)
-: The simulation that this FMU represents is ready to be operated.
-
-
-
 ## fmi2GetReal
 
 
@@ -49,33 +28,58 @@ fmi2OK (fmi2Status)
 
 
 
-## FMI ModelC FMU
+## fmi2DoStep
 
 
-The FMI ModelC FMU is and FMU which is capable of loading and running a
-DSE Simulation (e.g. a ModelC Simulation Stack). All capabilites of the ModelC
-Runtime are supported, including the exchange of binary signals (e.g. CAN) and
-realisation of bus topologies (e.g. multi-node CAN Networks).
+Set values for the provided list of value references and values. String/Binary
+variables are always appended to the ModelC Binary Signal.
+
+> Note: If several variables are indexed against the same ModelC Binary Signal,
+  for instance in a Bus Topology, then each variable will be appended to that
+  ModelC Binary Signal.
+
+### Parameters
+
+c (fmi2Component*)
+: An Fmu2InstanceData object representing an instance of this FMU.
+
+currentCommunicationPoint (fmi2Real)
+: The model time (for the start of this step).
+
+communicationStepSize (fmi2Real)
+: The model step size.
+
+noSetFMUStatePriorToCurrentPoint (fmi2Boolean)
+: Not used.
+
+### Returns
+
+fmi2OK (fmi2Status)
+: The step completed.
+
+fmi2Error (fmi2Status)
+: An error occurred when stepping the ModelC Simulation.
 
 
-### Component Diagram
 
-<div hidden>
+## fmi2ExitInitializationMode
 
-```
-@startuml fmimodelc-component
 
-title FMI ModelC FMU
+Initialise the Model Runtime (of the ModelC library) and in the process
+establish the simulation that this ModelC FMU is wrapping/operating.
 
-center footer Dynamic Simulation Environment
+This function will generate indexes to map between FMI Variables and ModelC
+Signals; both scaler signals (double) and binary signals (string/binary).
 
-@enduml
-```
+### Parameters
 
-</div>
+c (fmi2Component*)
+: An Fmu2InstanceData object representing an instance of this FMU.
 
-![](fmimodelc-component.png)
+### Returns
 
+fmi2OK (fmi2Status)
+: The simulation that this FMU represents is ready to be operated.
 
 
 
@@ -162,40 +166,6 @@ fmi2OK (fmi2Status)
 
 
 
-## fmi2DoStep
-
-
-Set values for the provided list of value references and values. String/Binary
-variables are always appended to the ModelC Binary Signal.
-
-> Note: If several variables are indexed against the same ModelC Binary Signal,
-  for instance in a Bus Topology, then each variable will be appended to that
-  ModelC Binary Signal.
-
-### Parameters
-
-c (fmi2Component*)
-: An Fmu2InstanceData object representing an instance of this FMU.
-
-currentCommunicationPoint (fmi2Real)
-: The model time (for the start of this step).
-
-communicationStepSize (fmi2Real)
-: The model step size.
-
-noSetFMUStatePriorToCurrentPoint (fmi2Boolean)
-: Not used.
-
-### Returns
-
-fmi2OK (fmi2Status)
-: The step completed.
-
-fmi2Error (fmi2Status)
-: An error occurred when stepping the ModelC Simulation.
-
-
-
 ## fmi2FreeInstance
 
 
@@ -205,6 +175,36 @@ Free memory and resources related to the provided FMU instance.
 
 c (fmi2Component*)
 : An Fmu2InstanceData object representing an instance of this FMU.
+
+
+
+## FMI ModelC FMU
+
+
+The FMI ModelC FMU is and FMU which is capable of loading and running a
+DSE Simulation (e.g. a ModelC Simulation Stack). All capabilites of the ModelC
+Runtime are supported, including the exchange of binary signals (e.g. CAN) and
+realisation of bus topologies (e.g. multi-node CAN Networks).
+
+
+### Component Diagram
+
+<div hidden>
+
+```
+@startuml fmimodelc-component
+
+title FMI ModelC FMU
+
+center footer Dynamic Simulation Environment
+
+@enduml
+```
+
+</div>
+
+![](fmimodelc-component.png)
+
 
 
 
