@@ -2,20 +2,24 @@
 title: FMI ModelC FMU API Reference
 linkTitle: FMI
 ---
-## fmi2Instantiate
+## fmi2ExitInitializationMode
 
 
-Create an instance of this FMU, allocate/initialise a Fmu2InstanceData
-object which should be used for subsequent calls to FMI methods (as parameter
-`fmi2Component c`).
+Initialise the Model Runtime (of the ModelC library) and in the process
+establish the simulation that this ModelC FMU is wrapping/operating.
 
-> Note: This implementation __does not__ use memory related callbacks provided
-  by the Importer (e.g. `malloc()` or `free()`).
+This function will generate indexes to map between FMI Variables and ModelC
+Signals; both scaler signals (double) and binary signals (string/binary).
+
+### Parameters
+
+c (fmi2Component*)
+: An Fmu2InstanceData object representing an instance of this FMU.
 
 ### Returns
 
-fmi2Component (pointer)
-: An Fmu2InstanceData object which represents this FMU instance.
+fmi2OK (fmi2Status)
+: The simulation that this FMU represents is ready to be operated.
 
 
 
@@ -42,44 +46,6 @@ value (fmi2Real[])
 
 fmi2OK (fmi2Status)
 : The requested variables are retrieved (where available).
-
-
-
-## fmi2GetString
-
-
-Get values for the provided list of value references.
-
-### Parameters
-
-c (fmi2Component*)
-: An Fmu2InstanceData object representing an instance of this FMU.
-
-vr (fmi2ValueReference[])
-: List of value references to retrieve.
-
-nvr (int)
-: The number of value references to retrieve.
-
-value (fmi2String[])
-: Storage for the retrieved values.
-
-### Returns
-
-fmi2OK (fmi2Status)
-: The requested variables are retrieved (where available).
-
-
-
-## fmi2FreeInstance
-
-
-Free memory and resources related to the provided FMU instance.
-
-### Parameters
-
-c (fmi2Component*)
-: An Fmu2InstanceData object representing an instance of this FMU.
 
 
 
@@ -113,24 +79,29 @@ center footer Dynamic Simulation Environment
 
 
 
-## fmi2ExitInitializationMode
+## fmi2GetString
 
 
-Initialise the Model Runtime (of the ModelC library) and in the process
-establish the simulation that this ModelC FMU is wrapping/operating.
-
-This function will generate indexes to map between FMI Variables and ModelC
-Signals; both scaler signals (double) and binary signals (string/binary).
+Get values for the provided list of value references.
 
 ### Parameters
 
 c (fmi2Component*)
 : An Fmu2InstanceData object representing an instance of this FMU.
 
+vr (fmi2ValueReference[])
+: List of value references to retrieve.
+
+nvr (int)
+: The number of value references to retrieve.
+
+value (fmi2String[])
+: Storage for the retrieved values.
+
 ### Returns
 
 fmi2OK (fmi2Status)
-: The simulation that this FMU represents is ready to be operated.
+: The requested variables are retrieved (where available).
 
 
 
@@ -222,6 +193,35 @@ fmi2OK (fmi2Status)
 
 fmi2Error (fmi2Status)
 : An error occurred when stepping the ModelC Simulation.
+
+
+
+## fmi2FreeInstance
+
+
+Free memory and resources related to the provided FMU instance.
+
+### Parameters
+
+c (fmi2Component*)
+: An Fmu2InstanceData object representing an instance of this FMU.
+
+
+
+## fmi2Instantiate
+
+
+Create an instance of this FMU, allocate/initialise a Fmu2InstanceData
+object which should be used for subsequent calls to FMI methods (as parameter
+`fmi2Component c`).
+
+> Note: This implementation __does not__ use memory related callbacks provided
+  by the Importer (e.g. `malloc()` or `free()`).
+
+### Returns
+
+fmi2Component (pointer)
+: An Fmu2InstanceData object which represents this FMU instance.
 
 
 
