@@ -39,12 +39,6 @@ center footer Dynamic Simulation Environment
 
 ![](fmimodelc-component.png)
 
-
-Example
--------
-
-{{< readfile file="examples/fmimcl_api.c" code="true" lang="c" >}}
-
 */
 
 

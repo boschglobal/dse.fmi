@@ -9,14 +9,14 @@ The FMI Model Compatibility Library provides an interfaces for loading and
 operating FMUs.
 
 
-### Component Diagram
+### Sequence Diagram
 
 <div hidden>
 
 ```
-@startuml fmimcl-component
+@startuml fmimcl-sequence
 
-title FMI Model Compatibility Library
+title FMI MCL - Sequence
 
 actor       User
 participant ModelC
@@ -191,14 +191,29 @@ center footer Dynamic Simulation Environment
 
 </div>
 
-![](fmimcl-component.png)
+![](fmimcl-sequence.png)
 
 
-### Example
 
 
-{{< readfile file="examples/fmimcl_api.c" code="true" lang="c" >}}
+## fmimcl_adapter_create
 
+
+This method creates an adapter object based on the configuration in the FMU
+Model object.
+
+### Parameters
+
+fmu_model (FmuModel*)
+: FMU Model descriptor object.
+
+### Returns
+
+0 (int32_t)
+: The related adapter was loaded by the fmimcl.
+
+-EINVAL (-22)
+: No matching adapter found.
 
 
 
@@ -241,7 +256,6 @@ model (ModelDesc*)
 
 
 
-
 ## Typedefs
 
 ### FmuData
@@ -250,7 +264,8 @@ model (ModelDesc*)
 typedef struct FmuData {
     int count;
     const char** name;
-    double* scalar;
+    uint32_t* binary_len;
+    int* kind;
     int* mg_table;
 }
 ```
@@ -269,9 +284,9 @@ typedef struct FmuModel {
     const char* handle;
     FmuSignal* signals;
     void* m_doc;
-    void* v_doc;
     void* adapter;
     FmuData data;
+    struct (anonymous struct at dse/fmimcl/fmimcl.h:257:5) measurement;
 }
 ```
 
@@ -285,32 +300,13 @@ typedef struct FmuSignal {
     int variable_kind;
     int variable_dir;
     int variable_type;
+    const char* variable_annotation_encoding;
 }
 ```
 
 ## Functions
 
-### fmimcl_adapter_create
-
-This method creates an adapter object based on the configuration in the FMU
-Model object.
-
-#### Parameters
-
-fmu_model (FmuModel*)
-: Fmu Model descriptor object.
-
-#### Returns
-
-0 (int32_t)
-: The related adapter was loaded by the fmimcl.
-
--EINVAL (-22)
-: No matching adapter found.
-
-
-
-### fmimcl_allocate_scalar_source
+### fmimcl_allocate_source
 
 For each Signal parsed from the Signalgroup, this function creates an
 intermediate signal object for mapping between SignalVector and FMU Variable.
@@ -318,20 +314,19 @@ intermediate signal object for mapping between SignalVector and FMU Variable.
 #### Parameters
 
 fmu_model (FmuModel*)
-: Fmu Model descriptor object.
-
+: FMU Model descriptor object.
 
 
 
 ### fmimcl_destroy
 
-Releases memory and system resources allocated by fmimcl.
+Releases memory and system resources allocated by
+FMI Model Compatibility Library.
 
 #### Parameters
 
 fmu_model (FmuModel*)
-: Fmu Model descriptor object.
-
+: FMU Model descriptor object.
 
 
 
@@ -345,21 +340,34 @@ of signal blocks, each representing a marshal group.
 #### Parameters
 
 fmu_model (FmuModel*)
-: Fmu Model descriptor object.
+: FMU Model descriptor object.
 
+
+
+### fmimcl_load_encoder_funcs
+
+Parse the MarshalGroup NTL and for each Kind which supports an encoder
+function attempt to load the configured encoder functions to:
+
+*    .functions.string_encode
+*    .functions.string_decode
+
+#### Parameters
+
+fmu_model (FmuModel*)
+: FMU Model descriptor object.
 
 
 
 ### fmimcl_parse
 
-This function parses the given yaml files into a Fmu Model descriptor object
+This function parses the given yaml files into a FMU Model descriptor object
 and into a mapping list between the signals and FMU variables.
 
 #### Parameters
 
 fmu_model (FmuModel*)
-: Fmu Model descriptor object.
-
+: FMU Model descriptor object.
 
 
 

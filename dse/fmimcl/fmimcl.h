@@ -20,14 +20,14 @@ The FMI Model Compatibility Library provides an interfaces for loading and
 operating FMUs.
 
 
-Component Diagram
------------------
+Sequence Diagram
+----------------
 <div hidden>
 
 ```
-@startuml fmimcl-component
+@startuml fmimcl-sequence
 
-title FMI Model Compatibility Library
+title FMI MCL - Sequence
 
 actor       User
 participant ModelC
@@ -202,13 +202,7 @@ center footer Dynamic Simulation Environment
 
 </div>
 
-![](fmimcl-component.png)
-
-
-Example
--------
-
-{{< readfile file="examples/fmimcl_api.c" code="true" lang="c" >}}
+![](fmimcl-sequence.png)
 
 */
 
