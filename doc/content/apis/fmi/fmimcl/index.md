@@ -196,27 +196,6 @@ center footer Dynamic Simulation Environment
 
 
 
-## fmimcl_adapter_create
-
-
-This method creates an adapter object based on the configuration in the FMU
-Model object.
-
-### Parameters
-
-fmu_model (FmuModel*)
-: FMU Model descriptor object.
-
-### Returns
-
-0 (int32_t)
-: The related adapter was loaded by the fmimcl.
-
--EINVAL (-22)
-: No matching adapter found.
-
-
-
 ## mcl_create
 
 
@@ -286,7 +265,7 @@ typedef struct FmuModel {
     void* m_doc;
     void* adapter;
     FmuData data;
-    struct (anonymous struct at dse/fmimcl/fmimcl.h:257:5) measurement;
+    struct (anonymous struct at dse/fmimcl/fmimcl.h:266:5) measurement;
 }
 ```
 
@@ -305,6 +284,26 @@ typedef struct FmuSignal {
 ```
 
 ## Functions
+
+### fmimcl_adapter_create
+
+This method creates an adapter object based on the configuration in the FMU
+Model object.
+
+#### Parameters
+
+fmu_model (FmuModel*)
+: FMU Model descriptor object.
+
+#### Returns
+
+0 (int32_t)
+: The related adapter was loaded by the fmimcl.
+
+-EINVAL (-22)
+: No matching adapter found.
+
+
 
 ### fmimcl_allocate_source
 

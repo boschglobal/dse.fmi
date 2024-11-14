@@ -5,7 +5,7 @@
 
 ################
 ## DSE Projects.
-export DSE_CLIB_VERSION ?= 1.0.24
+export DSE_CLIB_VERSION ?= 1.0.26
 export DSE_MODELC_VERSION ?= 2.1.9
 
 
@@ -137,9 +137,8 @@ ifeq ($(PACKAGE_ARCH), linux-amd64)
 	@-docker kill simer
 	@set -eu; for t in $(TESTSCRIPT_E2E_FILES) ;\
 	do \
-		echo "Running E2E Test: $$t" ;\
 		export ENTRYWORKDIR=$$(mktemp -d) ;\
-		echo "ENTRYWORKDIR: $${ENTRYWORKDIR}" ;\
+		echo "Running E2E Test: $$t (in $${ENTRYWORKDIR})" ;\
 		docker run -i --rm \
 			-e ENTRYHOSTDIR=$(HOST_DOCKER_WORKSPACE) \
 			-e ENTRYWORKDIR=$${ENTRYWORKDIR} \

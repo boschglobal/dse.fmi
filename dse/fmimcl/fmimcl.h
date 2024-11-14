@@ -8,8 +8,17 @@
 #include <stdint.h>
 #include <dse/platform.h>
 #include <dse/clib/data/marshal.h>
+#include <dse/clib/mdf/mdf.h>
 #include <dse/modelc/mcl.h>
 #include <dse/modelc/model.h>
+
+
+#ifndef DLL_PUBLIC
+#define DLL_PUBLIC __attribute__((visibility("default")))
+#endif
+#ifndef DLL_PRIVATE
+#define DLL_PRIVATE __attribute__((visibility("hidden")))
+#endif
 
 
 /**
@@ -255,9 +264,10 @@ typedef struct FmuModel {
     FmuData     data;
     /* Measurement file. */
     struct {
-        char* file_name;
-        void* file;
-        // TODO measurement descriptor
+        char*            file_name;
+        void*            file;
+        MdfChannelGroup* cg;
+        MdfDesc          mdf;
     } measurement;
 } FmuModel;
 

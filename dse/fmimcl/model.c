@@ -7,9 +7,10 @@
 #include <string.h>
 #include <dse/testing.h>
 #include <dse/logger.h>
+#include <dse/clib/collections/hashlist.h>
 #include <dse/clib/util/strings.h>
-#include <dse/fmimcl/fmimcl.h>
 #include <dse/modelc/runtime.h>
+#include <dse/fmimcl/fmimcl.h>
 
 
 #define UNUSED(x)      ((void)x)
@@ -47,11 +48,31 @@ ModelDesc* model_create(ModelDesc* model)
     if (fmu->measurement.file_name) {
         errno = 0;
         fmu->measurement.file = fopen(fmu->measurement.file_name, "wb");
-        if (fmu->measurement.file == NULL)
+        if (fmu->measurement.file == NULL) {
             log_fatal("Failed to open measurement file: %s",
                 fmu->measurement.file_name);
-        // TODO configure the measurement interface
-        // (fmu_model->data.count/name/scalar)
+        }
+        /* Configure the measurement interface. */
+        size_t count = 0;
+        for (size_t i = 0; i < m->source.count; i++) {
+            if (m->source.kind[i] != MARSHAL_KIND_PRIMITIVE) {
+                // Stop counting once signals of 'primitive' kind end. These
+                // should be first in the list of signals (followed by signals
+                // with 'binary' kind).
+                break;
+            }
+            count++;
+        }
+        fmu->measurement.cg = calloc(1, sizeof(MdfChannelGroup));
+        fmu->measurement.cg[0] = (MdfChannelGroup){
+            .name = model->mi->name,
+            .signal = m->source.signal,
+            .scalar = m->source.scalar,
+            .count = count,
+        };
+        fmu->measurement.mdf =
+            mdf_create(fmu->measurement.file, fmu->measurement.cg, 1);
+        mdf_start_blocks(&fmu->measurement.mdf);
     }
 
     /* Return the extended object (FmuModel). */
@@ -79,11 +100,16 @@ static void __trace_sv(SignalVector* sv_save)
 
 int model_step(ModelDesc* model, double* model_time, double stop_time)
 {
-    int32_t  rc;
-    MclDesc* m = (MclDesc*)model;
+    int32_t   rc;
+    MclDesc*  m = (MclDesc*)model;
+    FmuModel* fmu = (FmuModel*)m;
 
-    // TODO call measurement interface
+    /* Call the measurement interface. */
+    if (fmu->measurement.file) {
+        mdf_write_records(&fmu->measurement.mdf, *model_time);
+    }
 
+    /* Step the FMU. */
     __trace_sv(model->sv);
     rc = mcl_marshal_out(m);
     if (rc != 0) return rc;
@@ -110,11 +136,11 @@ void model_destroy(ModelDesc* model)
     /* Finalise measurement. */
     FmuModel* fmu = (FmuModel*)m;
     if (fmu->measurement.file) {
-        // TODO finalise the measurement interface
         fclose(fmu->measurement.file);
         fmu->measurement.file = NULL;
     }
     free(fmu->measurement.file_name);
+    free(fmu->measurement.cg);
 
     /* Unload the MCL. */
     rc = mcl_unload((void*)m);
