@@ -13,7 +13,6 @@ exec cp -r $REPODIR/dse/build/_out/fmimcl/. sim
 # TEST: FMI MCL with Measurement
 rm $SIM/$MDF_FILE
 ! exists $SIM/$MDF_FILE
-exec ls -l -R /repo/$SIM/
 exec sh -e $WORK/test.sh
 exists $SIM/$MDF_FILE
 
