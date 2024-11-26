@@ -16,9 +16,25 @@ project(${MODULE}
     HOMEPAGE_URL "$ENV{PROJECT_URL}"
 )
 
+include(ExternalProject)
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED TRUE)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -ggdb -DLIBXML_STATIC")
+list(APPEND C_CXX_WARNING_FLAGS
+    -Wall
+    -W
+    -Wwrite-strings
+    -Wno-missing-field-initializers
+    -Wno-misleading-indentation
+)
+add_compile_options(${C_CXX_WARNING_FLAGS})
+
+
 # External Project - xml
 # ----------------------
-include(ExternalProject)
 ExternalProject_Add(libxml2
     URL https://github.com/GNOME/libxml2/archive/refs/tags/v2.13.5.zip
     CMAKE_ARGS
@@ -89,6 +105,7 @@ target_include_directories(importer
 target_link_libraries(importer
     PRIVATE
         xml
+        $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${UNIX}>:mcheck>
         dl
         m
