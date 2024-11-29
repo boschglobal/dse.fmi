@@ -40,6 +40,7 @@ set(DSE_CLIB_SOURCE_DIR ${dse_clib_SOURCE_DIR}/dse)
 set(DSE_CLIB_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/..")
 set(DSE_CLIB_SOURCE_FILES
     ${DSE_CLIB_SOURCE_DIR}/clib/util/strings.c
+    ${DSE_CLIB_SOURCE_DIR}/clib/util/binary.c
     ${DSE_CLIB_SOURCE_DIR}/clib/collections/hashmap.c
 )
 set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
@@ -79,6 +80,7 @@ target_link_libraries(fmi2fmu
     PRIVATE
         xml
         $<$<BOOL:${WIN32}>:bcrypt>
+        $<$<BOOL:${WIN32}>:dl>
 )
 install(
     TARGETS
