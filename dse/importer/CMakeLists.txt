@@ -33,45 +33,6 @@ list(APPEND C_CXX_WARNING_FLAGS
 add_compile_options(${C_CXX_WARNING_FLAGS})
 
 
-# External Project - xml
-# ----------------------
-ExternalProject_Add(libxml2
-    URL https://github.com/GNOME/libxml2/archive/refs/tags/v2.13.5.zip
-    CMAKE_ARGS
-        -D CMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/libxml2
-        -D CMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -D BUILD_SHARED_LIBS=OFF
-        -D LIBXML2_WITH_HTML=OFF
-        -D LIBXML2_WITH_HTTP=OFF
-        -D LIBXML2_WITH_ICONV=OFF
-        -D LIBXML2_WITH_LZMA=OFF
-        -D LIBXML2_WITH_PYTHON=OFF
-        -D LIBXML2_WITH_SCHEMATRON=OFF
-        -D LIBXML2_WITH_TESTS=OFF
-        -D LIBXML2_WITH_THREAD_ALLOC=OFF
-        -D LIBXML2_WITH_THREADS=OFF
-        -D LIBXML2_WITH_TREE=OFF
-        -D LIBXML2_WITH_VALID=OFF
-        -D LIBXML2_WITH_WRITER=OFF
-        -D LIBXML2_WITH_ZLIB=OFF
-    INSTALL_DIR "${CMAKE_BINARY_DIR}/libxml2"
-    UPDATE_COMMAND ""
-)
-ExternalProject_Get_property(libxml2 SOURCE_DIR BINARY_DIR INSTALL_DIR)
-set(XML_SOURCE_DIR "${SOURCE_DIR}")
-set(XML_BINARY_DIR "${BINARY_DIR}")
-set(XML_INSTALL_DIR "${INSTALL_DIR}")
-
-add_library(xml STATIC IMPORTED GLOBAL)
-add_dependencies(xml libxml2)
-file(MAKE_DIRECTORY "${XML_SOURCE_DIR}/include")
-file(MAKE_DIRECTORY "${XML_INSTALL_DIR}/include/libxml2")
-set_target_properties(xml
-    PROPERTIES
-        IMPORTED_LOCATION "${XML_BINARY_DIR}/libxml2.a"
-        INTERFACE_INCLUDE_DIRECTORIES "${XML_INSTALL_DIR}/include/libxml2"
-)
-
 set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
 set(FMI3_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi3/headers")
 
