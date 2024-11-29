@@ -224,3 +224,4 @@ install(
 
 
 add_subdirectory(fmimodelc)
+add_subdirectory(fmu)

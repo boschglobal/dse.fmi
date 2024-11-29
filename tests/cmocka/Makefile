@@ -26,6 +26,7 @@ run:
 	cd build/_out; $(GDB_CMD) bin/test_fmimcl
 	cd build/_out; $(GDB_CMD) bin/test_mstep
 	cd build/_out; $(GDB_CMD) bin/test_fmimodelc
+	cd build/_out; $(GDB_CMD) bin/test_fmu
 
 clean:
 	rm -rf build

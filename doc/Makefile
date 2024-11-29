@@ -28,7 +28,7 @@ DOC_OUTPUT_index := doc/content/apis/fmi/_index.md
 DOC_INPUT_fmimcl := dse/fmimcl/fmimcl.h
 DOC_CDIR_fmimcl := dse/fmimcl/engine.c,dse/fmimcl/fmimcl.c,dse/fmimcl/model.c,dse/fmimcl/parser.c
 DOC_OUTPUT_fmimcl := doc/content/apis/fmi/fmimcl/index.md
-DOC_LINKTITLE_fmimcl := MCL
+DOC_LINKTITLE_fmimcl := "MCL"
 DOC_TITLE_fmimcl := "FMI MCL API Reference"
 
 # Module "fmimodelc"
@@ -38,9 +38,21 @@ DOC_OUTPUT_fmimodelc := doc/content/apis/fmi/fmimodelc/index.md
 DOC_LINKTITLE_fmimodelc := "ModelC FMU"
 DOC_TITLE_fmimodelc := "FMI ModelC FMU API Reference"
 
-# Targets
-DOC_C_MODULES := fmimcl fmimodelc
+# Module "fmu"
+DOC_INPUT_fmu := dse/fmu/fmu.h
+DOC_CDIR_fmu := dse/fmu/fmu.c,dse/fmu/ascii85.c,dse/fmu/signal.c
+DOC_OUTPUT_fmu := doc/content/apis/fmi/fmu/index.md
+DOC_LINKTITLE_fmu := "FMU"
+DOC_TITLE_fmu := "FMU API Reference"
 
+# Targets
+DOC_C_MODULES := fmimcl fmimodelc fmu
+
+
+.PHONY: examples
+examples:
+	cd ..;mkdir -p doc/content/apis/fmi/examples/fmu
+	cd ..;cp dse/examples/fmu/counter/fmu.c doc/content/apis/fmi/examples/fmu/fmu.c
 
 .PHONY: index
 index:
@@ -66,4 +78,4 @@ $(DOC_C_MODULES):
 			-tpng  $$(basename $(DOC_OUTPUT_$@))
 
 .PHONY: generate
-generate: index $(DOC_C_MODULES)
+generate: index examples $(DOC_C_MODULES)

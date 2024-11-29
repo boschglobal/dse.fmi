@@ -15,7 +15,12 @@ project(test_fmimodelc)
 set(DSE_FMIMODELC_SOURCE_DIR ../../../dse/fmimodelc)
 set(DSE_FMIMODELC_SOURCE_FILES
     ${DSE_FMIMODELC_SOURCE_DIR}/runtime.c
-    ${DSE_FMIMODELC_SOURCE_DIR}/ascii85.c
+)
+# FMU Code
+# ===============
+set(DSE_FMU_SOURCE_DIR ../../../dse/fmu)
+set(DSE_FMU_SOURCE_FILES
+    ${DSE_FMU_SOURCE_DIR}/ascii85.c
 )
 set(DSE_FMIMODELC_INCLUDE_DIR "${DSE_FMIMODELC_SOURCE_DIR}/../..")
 
@@ -28,7 +33,7 @@ set(DSE_FMIMODELC_INCLUDE_DIR "${DSE_FMIMODELC_SOURCE_DIR}/../..")
 add_executable(test_fmimodelc
     __test__.c
     test_index.c
-    test_ascii85.c
+    ${DSE_FMU_SOURCE_FILES}
     ${DSE_FMIMODELC_SOURCE_FILES}
 )
 target_include_directories(test_fmimodelc

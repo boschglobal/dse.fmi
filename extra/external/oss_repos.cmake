@@ -9,6 +9,7 @@ set(ExternalProject__CLIB__URL          https://github.com/boschglobal/dse.clib/
 set(ExternalProject__MODELC__URL        https://github.com/boschglobal/dse.modelc/archive/refs/tags/v$ENV{DSE_MODELC_VERSION}.zip)
 set(ExternalProject__MODELC_LIB__URL    https://github.com/boschglobal/dse.modelc/releases/download/v$ENV{DSE_MODELC_VERSION}/ModelC-$ENV{DSE_MODELC_VERSION}-$ENV{PACKAGE_ARCH}.zip)
 set(ExternalProject__DLFCNWIN32__URL    https://github.com/dlfcn-win32/dlfcn-win32/archive/refs/tags/v1.3.0.tar.gz)
+set(ExternalProject__XML2__URL          https://github.com/GNOME/libxml2/archive/refs/tags/v2.13.5.zip)
 
 
 # Used by unit testing only (provided by ModelC for released targets).

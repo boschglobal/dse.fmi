@@ -45,7 +45,7 @@ spec:
     mcl:
       - os: linux
         arch: amd64
-        path: ../../../../dse/build/_out/fmimcl/examples/lib/libfmi2fmu.so
+        path: ../../../../dse/build/_out/fmimcl/examples/lib/libfmi2mclTarget.so
   channels:
     - alias: signal_channel
       selectors:

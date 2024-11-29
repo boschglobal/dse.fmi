@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription
+    fmiVersion="2.0"
+    modelName="example"
+    description="Example FMU."
+    generationTool="Reference FMUs (development build)"
+    guid="{12345678-1234-1234-1234-1234567890ab}"
+    numberOfEventIndicators="0">
+
+    <CoSimulation
+        modelIdentifier="example"
+        canHandleVariableCommunicationStepSize="false"
+        canNotUseMemoryManagementFunctions="false"
+        canGetAndSetFMUstate="false"
+        canSerializeFMUstate="false">
+        <SourceFiles>
+            <File name="fmu.c" />
+        </SourceFiles>
+    </CoSimulation>
+
+    <DefaultExperiment startTime="0" stopTime="0.0020" stepSize="0.0005" />
+
+    <ModelVariables>
+        <ScalarVariable name="counter" valueReference="1" causality="output">
+            <Real start="42" reinit="" derivative=""></Real>
+        </ScalarVariable>
+    </ModelVariables>
+
+</fmiModelDescription>

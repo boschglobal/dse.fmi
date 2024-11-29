@@ -93,6 +93,28 @@ set_target_properties(yaml
 )
 
 
+# External Project - xml
+# ----------------------
+set(XML_SOURCE_DIR "$ENV{EXTERNAL_BUILD_DIR}/libxml2")
+set(XML_BINARY_DIR "$ENV{EXTERNAL_BUILD_DIR}/libxml2")
+set(XML_INCLUDE_DIR "$ENV{EXTERNAL_BUILD_DIR}/libxml2/install/include/libxml2")
+find_library(XML_LIB
+    NAMES
+        libxml2.a
+    PATHS
+        ${XML_BINARY_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH
+)
+add_library(xml STATIC IMPORTED GLOBAL)
+add_dependencies(xml libxml2)
+set_target_properties(xml
+    PROPERTIES
+        IMPORTED_LOCATION "${XML_LIB}"
+        INTERFACE_INCLUDE_DIRECTORIES "${XML_INCLUDE_DIR}"
+)
+
+
 # External Project - dlfcn-win32
 # ------------------------------
 if(WIN32)
@@ -120,7 +142,10 @@ endif()
 # ===========
 add_subdirectory(fmimcl)
 add_subdirectory(fmimodelc)
+add_subdirectory(fmu)
 add_subdirectory(importer)
+add_subdirectory(examples)
+
 
 
 # Common Targets

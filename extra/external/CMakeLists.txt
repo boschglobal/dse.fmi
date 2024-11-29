@@ -80,6 +80,42 @@ ExternalProject_Add(yaml
     INSTALL_COMMAND     ""
 )
 
+# External Project - xml
+# ----------------------
+ExternalProject_Add(libxml2
+    URL https://github.com/GNOME/libxml2/archive/refs/tags/v2.13.5.zip
+    URL                 ${ExternalProject__XML2__URL}
+    HTTP_USERNAME       ${ExternalProject__XML2__USERNAME}
+    HTTP_PASSWORD       ${ExternalProject__XML2__PASSWORD}
+    CMAKE_ARGS
+        -D CMAKE_INSTALL_PREFIX=$ENV{EXTERNAL_BUILD_DIR}/libxml2/install
+        -D CMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+        -D BUILD_SHARED_LIBS=OFF
+        -D LIBXML2_WITH_HTML=OFF
+        -D LIBXML2_WITH_HTTP=OFF
+        -D LIBXML2_WITH_ICONV=OFF
+        -D LIBXML2_WITH_LZMA=OFF
+        -D LIBXML2_WITH_PYTHON=OFF
+        -D LIBXML2_WITH_SCHEMATRON=OFF
+        -D LIBXML2_WITH_TESTS=OFF
+        -D LIBXML2_WITH_THREAD_ALLOC=OFF
+        -D LIBXML2_WITH_THREADS=OFF
+        -D LIBXML2_WITH_TREE=OFF
+        -D LIBXML2_WITH_VALID=OFF
+        -D LIBXML2_WITH_WRITER=OFF
+        -D LIBXML2_WITH_ZLIB=OFF
+    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/libxml2"
+    BINARY_DIR          "$ENV{EXTERNAL_BUILD_DIR}/libxml2"
+    INSTALL_DIR         "$ENV{EXTERNAL_BUILD_DIR}/libxml2/install"
+    UPDATE_COMMAND ""
+)
+ExternalProject_Get_property(libxml2 SOURCE_DIR BINARY_DIR INSTALL_DIR)
+set(XML_SOURCE_DIR "${SOURCE_DIR}")
+set(XML_BINARY_DIR "${BINARY_DIR}")
+set(XML_INSTALL_DIR "${INSTALL_DIR}")
+file(MAKE_DIRECTORY "${XML_SOURCE_DIR}/include")
+file(MAKE_DIRECTORY "${XML_INSTALL_DIR}/include/libxml2")
+
 # dlfcn-win32
 # -----------
 if(NOT WIN32)
@@ -112,7 +148,9 @@ function(oss_copy src dst)
 endfunction()
 add_dependencies(oss
     dlfcnwin32-download
+    libxml2-download
 )
 oss_copy($ENV{EXTERNAL_BUILD_DIR}/dse.clib      boschglobal/dse.clib)
 oss_copy($ENV{EXTERNAL_BUILD_DIR}/dse.modelc    boschglobal/dse.modelc)
 oss_copy($ENV{EXTERNAL_BUILD_DIR}/dlfcnwin32    dlfcn-win32/dlfcn-win32)
+oss_copy($ENV{EXTERNAL_BUILD_DIR}/libxml2       GNOME/libxml2)

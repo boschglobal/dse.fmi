@@ -29,9 +29,9 @@ export EXTERNAL_BUILD_DIR ?= /tmp/$(NAMESPACE).$(MODULE)
 export PACKAGE_ARCH ?= linux-amd64
 export PACKAGE_ARCH_LIST ?= $(PACKAGE_ARCH)
 export CMAKE_TOOLCHAIN_FILE ?= $(shell pwd -P)/extra/cmake/$(PACKAGE_ARCH).cmake
-SUBDIRS = $(NAMESPACE)
 export MODELC_SANDBOX_DIR ?= $(shell pwd -P)/dse/modelc/build/_out
 export MAKE_NPROC ?= $(shell nproc)
+SUBDIRS = $(NAMESPACE)
 
 
 ###############

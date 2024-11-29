@@ -13,27 +13,27 @@ set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
 # Targets
 # =======
 
-add_library(fmi2fmu SHARED
+add_library(fmi2mclTarget SHARED
     fmi2fmu.c
     ../../../fmimodelc/ascii85.c
     ${DSE_CLIB_SOURCE_DIR}/clib/collections/hashmap.c
     ${DSE_CLIB_SOURCE_DIR}/clib/collections/set.c
 )
-target_include_directories(fmi2fmu
+target_include_directories(fmi2mclTarget
     PRIVATE
         ${DSE_CLIB_INCLUDE_DIR}
         ${FMI2_INCLUDE_DIR}
 )
 install(
     TARGETS
-        fmi2fmu
+        fmi2mclTarget
     LIBRARY DESTINATION
         ${MODEL_PATH}/lib
 )
 
 install(
     TARGETS
-        fmi2fmu
+        fmi2mclTarget
     LIBRARY DESTINATION
         ${MODEL_PATH}/fmu/binaries/linux64
 )

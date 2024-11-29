@@ -2,33 +2,32 @@
 title: FMI ModelC FMU API Reference
 linkTitle: ModelC FMU
 ---
-## FMI ModelC FMU
+## fmi2FreeInstance
 
 
-The FMI ModelC FMU is and FMU which is capable of loading and running a
-DSE Simulation (e.g. a ModelC Simulation Stack). All capabilites of the ModelC
-Runtime are supported, including the exchange of binary signals (e.g. CAN) and
-realisation of bus topologies (e.g. multi-node CAN Networks).
+Free memory and resources related to the provided FMU instance.
+
+### Parameters
+
+c (fmi2Component*)
+: An Fmu2InstanceData object representing an instance of this FMU.
 
 
-### Component Diagram
 
-<div hidden>
+## fmi2Instantiate
 
-```
-@startuml fmimodelc-component
 
-title FMI ModelC FMU
+Create an instance of this FMU, allocate/initialise a Fmu2InstanceData
+object which should be used for subsequent calls to FMI methods (as parameter
+`fmi2Component c`).
 
-center footer Dynamic Simulation Environment
+> Note: This implementation __does not__ use memory related callbacks provided
+  by the Importer (e.g. `malloc()` or `free()`).
 
-@enduml
-```
+### Returns
 
-</div>
-
-![](fmimodelc-component.png)
-
+fmi2Component (pointer)
+: An Fmu2InstanceData object which represents this FMU instance.
 
 
 
@@ -55,6 +54,32 @@ value (fmi2Real[])
 
 fmi2OK (fmi2Status)
 : The requested variables are retrieved (where available).
+
+
+
+## fmi2SetReal
+
+
+Set values for the provided list of value references and values.
+
+### Parameters
+
+c (fmi2Component*)
+: An Fmu2InstanceData object representing an instance of this FMU.
+
+vr (fmi2ValueReference[])
+: List of value references to set.
+
+nvr (int)
+: The number of value references to set.
+
+value (fmi2Real[])
+: Storage for the values to be set.
+
+### Returns
+
+fmi2OK (fmi2Status)
+: The requested variables have been set (where available).
 
 
 
@@ -123,20 +148,33 @@ fmi2Error (fmi2Status)
 
 
 
-## fmi2Instantiate
+## FMI ModelC FMU
 
 
-Create an instance of this FMU, allocate/initialise a Fmu2InstanceData
-object which should be used for subsequent calls to FMI methods (as parameter
-`fmi2Component c`).
+The FMI ModelC FMU is and FMU which is capable of loading and running a
+DSE Simulation (e.g. a ModelC Simulation Stack). All capabilites of the ModelC
+Runtime are supported, including the exchange of binary signals (e.g. CAN) and
+realisation of bus topologies (e.g. multi-node CAN Networks).
 
-> Note: This implementation __does not__ use memory related callbacks provided
-  by the Importer (e.g. `malloc()` or `free()`).
 
-### Returns
+### Component Diagram
 
-fmi2Component (pointer)
-: An Fmu2InstanceData object which represents this FMU instance.
+<div hidden>
+
+```
+@startuml fmimodelc-component
+
+title FMI ModelC FMU
+
+center footer Dynamic Simulation Environment
+
+@enduml
+```
+
+</div>
+
+![](fmimodelc-component.png)
+
 
 
 
@@ -184,44 +222,6 @@ value (fmi2String[])
 
 fmi2OK (fmi2Status)
 : The requested variables are retrieved (where available).
-
-
-
-## fmi2SetReal
-
-
-Set values for the provided list of value references and values.
-
-### Parameters
-
-c (fmi2Component*)
-: An Fmu2InstanceData object representing an instance of this FMU.
-
-vr (fmi2ValueReference[])
-: List of value references to set.
-
-nvr (int)
-: The number of value references to set.
-
-value (fmi2Real[])
-: Storage for the values to be set.
-
-### Returns
-
-fmi2OK (fmi2Status)
-: The requested variables have been set (where available).
-
-
-
-## fmi2FreeInstance
-
-
-Free memory and resources related to the provided FMU instance.
-
-### Parameters
-
-c (fmi2Component*)
-: An Fmu2InstanceData object representing an instance of this FMU.
 
 
 
