@@ -23,7 +23,7 @@ int test_fmu_default_signal_setup(void** state)
     hashmap_init(&fmu->variables.binary.decode_func);
     fmu_load_signal_handlers(fmu);
 
-    fmu->instance.resource_location = (char*)"../../fmu/data/resources";
+    fmu->instance.resource_location = (char*)"data/test_fmu/resources";
 
     *state = fmu;
     return 0;
@@ -119,7 +119,6 @@ void test_fmu_default_signals_reset(void** state)
     fmu->variables.vtable.setup(fmu);
 
     assert_non_null(fmu->data);
-    FmuSignalVector* sv = fmu->data;
 
     FmuSignalVectorIndex* idx_i = hashmap_get(&fmu->variables.binary.rx, "4");
     FmuSignalVectorIndex* idx_o = hashmap_get(&fmu->variables.binary.tx, "5");

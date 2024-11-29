@@ -105,7 +105,13 @@ target_link_libraries(test_fmu
 install(TARGETS test_fmu)
 install(
     FILES
+        data/modelDescription.xml
     DESTINATION
-        data
+        data/test_fmu
 )
-
+install(
+    FILES
+        data/modelDescription.xml
+    DESTINATION
+        data/test_fmu/resources
+)
