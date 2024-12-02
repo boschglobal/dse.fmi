@@ -33,7 +33,7 @@ int test_fmi2_setup(void** state)
             .cosim = true,
             .guid = "",
             .resource_dir = "",
-            .path = "../../../../dse/build/_out/fmimcl/examples/lib/libfmi2mclTarget.so",
+            .path = "../../../../dse/build/_out/fmimcl/examples/lib/libmclfmi2fmu.so",
             .handle = "",
         },
         .model_instance = {

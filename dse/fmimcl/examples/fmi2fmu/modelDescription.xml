@@ -9,7 +9,7 @@
         generationDateAndTime=""
         variableNamingConvention=""
         numberOfEventIndicators="">
-    <CoSimulation modelIdentifier="libfmi2fmu" canHandleVariableCommunicationStepSize=""
+    <CoSimulation modelIdentifier="libmclfmi2fmu" canHandleVariableCommunicationStepSize=""
         canInterpolateInputs=""></CoSimulation>
     <DefaultExperiment startTime="0" stopTime="42" stepSize="0.0005"></DefaultExperiment>
 

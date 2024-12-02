@@ -23,7 +23,7 @@ spec:
     mcl:
       - os: linux
         arch: amd64
-        path: examples/lib/libfmi2fmu.so
+        path: examples/lib/libmclfmi2fmu.so
   channels:
     - alias: signal_channel
       selectors:
