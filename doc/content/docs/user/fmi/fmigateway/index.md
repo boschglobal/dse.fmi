@@ -1,6 +1,6 @@
 ---
 title: "FMI Gateway FMU"
-linkTitle: "Gateway FMU"
+linkTitle: "Gateway"
 weight: 200
 tags:
 - FMI
@@ -25,11 +25,11 @@ FMI Gateway FMU
 
 ```
 
-## FMI Gateway FMU Setup
+## Setup
 
-> DOC: Provide description of FMI Gateway FMU Taskfile workflows.
+> DOC: Provide description of Gateway Taskfile workflows.
 
 
-## FMI Gateway FMU Operation
+## Operation
 
 > DOC: Operation.

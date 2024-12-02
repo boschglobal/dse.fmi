@@ -1,5 +1,5 @@
 ---
-title: "FMI Model Compatibility Library (MCL)"
+title: "FMI Model Compatibility Library"
 linkTitle: "MCL"
 weight: 400
 tags:
@@ -25,12 +25,12 @@ FMI Model Compatibility Library
 
 ```
 
-## FMI MCL Setup
+## Setup
 
 > DOC: Provide description of FMI MCL Taskfile workflows.
 
 
-## FMI MCL Operation
+## Operation
 
 ### Measurement
 

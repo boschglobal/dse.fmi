@@ -18,6 +18,7 @@ FMI Libraries of the Dynamic Simulation Environment (DSE) Core Platform provide 
 * FMI Model Compatability Library (MCL) - for loading FMUs into a DSE simulation.
 * FMI ModelC FMU - for packaging a DSE simulation as an FMU.
 * FMI Gateway FMU - for bridging between a remote simulation and a DSE simulation.
+* FMI FMU - a minimal API for implementing FMUs with support for Binary Variables and Virtual Networks.
 
 The DSE FMI libraries operate in Co-simulation environments and support both scalar and binary variables.
 Virtual networks (e.g. CAN) are implemented using [Network Codecs](https://github.com/boschglobal/dse.standards/tree/main/dse/ncodec) and supported via FMI Binary variables, or in the case of FMI 2, by using encoded [FMI String variables](https://github.com/boschglobal/dse.standards/tree/main/modelica/fmi-ls-binary-to-text).
@@ -51,6 +52,18 @@ Virtual networks (e.g. CAN) are implemented using [Network Codecs](https://githu
 * Simple lifecycle which can be customised to support automation of simulation environments (e.g. session management).
 
 
+#### FMI FMU
+
+* Minimal API for implementing Co-simulation FMUs with methods:
+  * `fmu_create()`
+  * `fmu_init()`
+  * `fmu_step()`
+  * `fmu_destroy()`
+* Automatic FMI Variable indexing and storage, including FMI 2 support for Binary Variables
+* Build targets for FMI 2 and FMI 3.
+* Virtual Networks (CAN etc.) using [Network Codecs](https://github.com/boschglobal/dse.standards/tree/main/dse/ncodec) and Binary Streams. Includes support for FMI 2 (via String variables).
+
+
 ### Project Structure
 
 ```text
@@ -58,6 +71,7 @@ L- dse
   L- fmigateway  FMI Gateway FMU source code.
   L- fmimcl      FMI MCL source code.
   L- fmimodelc   FMI ModelC FMU source code.
+  L- fmu         FMI FMU source code.
 L- extra         Build infrastructure.
   L- tools/fmi   Containerised tools.
 L- licenses      Third Party Licenses.

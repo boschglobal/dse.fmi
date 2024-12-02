@@ -2,45 +2,6 @@
 title: FMI MCL API Reference
 linkTitle: MCL
 ---
-## mcl_create
-
-
-Create an instance of the MCL which will then be used to operate the Model that
-the MCL represents.
-
-### Parameters
-
-model (ModelDesc*)
-: Model descriptor object.
-
-### Returns
-
-MclDesc (pointer)
-: Object representing the MCL Model, an extended ModelDesc type (derived from
-parameter `model`).
-
-NULL
-: The MCL Model could not be created. Inspect `errno` for more details.
-
-### Error Conditions
-
-
-Available by inspection of `errno`.
-
-
-
-## mcl_destroy
-
-
-Releases memory and system resources allocated by `mcl_create()`.
-
-### Parameters
-
-model (ModelDesc*)
-: Model descriptor object.
-
-
-
 ## FMI Model Compatibility Library
 
 
@@ -232,6 +193,45 @@ center footer Dynamic Simulation Environment
 
 ![](fmimcl-sequence.png)
 
+
+
+
+## mcl_create
+
+
+Create an instance of the MCL which will then be used to operate the Model that
+the MCL represents.
+
+### Parameters
+
+model (ModelDesc*)
+: Model descriptor object.
+
+### Returns
+
+MclDesc (pointer)
+: Object representing the MCL Model, an extended ModelDesc type (derived from
+parameter `model`).
+
+NULL
+: The MCL Model could not be created. Inspect `errno` for more details.
+
+### Error Conditions
+
+
+Available by inspection of `errno`.
+
+
+
+## mcl_destroy
+
+
+Releases memory and system resources allocated by `mcl_create()`.
+
+### Parameters
+
+model (ModelDesc*)
+: Model descriptor object.
 
 
 

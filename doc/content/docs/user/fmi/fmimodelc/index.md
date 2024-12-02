@@ -1,6 +1,6 @@
 ---
 title: "FMI ModelC FMU"
-linkTitle: "ModelC FMU"
+linkTitle: "ModelC"
 weight: 600
 tags:
 - FMI
@@ -25,11 +25,11 @@ FMI ModelC FMU
 
 ```
 
-## FMI ModelC FMU Setup
+## FMU Setup
 
 > DOC: Provide description of FMI ModelC FMU Taskfile workflows.
 
 
-## FMI ModelC FMU Operation
+## FMU Operation
 
 > DOC: Operation.
