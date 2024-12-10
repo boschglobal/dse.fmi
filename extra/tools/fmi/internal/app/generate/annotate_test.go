@@ -66,28 +66,28 @@ func TestGenFmuAnnotationSignals(t *testing.T) {
 		{
 			"Signal":                 "input_1",
 			"fmi_variable_causality": "input",
-			"fmi_variable_id":        "1",
+			"fmi_variable_vref":      "1",
 			"fmi_variable_type":      "Real",
 			"fmi_variable_name":      "input_1",
 		},
 		{
 			"Signal":                 "input_2",
 			"fmi_variable_causality": "input",
-			"fmi_variable_id":        "2",
+			"fmi_variable_vref":      "2",
 			"fmi_variable_type":      "Real",
 			"fmi_variable_name":      "input_2",
 		},
 		{
 			"Signal":                 "output_1",
 			"fmi_variable_causality": "output",
-			"fmi_variable_id":        "3",
+			"fmi_variable_vref":      "3",
 			"fmi_variable_type":      "Real",
 			"fmi_variable_name":      "output_1",
 		},
 		{
 			"Signal":                 "output_2",
 			"fmi_variable_causality": "output",
-			"fmi_variable_id":        "4",
+			"fmi_variable_vref":      "4",
 			"fmi_variable_type":      "Real",
 			"fmi_variable_name":      "output_2",
 		},
@@ -96,7 +96,7 @@ func TestGenFmuAnnotationSignals(t *testing.T) {
 	for i, s := range generatedYAML.Spec.Signals {
 		assert.Equal(t, s.Signal, test_data[i]["Signal"], "signal should match")
 		assert.Equal(t, (*s.Annotations)["fmi_variable_causality"], test_data[i]["fmi_variable_causality"], "annotation/fmi_variable_causality should match")
-		assert.Equal(t, (*s.Annotations)["fmi_variable_id"], test_data[i]["fmi_variable_id"], "annotation/fmi_variable_id should match")
+		assert.Equal(t, (*s.Annotations)["fmi_variable_vref"], test_data[i]["fmi_variable_vref"], "annotation/fmi_variable_vref should match")
 		assert.Equal(t, (*s.Annotations)["fmi_variable_type"], test_data[i]["fmi_variable_type"], "annotation/fmi_variable_type should match")
 		assert.Equal(t, (*s.Annotations)["fmi_variable_name"], test_data[i]["fmi_variable_name"], "annotation/fmi_variable_name should match")
 	}

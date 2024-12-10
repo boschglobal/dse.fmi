@@ -97,7 +97,7 @@ void fmimodelc_index_scalar_signals(
             for (uint32_t i = 0; i < sv->count; i++) {
                 /* Value Reference. */
                 const char* vref =
-                    signal_annotation(sv, i, "fmi_value_reference", NULL);
+                    signal_annotation(sv, i, "fmi_variable_vref", NULL);
                 if (vref == NULL) continue;
 
                 /* Locate the SimBus variable. */
@@ -134,7 +134,7 @@ void fmimodelc_index_binary_signals(
             for (uint32_t i = 0; i < sv->count; i++) {
                 /* Value Reference. */
                 const char* vref =
-                    signal_annotation(sv, i, "fmi_value_reference", NULL);
+                    signal_annotation(sv, i, "fmi_variable_vref", NULL);
                 if (vref == NULL) continue;
 
                 /* Index according to bus topology. */
@@ -201,7 +201,7 @@ void fmimodelc_index_text_encoding(
             for (uint32_t i = 0; i < sv->count; i++) {
                 /* Value Reference. */
                 const char* _ =
-                    signal_annotation(sv, i, "fmi_value_reference", NULL);
+                    signal_annotation(sv, i, "fmi_variable_vref", NULL);
                 if (_ == NULL) continue;
 
                 /* Encoding. */

@@ -112,7 +112,7 @@ static void* _fmu_signal_generator(ModelInstanceSpec* mi, void* data)
 
         s->name = n->scalar;
         dse_yaml_get_uint(
-            data, "annotations/fmi_variable_id", &s->variable_vref);
+            data, "annotations/fmi_variable_vref", &s->variable_vref);
         dse_yaml_get_string(
             data, "annotations/fmi_variable_name", &s->variable_name);
         dse_yaml_get_string(data, "annotations/fmi_variable_type", &v_type);

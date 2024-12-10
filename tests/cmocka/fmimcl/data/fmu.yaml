@@ -42,25 +42,25 @@ spec:
   signals:
     - signal: foo
       annotations:
-        fmi_variable_id: 0
+        fmi_variable_vref: 0
         fmi_variable_name: foo
         fmi_variable_type: Real
         fmi_variable_start: 42.0
     - signal: bar
       annotations:
-        fmi_variable_id: 1
+        fmi_variable_vref: 1
         fmi_variable_name: bar
         fmi_variable_type: Real
         fmi_variable_start: 24.0
     - signal: count
       annotations:
-        fmi_variable_id: 2
+        fmi_variable_vref: 2
         fmi_variable_name: count
         fmi_variable_type: Integer
         fmi_variable_start: 0
     - signal: active
       annotations:
-        fmi_variable_id: 3
+        fmi_variable_vref: 3
         fmi_variable_name: active
         fmi_variable_type: Boolean
         fmi_variable_start: 0
@@ -77,19 +77,19 @@ spec:
   signals:
     - signal: string_tx
       annotations:
-        fmi_variable_id: 4
+        fmi_variable_vref: 4
         fmi_variable_name: string_tx
         fmi_variable_type: String
         fmi_variable_causality: input
     - signal: string_rx
       annotations:
-        fmi_variable_id: 5
+        fmi_variable_vref: 5
         fmi_variable_name: string_rx
         fmi_variable_type: String
         fmi_variable_causality: output
     - signal: string_ascii85_tx
       annotations:
-        fmi_variable_id: 6
+        fmi_variable_vref: 6
         fmi_variable_name: string_ascii85_tx
         fmi_variable_type: String
         fmi_variable_causality: input
@@ -97,7 +97,7 @@ spec:
           dse.standards.fmi-ls-binary-to-text.encoding: ascii85
     - signal: string_ascii85_rx
       annotations:
-        fmi_variable_id: 7
+        fmi_variable_vref: 7
         fmi_variable_name: string_ascii85_rx
         fmi_variable_type: String
         fmi_variable_causality: output

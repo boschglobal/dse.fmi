@@ -104,7 +104,7 @@ func (c *GenFmuAnnotationCommand) applyRule(ruleFile string, signalgroup *kind.S
 				}
 			}
 		}
-		(*signal.Annotations)["fmi_variable_id"] = strconv.Itoa(vr)
+		(*signal.Annotations)["fmi_variable_vref"] = strconv.Itoa(vr)
 		(*signal.Annotations)["fmi_variable_type"] = "Real"
 		(*signal.Annotations)["fmi_variable_name"] = signal.Signal
 		vr++

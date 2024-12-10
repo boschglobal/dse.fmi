@@ -84,7 +84,7 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.FmiModelDescript
 
 		annotations := kind.Annotations{
 			"fmi_variable_causality": s.Causality,
-			"fmi_variable_id":        s.ValueReference,
+			"fmi_variable_vref":      s.ValueReference,
 			"fmi_variable_type":      variable_type,
 			"fmi_variable_name":      s.Name,
 		}

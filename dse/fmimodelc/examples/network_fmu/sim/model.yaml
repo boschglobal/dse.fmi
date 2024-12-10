@@ -38,7 +38,7 @@ spec:
   signals:
     - signal: counter
       annotations:
-        fmi_value_reference: 1
+        fmi_variable_vref: 1
         fmi_variable_start_value: 42
         fmi_variable_causality: "output"
 ---
@@ -57,9 +57,9 @@ spec:
         #
         # FMI Value Reference
         # -------------------
-        fmi_value_reference: 4
-        fmi_value_reference_input: 4
-        fmi_value_reference_output: 5
+        fmi_variable_vref: 4
+        fmi_variable_vref_input: 4
+        fmi_variable_vref_output: 5
         #
         # FMI LS Text Encoding (applied to FMI String Variables):
         # --------------------

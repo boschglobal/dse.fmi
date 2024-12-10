@@ -90,79 +90,79 @@ spec:
   signals:
     - signal: real_3_rx
       annotations:
-        fmi_variable_id: 0
+        fmi_variable_vref: 0
         fmi_variable_name: real_3_rx
         fmi_variable_type: Real
         fmi_variable_causality: input
     - signal: real_1_tx
       annotations:
-        fmi_variable_id: 1
+        fmi_variable_vref: 1
         fmi_variable_name: real_1_tx
         fmi_variable_type: Real
         fmi_variable_causality: output
     - signal: integer_3_rx
       annotations:
-        fmi_variable_id: 2
+        fmi_variable_vref: 2
         fmi_variable_name: integer_3_rx
         fmi_variable_type: Integer
         fmi_variable_causality: input
     - signal: integer_2_tx
       annotations:
-        fmi_variable_id: 3
+        fmi_variable_vref: 3
         fmi_variable_name: integer_2_tx
         fmi_variable_type: Integer
         fmi_variable_causality: output
     - signal: integer_1_tx
       annotations:
-        fmi_variable_id: 4
+        fmi_variable_vref: 4
         fmi_variable_name: integer_1_tx
         fmi_variable_type: Integer
         fmi_variable_causality: output
     - signal: real_2_rx
       annotations:
-        fmi_variable_id: 5
+        fmi_variable_vref: 5
         fmi_variable_name: real_2_rx
         fmi_variable_type: Real
         fmi_variable_causality: input
     - signal: bool_1_rx
       annotations:
-        fmi_variable_id: 6
+        fmi_variable_vref: 6
         fmi_variable_name: bool_1_rx
         fmi_variable_type: Integer
         fmi_variable_causality: input
     - signal: bool_2_tx
       annotations:
-        fmi_variable_id: 7
+        fmi_variable_vref: 7
         fmi_variable_name: bool_2_tx
         fmi_variable_type: Integer
         fmi_variable_causality: output
     - signal: real_A_rx
       annotations:
-        fmi_variable_id: 8
+        fmi_variable_vref: 8
         fmi_variable_name: real_A_rx
         fmi_variable_type: Real
         fmi_variable_causality: input
     - signal: real_A_rx
       annotations:
-        fmi_variable_id: 9
+        fmi_variable_vref: 9
         fmi_variable_name: real_A2_rx
         fmi_variable_type: Real
         fmi_variable_causality: input
     - signal: real_B_tx
       annotations:
-        fmi_variable_id: 10
+        fmi_variable_vref: 10
         fmi_variable_name: real_A_rx
         fmi_variable_type: Real
         fmi_variable_causality: output
     - signal: real_C_tx
       annotations:
-        fmi_variable_id: 11
+        fmi_variable_vref: 11
         fmi_variable_name: real_A2_rx
         fmi_variable_type: Real
         fmi_variable_causality: output
     - signal: real_D_tx
       annotations:
-        fmi_variable_id: 11
+        fmi_variable_vref: 11
         fmi_variable_name: real_A2_rx
         fmi_variable_type: Real
         fmi_variable_causality: output
@@ -179,19 +179,19 @@ spec:
   signals:
     - signal: string_tx
       annotations:
-        fmi_variable_id: 100
+        fmi_variable_vref: 100
         fmi_variable_name: string_tx
         fmi_variable_type: String
         fmi_variable_causality: input
     - signal: string_rx
       annotations:
-        fmi_variable_id: 101
+        fmi_variable_vref: 101
         fmi_variable_name: string_rx
         fmi_variable_type: String
         fmi_variable_causality: output
     - signal: string_ascii85_tx
       annotations:
-        fmi_variable_id: 102
+        fmi_variable_vref: 102
         fmi_variable_name: string_ascii85_tx
         fmi_variable_type: String
         fmi_variable_causality: input
@@ -199,7 +199,7 @@ spec:
           dse.standards.fmi-ls-binary-to-text.encoding: ascii85
     - signal: string_ascii85_rx
       annotations:
-        fmi_variable_id: 103
+        fmi_variable_vref: 103
         fmi_variable_name: string_ascii85_rx
         fmi_variable_type: String
         fmi_variable_causality: output

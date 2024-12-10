@@ -29,6 +29,6 @@ spec:
   signals:
     - signal: counter
       annotations:
-        fmi_value_reference: 1
+        fmi_variable_vref: 1
         fmi_variable_start_value: 42
         fmi_variable_causality: "output"

@@ -158,13 +158,13 @@ func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelD
 		if (*signal.Annotations)["fmi_variable_start_value"] != nil {
 			start = strconv.Itoa((*signal.Annotations)["fmi_variable_start_value"].(int))
 		}
-		if (*signal.Annotations)["fmi_value_reference"] == nil {
+		if (*signal.Annotations)["fmi_variable_vref"] == nil {
 			return fmt.Errorf("Could not get value reference for signal %s", signal.Signal)
 		}
 
 		ScalarVariable := ScalarVariable{
 			Name:           signal.Signal,
-			ValueReference: strconv.Itoa((*signal.Annotations)["fmi_value_reference"].(int)),
+			ValueReference: strconv.Itoa((*signal.Annotations)["fmi_variable_vref"].(int)),
 			Causality:      (*signal.Annotations)["fmi_variable_causality"].(string),
 			Real: &FmiReal{
 				Start: start,
