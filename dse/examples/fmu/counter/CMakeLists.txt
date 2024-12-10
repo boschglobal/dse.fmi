@@ -65,8 +65,9 @@ set(FMI_3_COMMON_FILES
 # Targets
 # =======
 
-# FMI2 FMU
-# --------
+# Counter FMU (FMI2)
+# -----------
+set(COUNTER_FMI2_PATH examples/fmu/counter/fmi2)
 add_library(fmu2counter SHARED
     ${DSE_CLIB_SOURCE_FILES}
     ${FMI_2_COMMON_FILES}
@@ -84,15 +85,27 @@ target_link_libraries(fmu2counter
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${WIN32}>:dl>
 )
+set_target_properties(fmu2counter
+    PROPERTIES
+        OUTPUT_NAME counter
+)
 install(
     TARGETS
         fmu2counter
     LIBRARY DESTINATION
-        examples/fmu/counter
+        ${COUNTER_FMI2_PATH}/binaries/linux64
 )
+install(
+    FILES
+        fmi2/modelDescription.xml
+    DESTINATION
+        ${COUNTER_FMI2_PATH}
+)
+
 
 # FMI3 FMU
 # --------
+set(COUNTER_FMI3_PATH examples/fmu/counter/fmi3)
 add_library(fmu3counter SHARED
     ${DSE_CLIB_SOURCE_FILES}
     ${FMI_3_COMMON_FILES}
@@ -110,9 +123,40 @@ target_link_libraries(fmu3counter
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${WIN32}>:dl>
 )
+set_target_properties(fmu3counter
+    PROPERTIES
+        OUTPUT_NAME counter
+)
 install(
     TARGETS
         fmu3counter
     LIBRARY DESTINATION
-        examples/fmu/counter
+        ${COUNTER_FMI3_PATH}/binaries/x86_64-linux
+)
+install(
+    FILES
+        fmi3/modelDescription.xml
+    DESTINATION
+        ${COUNTER_FMI3_PATH}
+)
+
+# Package FMU
+# -----------
+install(CODE "
+    execute_process(
+        COMMAND sh -c \"
+            zip -r counter.zip ./
+            exit 0
+        \"
+        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${COUNTER_FMI2_PATH}
+    )"
+)
+install(CODE "
+    execute_process(
+        COMMAND sh -c \"
+            zip -r counter.zip ./
+            exit 0
+        \"
+        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${COUNTER_FMI3_PATH}
+    )"
 )

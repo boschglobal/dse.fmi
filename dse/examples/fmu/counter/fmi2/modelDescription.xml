@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fmiModelDescription
     fmiVersion="2.0"
-    modelName="example"
-    description="Example FMU."
+    modelName="counter"
+    description="Counter Example FMU."
     generationTool="Reference FMUs (development build)"
-    guid="{12345678-1234-1234-1234-1234567890ab}"
+    guid="{4a413e3f-4897-4abd-bf09-418ed822fdd9}"
     numberOfEventIndicators="0">
 
     <CoSimulation
-        modelIdentifier="example"
+        modelIdentifier="counter"
         canHandleVariableCommunicationStepSize="false"
         canNotUseMemoryManagementFunctions="false"
         canGetAndSetFMUstate="false"
