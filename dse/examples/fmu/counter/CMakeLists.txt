@@ -170,3 +170,19 @@ install(CODE "
         WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${FMU_FMI3_PATH}
     )"
 )
+install(
+    FILES
+        ${CMAKE_INSTALL_PREFIX}/${FMU_FMI2_PATH}/${MODULE_LC}.zip
+    DESTINATION
+        ${FMU_FMI2_PATH}
+    RENAME
+        ${MODULE_LC}.fmu
+)
+install(
+    FILES
+        ${CMAKE_INSTALL_PREFIX}/${FMU_FMI3_PATH}/${MODULE_LC}.zip
+    DESTINATION
+        ${FMU_FMI3_PATH}
+    RENAME
+        ${MODULE_LC}.fmu
+)
