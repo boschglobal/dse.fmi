@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription
+    fmiVersion="3.0"
+    modelName="linear"
+    description="Linear Example FMU."
+    generationTool="Reference FMUs (development build)"
+    instantiationToken="{71da084a-0998-4418-a29d-01af36a32568}"
+    numberOfEventIndicators="0"
+    version="1.0">
+
+    <CoSimulation
+        modelIdentifier="linear"
+        canHandleVariableCommunicationStepSize="false"
+        canNotUseMemoryManagementFunctions="false"
+        canGetAndSetFMUstate="false"
+        canSerializeFMUstate="false">
+        <SourceFiles>
+            <File name="linear.c" />
+        </SourceFiles>
+    </CoSimulation>
+
+    <ModelVariables>
+        <Float64 name="input" valueReference="1" causality="input" start="0" />
+        <Float64 name="factor" valueReference="2" causality="input" start="0" />
+        <Float64 name="offset" valueReference="3" causality="input" start="0" />
+        <Float64 name="output" valueReference="4" causality="output" start="0" />
+    </ModelVariables>
+    <ModelStructure>
+        <Input valueReference="1"/>
+        <Input valueReference="2"/>
+        <Input valueReference="3"/>
+        <Output valueReference="4"/>
+    </ModelStructure>
+</fmiModelDescription>

@@ -11,10 +11,10 @@ cmake_minimum_required(VERSION 3.21)
 ## Configure FMU here:
 ## ------------------
 set(VERSION "$ENV{PACKAGE_VERSION}")
-set(MODULE "Counter")
-set(MODULE_LC "counter")
+set(MODULE "Linear")
+set(MODULE_LC "linear")
 set(FMU_FILES
-    counter.c
+    linear.c
 )
 ##
 #################################################
