@@ -2,5 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+if($ENV{PACKAGE_ARCH} STREQUAL "linux-amd64")
 add_subdirectory(fmu/counter)
 add_subdirectory(fmu/linear)
+endif()
