@@ -8,7 +8,7 @@
     numberOfEventIndicators="0">
 
     <CoSimulation
-        modelIdentifier="linear"
+        modelIdentifier="fmu2linear"
         canHandleVariableCommunicationStepSize="false"
         canNotUseMemoryManagementFunctions="false"
         canGetAndSetFMUstate="false"

@@ -81,6 +81,7 @@ target_link_libraries(fmi2fmu
         xml
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${WIN32}>:dl>
+        m
 )
 install(
     TARGETS

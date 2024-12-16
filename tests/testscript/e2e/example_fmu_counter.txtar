@@ -1,0 +1,31 @@
+# Operate from REPODIR (i.e. $ENTRYHOSTDIR).
+env NAME=counter
+env IMPORTER=dse/build/_out/importer/fmuImporter
+env FMU_DIR=dse/build/_out/examples/fmu/counter/fmi2
+env FMU_SO=binaries/linux64/libfmu2counter.so
+
+# TEST: FMU 2 Counter
+exec sh -e $WORK/test.sh
+
+stdout 'Importer: Loading FMU: binaries/linux64/libfmu2counter.so'
+stdout 'Importer: Calling fmi2DoStep\(\): model_time=0.004500, step_size=0.000500'
+stdout 'Importer:   \[1\] 10.000000'
+
+
+-- test.sh --
+SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
+docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
+    -v $ENTRYHOSTDIR:/repo \
+    -e IMPORTER=$IMPORTER \
+    -e FMU_DIR=$FMU_DIR \
+    -e FMU_SO=$FMU_SO \
+    $SIMER \
+        bash -c "ls -R; cd $FMU_DIR; \
+            /repo/$IMPORTER -V 2 -F $FMU_SO"
+
+
+# TODO: run with valgrind.
+# bash -c "cd $FMU_DIR; valgrind -q --leak-check=yes --error-exitcode=808 \
+#            /repo/$IMPORTER -V 2 -F $FMU_SO"
+
+# TODO: add case for FMI 3.

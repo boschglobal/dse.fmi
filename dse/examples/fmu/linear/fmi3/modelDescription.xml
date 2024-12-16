@@ -9,7 +9,7 @@
     version="1.0">
 
     <CoSimulation
-        modelIdentifier="linear"
+        modelIdentifier="fmu3linear"
         canHandleVariableCommunicationStepSize="false"
         canNotUseMemoryManagementFunctions="false"
         canGetAndSetFMUstate="false"

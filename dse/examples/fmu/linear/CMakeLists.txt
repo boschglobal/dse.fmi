@@ -94,10 +94,7 @@ target_link_libraries(fmu2${MODULE_LC}
         xml
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${WIN32}>:dl>
-)
-set_target_properties(fmu2${MODULE_LC}
-    PROPERTIES
-        OUTPUT_NAME ${MODULE_LC}
+        m
 )
 install(
     TARGETS
@@ -132,10 +129,7 @@ target_link_libraries(fmu3${MODULE_LC}
         xml
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${WIN32}>:dl>
-)
-set_target_properties(fmu3${MODULE_LC}
-    PROPERTIES
-        OUTPUT_NAME ${MODULE_LC}
+        m
 )
 install(
     TARGETS
@@ -150,24 +144,18 @@ install(
         ${FMU_FMI3_PATH}
 )
 
+
 # Package FMU
 # -----------
 install(CODE "
     execute_process(
         COMMAND sh -c \"
+            mkdir -p resources
+            touch resources/.keepme
             zip -r ${MODULE_LC}.zip ./
             exit 0
         \"
         WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${FMU_FMI2_PATH}
-    )"
-)
-install(CODE "
-    execute_process(
-        COMMAND sh -c \"
-            zip -r ${MODULE_LC}.zip ./
-            exit 0
-        \"
-        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${FMU_FMI3_PATH}
     )"
 )
 install(
@@ -180,9 +168,33 @@ install(
 )
 install(
     FILES
+        ${CMAKE_INSTALL_PREFIX}/${FMU_FMI2_PATH}/resources/.keepme
+    DESTINATION
+        ${FMU_FMI2_PATH}
+)
+
+install(CODE "
+    execute_process(
+        COMMAND sh -c \"
+            mkdir -p resources
+            touch resources/.keepme
+            zip -r ${MODULE_LC}.zip ./
+            exit 0
+        \"
+        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${FMU_FMI3_PATH}
+    )"
+)
+install(
+    FILES
         ${CMAKE_INSTALL_PREFIX}/${FMU_FMI3_PATH}/${MODULE_LC}.zip
     DESTINATION
         ${FMU_FMI3_PATH}
     RENAME
         ${MODULE_LC}.fmu
+)
+install(
+    FILES
+        ${CMAKE_INSTALL_PREFIX}/${FMU_FMI3_PATH}/resources/.keepme
+    DESTINATION
+        ${FMU_FMI3_PATH}
 )

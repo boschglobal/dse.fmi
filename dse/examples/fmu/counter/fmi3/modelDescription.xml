@@ -9,7 +9,7 @@
     version="1.0">
 
     <CoSimulation
-        modelIdentifier="counter"
+        modelIdentifier="fmu3counter"
         canHandleVariableCommunicationStepSize="false"
         canNotUseMemoryManagementFunctions="false"
         canGetAndSetFMUstate="false"

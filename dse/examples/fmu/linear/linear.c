@@ -19,6 +19,8 @@ typedef struct {
     double* output;
 } LinearModel;
 
+static LinearModel* __lm;  // TODO change to extended FmuInstanceData object.
+
 int fmu_create(FmuInstanceData* fmu)
 {
     UNUSED(fmu);
@@ -27,7 +29,7 @@ int fmu_create(FmuInstanceData* fmu)
 
 int fmu_init(FmuInstanceData* fmu)
 {
-    if (fmu->data) return 1;
+    UNUSED(fmu);
 
     LinearModel* lm = calloc(1, sizeof(LinearModel));
     lm->input = hashmap_get(&fmu->variables.scalar.input, VR_INPUT);
@@ -35,7 +37,7 @@ int fmu_init(FmuInstanceData* fmu)
     lm->offset = hashmap_get(&fmu->variables.scalar.input, VR_OFFSET);
     lm->output = hashmap_get(&fmu->variables.scalar.output, VR_OUTPUT);
     if (lm->input && lm->factor && lm->offset && lm->output) {
-        fmu->data = lm;
+        __lm = lm;
         return 0;
     } else {
         free(lm);
@@ -45,10 +47,11 @@ int fmu_init(FmuInstanceData* fmu)
 
 int fmu_step(FmuInstanceData* fmu, double CommunicationPoint, double stepSize)
 {
+    UNUSED(fmu);
     UNUSED(CommunicationPoint);
     UNUSED(stepSize);
-    if (fmu->data == NULL) return 3;
-    LinearModel* lm = fmu->data;
+    if (__lm == NULL) return 3;
+    LinearModel* lm = __lm;
 
     /*
     Evaluate the Linear Function.
@@ -67,7 +70,8 @@ int fmu_step(FmuInstanceData* fmu, double CommunicationPoint, double stepSize)
 
 int fmu_destroy(FmuInstanceData* fmu)
 {
-    free(fmu->data);
+    UNUSED(fmu);
+    free(__lm);
     return 0;
 }
 
