@@ -85,8 +85,17 @@ static int _run_fmu2_cosim(
     fmi2Component* fmu = NULL;
 
     /* fmi2Instantiate */
+    char* dlerror_str;
+    dlerror();
     fmi2Instantiate instantiate = dlsym(handle, "fmi2Instantiate");
-    if (instantiate == NULL) return EINVAL;
+    dlerror_str = dlerror();
+    if (dlerror_str || instantiate == NULL) {
+        _log("ERROR: could not load fmi2Instantiate() from FMU: %s", dlerror_str);
+        return EINVAL;
+    }
+    if (instantiate == NULL) {
+        return EINVAL;
+    }
     fmu = instantiate(
         "fmu", fmi2CoSimulation, "guid", "resources", NULL, true, false);
     if (fmu == NULL) return EINVAL;
@@ -299,7 +308,7 @@ int main(int argc, char** argv)
     int          c;
 
     uint8_t     version = 2;
-    const char* fmu_lib_path = "";
+    const char* fmu_lib_path = NULL;
     double      step_size = 0.0005;
     double      steps = 10;
 
@@ -332,7 +341,7 @@ int main(int argc, char** argv)
 
     /* Load the FMU
      * ============ */
-    _log("Loading FMU: %s ...", fmu_lib_path);
+    _log("Loading FMU: %s", fmu_lib_path);
     dlerror();
     void* handle = dlopen(fmu_lib_path, RTLD_NOW | RTLD_GLOBAL);
     if (handle == NULL) {
@@ -343,7 +352,7 @@ int main(int argc, char** argv)
 
     /* Run a CoSimulation
      * ================== */
-    int rc = EINVAL;
+    int rc = 0;
     switch (version) {
     case 2:
         rc = _run_fmu2_cosim(desc, handle, step_size, steps);
@@ -353,8 +362,9 @@ int main(int argc, char** argv)
         break;
     default:
         _log("Unsupported FMI version (%d)!", version);
-        rc = EINVAL;
+        return EINVAL;
     }
+    _log("Simulation return value: %d", rc);
 
     /* Release allocated resources
      * =========================== */
