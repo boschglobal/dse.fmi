@@ -382,7 +382,7 @@ fmi2Status fmi2SetString(fmi2Component c, const fmi2ValueReference vr[],
     FmuInstanceData* fmu = (FmuInstanceData*)c;
 
     /* Make sure that all binary signals were reset at some point. */
-    if (fmu->variables.vtable.reset) fmu->variables.vtable.reset(fmu->data);
+    if (fmu->variables.vtable.reset) fmu->variables.vtable.reset(fmu);
 
     for (size_t i = 0; i < nvr; i++) {
         /* String to process? */
