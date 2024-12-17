@@ -79,11 +79,14 @@ static xmlChar* parse_tool_anno(
 
 
 static inline void _alloc_var(HashMap map, void** vr_ptr, void** val_ptr,
-    size_t ptr_val_size, size_t* count, bool is_string)
+    size_t ptr_size, size_t** val_size, size_t* count, bool is_string)
 {
     *count = map.used_nodes;
     *vr_ptr = calloc(*count, sizeof(unsigned int));
-    *val_ptr = calloc(*count, ptr_val_size);
+    *val_ptr = calloc(*count, ptr_size);
+    if (val_size) {
+        *val_size = calloc(*count, sizeof(size_t));
+    }
     char** keys = hashmap_keys(&map);
     for (uint64_t i = 0; i < map.used_nodes; i++) {
         unsigned int key = (unsigned int)atoi(keys[i]);
@@ -99,8 +102,7 @@ static inline void _alloc_var(HashMap map, void** vr_ptr, void** val_ptr,
                 // memcpy(vr_ptr, value, len);
                 // string_arr[i] = vr_ptr;
             } else {
-                memcpy(
-                    (void*)(*val_ptr + i * ptr_val_size), value, ptr_val_size);
+                memcpy((void*)(*val_ptr + i * ptr_size), value, ptr_size);
             }
         }
         free(keys[i]);
@@ -111,7 +113,154 @@ static inline void _alloc_var(HashMap map, void** vr_ptr, void** val_ptr,
 }
 
 
-modelDescription* parse_model_desc(char* docname)
+static inline void _parse_fmi2_scalar(
+    xmlNodePtr child, xmlChar* vr, xmlChar* causality, xmlChar* start,
+    HashMap* vr_rx_real, HashMap* vr_tx_real)
+{
+    if (xmlStrcmp(child->name, (xmlChar*)"Real")) return;
+
+    double _start = atof((char*)start);
+    if (xmlStrcmp(causality, (xmlChar*)"input") == 0) {
+        hashmap_set_double(vr_rx_real, (char*)vr, _start);
+    } else if (xmlStrcmp(causality, (xmlChar*)"output") == 0) {
+        hashmap_set_double(vr_tx_real, (char*)vr, _start);
+    }
+}
+
+
+static inline void _parse_fmi2_string(
+    xmlNodePtr child, xmlChar* vr, xmlChar* causality, xmlChar* start,
+    HashMap* vr_rx_binary, HashMap* vr_tx_binary)
+{
+    if (xmlStrcmp(child->name, (xmlChar*)"String")) return;
+
+    if (strcmp((char*)causality, "input") == 0) {
+        hashmap_set_string(vr_rx_binary, (char*)vr, (char*)start);
+    } else if (strcmp((char*)causality, "output") == 0) {
+        hashmap_set_string(vr_tx_binary, (char*)vr, (char*)start);
+    }
+
+    /* TODO Support for binary/string variables. */
+    // xmlChar* a_bus_id = parse_tool_anno(
+    //     child->name, "dse.standards.fmi-ls-bus-topology",
+    //     "bus_id");
+    // xmlChar* encoding = parse_tool_anno(
+    //     child->name, "dse.standards.fmi-ls-binary-to-text",
+    //     "encoding");
+    // xmlChar* encoding = parse_tool_anno(
+    //     child->name, "dse.standards.fmi-ls-binary-codec",
+    //     "mimetype");
+}
+
+
+void _parse_fmi2_model_desc(HashMap* vr_rx_real, HashMap* vr_tx_real,
+    HashMap* vr_rx_binary, HashMap* vr_tx_binary, xmlXPathContext* ctx)
+{
+    xmlXPathObject* xml_sv_obj = xmlXPathEvalExpression(
+        (xmlChar*)"/fmiModelDescription/ModelVariables/ScalarVariable", ctx);
+    for (int i = 0; i < xml_sv_obj->nodesetval->nodeNr; i++) {
+        xmlNodePtr scalarVariable = xml_sv_obj->nodesetval->nodeTab[i];
+        xmlChar*   vr = xmlGetProp(scalarVariable, (xmlChar*)"valueReference");
+        xmlChar* causality = xmlGetProp(scalarVariable, (xmlChar*)"causality");
+        xmlChar* start = NULL;
+
+        if (vr == NULL || causality == NULL) goto next;
+
+        for (xmlNodePtr child = scalarVariable->children; child;
+             child = child->next) {
+            if (child->type != XML_ELEMENT_NODE) continue;
+
+            start = xmlGetProp(child, (xmlChar*)"start");
+
+            _parse_fmi2_scalar(
+                child, vr, causality, start, vr_rx_real, vr_tx_real);
+            _parse_fmi2_string(
+                child, vr, causality, start, vr_rx_binary, vr_tx_binary);
+        }
+    /* Cleanup. */
+    next:
+        if (vr) xmlFree(vr);
+        if (causality) xmlFree(causality);
+        if (start) xmlFree(start);
+    }
+    xmlXPathFreeObject(xml_sv_obj);
+}
+
+
+static inline void _parse_fmi3_scalar(
+    xmlNodePtr child, xmlChar* vr, xmlChar* causality, xmlChar* start,
+    HashMap* vr_rx_real, HashMap* vr_tx_real)
+{
+    if (xmlStrcmp(child->name, (xmlChar*)"Float64")) return;
+
+    start = xmlGetProp(child, (xmlChar*)"start");
+    double _start = 0.0;
+    if (start) _start = atof((char*)start);
+
+    if (xmlStrcmp(causality, (xmlChar*)"input") == 0) {
+        hashmap_set_double(vr_rx_real, (char*)vr, _start);
+    } else if (xmlStrcmp(causality, (xmlChar*)"output") == 0) {
+        hashmap_set_double(vr_tx_real, (char*)vr, _start);
+    }
+}
+
+
+static inline void _parse_fmi3_binary(
+    xmlNodePtr child, xmlChar* vr, xmlChar* causality, xmlChar* start,
+    HashMap* vr_rx_binary, HashMap* vr_tx_binary)
+{
+    if (xmlStrcmp(child->name, (xmlChar*)"Binary")) return;
+
+    for (xmlNodePtr _child = child->children; _child;
+            _child = _child->next) {
+        if (_child->type != XML_ELEMENT_NODE) continue;
+        if (strcmp((char*)_child->name, "Start") == 0) {
+            start = xmlGetProp(_child, (xmlChar*)"value");
+        }
+    }
+
+    if (strcmp((char*)causality, "input") == 0) {
+        hashmap_set_string(vr_rx_binary, (char*)vr, (char*)start);
+    } else if (strcmp((char*)causality, "output") == 0) {
+        hashmap_set_string(vr_tx_binary, (char*)vr, (char*)"");
+    }
+}
+
+
+static inline void _parse_fmi3_model_desc(HashMap* vr_rx_real, HashMap* vr_tx_real,
+    HashMap* vr_rx_binary, HashMap* vr_tx_binary, xmlXPathContext* ctx)
+{
+    xmlXPathObject* xml_sv_obj = xmlXPathEvalExpression(
+        (xmlChar*)"/fmiModelDescription/ModelVariables", ctx);
+    for (int i = 0; i < xml_sv_obj->nodesetval->nodeNr; i++) {
+        xmlNodePtr model_variables = xml_sv_obj->nodesetval->nodeTab[i];
+        for (xmlNodePtr child = model_variables->children; child;
+             child = child->next) {
+            if (child->type != XML_ELEMENT_NODE) continue;
+
+            xmlChar* vr = xmlGetProp(child, (xmlChar*)"valueReference");
+            xmlChar* causality = xmlGetProp(child, (xmlChar*)"causality");
+            xmlChar* start = NULL;
+
+            if (vr == NULL || causality == NULL) goto next;
+
+            _parse_fmi3_scalar(
+                child, vr, causality, start, vr_rx_real, vr_tx_real);
+            _parse_fmi3_binary(
+                child, vr, causality, start, vr_rx_binary, vr_tx_binary);
+
+        /* Cleanup. */
+        next:
+            if (vr) xmlFree(vr);
+            if (causality) xmlFree(causality);
+            if (start) xmlFree(start);
+        }
+    }
+    xmlXPathFreeObject(xml_sv_obj);
+}
+
+
+modelDescription* parse_model_desc(char* docname, uint8_t version)
 {
     xmlDocPtr doc;
 
@@ -123,8 +272,6 @@ modelDescription* parse_model_desc(char* docname)
     }
 
     xmlXPathContext* ctx = xmlXPathNewContext(doc);
-    xmlXPathObject*  xml_sv_obj = xmlXPathEvalExpression(
-         (xmlChar*)"/fmiModelDescription/ModelVariables/ScalarVariable", ctx);
 
     HashMap vr_rx_real;
     HashMap vr_tx_real;
@@ -137,69 +284,36 @@ modelDescription* parse_model_desc(char* docname)
 
     modelDescription* desc = calloc(1, sizeof(modelDescription));
 
-    for (int i = 0; i < xml_sv_obj->nodesetval->nodeNr; i++) {
-        xmlNodePtr scalarVariable = xml_sv_obj->nodesetval->nodeTab[i];
-        xmlChar*   vr = xmlGetProp(scalarVariable, (xmlChar*)"valueReference");
-        xmlChar* causality = xmlGetProp(scalarVariable, (xmlChar*)"causality");
-        if (vr == NULL || causality == NULL) goto next;
-
-        for (xmlNodePtr child = scalarVariable->children; child;
-             child = child->next) {
-            if (child->type != XML_ELEMENT_NODE) continue;
-
-            xmlChar* start = xmlGetProp(child, (xmlChar*)"start");
-            if (xmlStrcmp(child->name, (xmlChar*)"Real") == 0 ||
-                xmlStrcmp(child->name, (xmlChar*)"Float64") == 0) {
-                double _start = atof((char*)start);
-                if (xmlStrcmp(causality, (xmlChar*)"input") == 0) {
-                    hashmap_set_double(&vr_rx_real, (char*)vr, _start);
-                } else if (xmlStrcmp(causality, (xmlChar*)"output") == 0) {
-                    hashmap_set_double(&vr_tx_real, (char*)vr, _start);
-                }
-            } else if (xmlStrcmp(child->name, (xmlChar*)"String") == 0 ||
-                       xmlStrcmp(child->name, (xmlChar*)"Binary") == 0) {
-                if (strcmp((char*)causality, "input") == 0) {
-                    hashmap_set_string(&vr_rx_binary, (char*)vr, (char*)start);
-                } else if (strcmp((char*)causality, "output") == 0) {
-                    hashmap_set_string(&vr_tx_binary, (char*)vr, (char*)start);
-                }
-
-                /* TODO Support for binary/string variables. */
-                // xmlChar* a_bus_id = parse_tool_anno(
-                //     child->name, "dse.standards.fmi-ls-bus-topology",
-                //     "bus_id");
-                // xmlChar* encoding = parse_tool_anno(
-                //     child->name, "dse.standards.fmi-ls-binary-to-text",
-                //     "encoding");
-                // xmlChar* encoding = parse_tool_anno(
-                //     child->name, "dse.standards.fmi-ls-binary-codec",
-                //     "mimetype");
-            }
-            xmlFree(start);
-        }
-    /* Cleanup. */
-    next:
-        xmlFree(vr);
-        xmlFree(causality);
+    switch (version) {
+    case 2:
+        _parse_fmi2_model_desc(
+            &vr_rx_real, &vr_tx_real, &vr_rx_binary, &vr_tx_binary, ctx);
+        break;
+    case 3:
+        _parse_fmi3_model_desc(
+            &vr_rx_real, &vr_tx_real, &vr_rx_binary, &vr_tx_binary, ctx);
+        break;
+    default:
+        return NULL;
     }
+
     /* Setup the Scalar vr/ val array for the getter/ setter. */
     _alloc_var(vr_rx_real, (void**)&desc->real.vr_rx_real,
-        (void**)&desc->real.val_rx_real, sizeof(double), &desc->real.rx_count,
-        false);
+        (void**)&desc->real.val_rx_real, sizeof(double), NULL,
+        &desc->real.rx_count, false);
     _alloc_var(vr_tx_real, (void**)&desc->real.vr_tx_real,
-        (void**)&desc->real.val_tx_real, sizeof(double), &desc->real.tx_count,
-        false);
+        (void**)&desc->real.val_tx_real, sizeof(double), NULL,
+        &desc->real.tx_count, false);
 
     /* Setup the string vr/ val array for the getter/ setter. */
     _alloc_var(vr_rx_binary, (void**)&desc->binary.vr_rx_binary,
         (void**)&desc->binary.val_rx_binary, sizeof(char*),
-        &desc->binary.rx_count, true);
+        &desc->binary.val_size_rx_binary, &desc->binary.rx_count, true);
     _alloc_var(vr_tx_binary, (void**)&desc->binary.vr_tx_binary,
         (void**)&desc->binary.val_tx_binary, sizeof(char*),
-        &desc->binary.tx_count, true);
+        &desc->binary.val_size_tx_binary, &desc->binary.tx_count, true);
 
     /* Cleanup. */
-    xmlXPathFreeObject(xml_sv_obj);
     xmlXPathFreeContext(ctx);
     xmlFreeDoc(doc);
 

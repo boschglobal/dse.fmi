@@ -248,7 +248,8 @@ static int _run_fmu3_cosim(
             }
         }
         set_binary(fmu, desc->binary.vr_rx_binary, desc->binary.rx_count,
-            desc->binary.val_rx_binary);
+            desc->binary.val_size_rx_binary, desc->binary.val_rx_binary,
+            desc->binary.rx_count);
         for (size_t i = 0; i < desc->binary.rx_count; i++) {
             /* Release the string (FMU should have duplicated). */
             if (desc->binary.val_rx_binary[i]) {
@@ -256,6 +257,8 @@ static int _run_fmu3_cosim(
                 desc->binary.val_rx_binary[i] = NULL;
             }
         }
+        set_float64(fmu, desc->real.vr_rx_real, desc->real.rx_count,
+            desc->real.val_rx_real, desc->real.rx_count);
 
         _log("Calling fmi3DoStep(): model_time=%f, step_size=%f", model_time,
             step_size);
@@ -266,9 +269,10 @@ static int _run_fmu3_cosim(
 
         /* Read from FMU. */
         get_float64(fmu, desc->real.vr_tx_real, desc->real.tx_count,
-            desc->real.val_tx_real);
-        get_binary(fmu, desc->real.vr_tx_real, desc->binary.tx_count,
-            desc->binary.val_tx_binary);
+            desc->real.val_tx_real, desc->real.tx_count);
+        get_binary(fmu, desc->binary.vr_tx_binary, desc->binary.tx_count,
+            desc->binary.val_size_tx_binary, desc->binary.val_tx_binary,
+            desc->binary.tx_count);
         for (size_t i = 0; i < desc->binary.tx_count; i++) {
             /* Duplicate received strings (in-case FMU releases). */
             if (desc->binary.val_tx_binary[i]) {
@@ -337,7 +341,12 @@ int main(int argc, char** argv)
     getcwd(_cwd, PATH_MAX);
     _log("Cwd: %s", _cwd);
 
-    modelDescription* desc = parse_model_desc((char*)"modelDescription.xml");
+    modelDescription* desc =
+        parse_model_desc((char*)"modelDescription.xml", version);
+    if (desc == NULL) {
+        _log("Could not parse the modelDescription.xml correctly!");
+        return EINVAL;
+    }
 
     /* Load the FMU
      * ============ */

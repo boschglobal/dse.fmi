@@ -54,6 +54,8 @@ typedef struct modelDescription {
         unsigned int* vr_tx_binary;
         char**        val_rx_binary;
         char**        val_tx_binary;
+        size_t*       val_size_rx_binary;
+        size_t*       val_size_tx_binary;
         size_t        rx_count;
         size_t        tx_count;
     } binary;
@@ -61,7 +63,7 @@ typedef struct modelDescription {
 
 
 /* xml.c */
-DLL_PRIVATE modelDescription* parse_model_desc(char* docname);
+DLL_PRIVATE modelDescription* parse_model_desc(char* docname, uint8_t version);
 
 
 #endif  // DSE_IMPORTER_IMPORTER_H_

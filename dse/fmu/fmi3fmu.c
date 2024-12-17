@@ -650,7 +650,7 @@ fmi3Status fmi3SetBinary(fmi3Instance instance,
     FmuInstanceData* fmu = (FmuInstanceData*)instance;
 
     /* Make sure that all binary signals were reset at some point. */
-    if (fmu->variables.vtable.reset) fmu->variables.vtable.reset(fmu->data);
+    if (fmu->variables.vtable.reset) fmu->variables.vtable.reset(fmu);
 
     for (size_t i = 0; i < nValueReferences; i++) {
         /* String to process? */

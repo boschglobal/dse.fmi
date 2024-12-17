@@ -225,9 +225,9 @@ DLL_PRIVATE int32_t fmu_step(
 DLL_PRIVATE int32_t fmu_destroy(FmuInstanceData* fmu);
 
 /* FMU Signal Interface (optional)  */
-DLL_PRIVATE void fmu_signals_reset(FmuInstanceData* fmu);
-DLL_PRIVATE void fmu_signals_setup(FmuInstanceData* fmu);
-DLL_PRIVATE void fmu_signals_remove(FmuInstanceData* fmu);
+DLL_PUBLIC void fmu_signals_reset(FmuInstanceData* fmu);
+DLL_PUBLIC void fmu_signals_setup(FmuInstanceData* fmu);
+DLL_PUBLIC void fmu_signals_remove(FmuInstanceData* fmu);
 
 
 #endif  // DSE_FMU_FMU_H_
