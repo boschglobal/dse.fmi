@@ -188,7 +188,14 @@ static int32_t fmi2mcl_marshal_in(FmuModel* m)
 
     log_trace("Marshal IN (FMU -> target):");
     for (MarshalGroup* mg = m->data.mg_table; mg && mg->name; mg++) {
-        if (mg->dir != MARSHAL_DIRECTION_RXONLY) continue;
+        switch (mg->dir) {
+        case MARSHAL_DIRECTION_TXRX:
+        case MARSHAL_DIRECTION_RXONLY:
+        case MARSHAL_DIRECTION_LOCAL:
+            break;
+        default:
+            continue;
+        }
 
         log_trace(
             "  (name: %s, count: %d, type: %d)", mg->name, mg->count, mg->type);
@@ -284,7 +291,14 @@ int32_t fmi2mcl_marshal_out(FmuModel* m)
 
     log_trace("Marshal OUT (target -> FMU):");
     for (MarshalGroup* mg = m->data.mg_table; mg && mg->name; mg++) {
-        if (mg->dir != MARSHAL_DIRECTION_TXONLY) continue;
+        switch (mg->dir) {
+        case MARSHAL_DIRECTION_TXRX:
+        case MARSHAL_DIRECTION_TXONLY:
+        case MARSHAL_DIRECTION_PARAMETER:
+            break;
+        default:
+            continue;
+        }
 
         log_trace(
             "  (name: %s, count: %d, type: %d)", mg->name, mg->count, mg->type);

@@ -166,6 +166,12 @@ spec:
         fmi_variable_name: real_A2_rx
         fmi_variable_type: Real
         fmi_variable_causality: output
+    - signal: local_var
+      annotations:
+        fmi_variable_vref: 12
+        fmi_variable_name: local_var
+        fmi_variable_type: Real
+        fmi_variable_causality: local
 ---
 kind: SignalGroup
 metadata:
