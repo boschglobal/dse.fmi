@@ -2,12 +2,12 @@
 env NAME=counter
 env IMPORTER=dse/build/_out/importer/fmuImporter
 env FMU_DIR=dse/build/_out/examples/fmu/counter/fmi2
-env FMU_SO=binaries/linux64/libfmu2counter.so
+env FMU_SO=binaries/linux64/fmu2counter.so
 
 # TEST: FMU 2 Counter
 exec sh -e $WORK/test.sh
 
-stdout 'Importer: Loading FMU: binaries/linux64/libfmu2counter.so'
+stdout 'Importer: Loading FMU: binaries/linux64/fmu2counter.so'
 stdout 'Importer: Calling fmi2DoStep\(\): model_time=0.004500, step_size=0.000500'
 stdout 'Importer:   \[1\] 10.000000'
 

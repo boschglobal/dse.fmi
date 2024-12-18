@@ -96,6 +96,10 @@ target_link_libraries(fmu2${MODULE_LC}
         $<$<BOOL:${WIN32}>:dl>
         m
 )
+set_target_properties(fmu2${MODULE_LC}
+    PROPERTIES
+        PREFIX ""
+)
 install(
     TARGETS
         fmu2${MODULE_LC}
@@ -130,6 +134,10 @@ target_link_libraries(fmu3${MODULE_LC}
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${WIN32}>:dl>
         m
+)
+set_target_properties(fmu3${MODULE_LC}
+    PROPERTIES
+        PREFIX ""
 )
 install(
     TARGETS

@@ -83,6 +83,10 @@ target_link_libraries(fmi2fmu
         $<$<BOOL:${WIN32}>:dl>
         m
 )
+set_target_properties(fmi2fmu
+    PROPERTIES
+        PREFIX ""
+)
 install(
     TARGETS
         fmi2fmu

@@ -2,12 +2,12 @@
 env NAME=linear
 env IMPORTER=dse/build/_out/importer/fmuImporter
 env FMU_DIR=dse/build/_out/examples/fmu/linear/fmi2
-env FMU_SO=binaries/linux64/libfmu2linear.so
+env FMU_SO=binaries/linux64/fmu2linear.so
 
 # TEST: FMU 2 Linear
 exec sh -e $WORK/test.sh
 
-stdout 'Importer: Loading FMU: binaries/linux64/libfmu2linear.so'
+stdout 'Importer: Loading FMU: binaries/linux64/fmu2linear.so'
 stdout 'Importer: Calling fmi2DoStep\(\): model_time=0.004500, step_size=0.000500'
 stdout 'Importer:   \[4\] 0.000000'
 
