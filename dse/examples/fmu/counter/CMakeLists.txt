@@ -70,6 +70,10 @@ set(FMI_3_COMMON_FILES
     ${FMU_SOURCE_DIR}/fmi3fmu.c
     ${FMU_SOURCE_DIR}/signal.c
 )
+file(GENERATE
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/.keepme
+    CONTENT "keepme"
+)
 
 
 # Targets
@@ -112,6 +116,12 @@ install(
     DESTINATION
         ${FMU_FMI2_PATH}
 )
+install(
+    FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/.keepme
+    DESTINATION
+        ${FMU_FMI2_PATH}/resources
+)
 
 
 # FMI3 FMU
@@ -145,6 +155,18 @@ install(
     LIBRARY DESTINATION
         ${FMU_FMI3_PATH}/binaries/x86_64-linux
 )
+install(
+    FILES
+        fmi3/modelDescription.xml
+    DESTINATION
+        ${FMU_FMI3_PATH}
+)
+install(
+    FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/.keepme
+    DESTINATION
+        ${FMU_FMI3_PATH}/resources
+)
 
 
 # Package FMU
@@ -152,9 +174,10 @@ install(
 install(CODE "
     execute_process(
         COMMAND sh -c \"
-            mkdir -p resources
-            touch resources/.keepme
-            zip -r ${MODULE_LC}.zip ./
+            FILE=${CMAKE_CURRENT_BINARY_DIR}/fmu2${MODULE_LC}.zip
+            if [ ! -f $FILE ]; then
+                zip -r $FILE ./
+            fi
             exit 0
         \"
         WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${FMU_FMI2_PATH}
@@ -162,41 +185,29 @@ install(CODE "
 )
 install(
     FILES
-        ${CMAKE_INSTALL_PREFIX}/${FMU_FMI2_PATH}/${MODULE_LC}.zip
+        ${CMAKE_CURRENT_BINARY_DIR}/fmu2${MODULE_LC}.zip
     DESTINATION
         ${FMU_FMI2_PATH}
     RENAME
         ${MODULE_LC}.fmu
 )
-install(
-    FILES
-        ${CMAKE_INSTALL_PREFIX}/${FMU_FMI2_PATH}/resources/.keepme
-    DESTINATION
-        ${FMU_FMI2_PATH}
-)
 
 install(CODE "
     execute_process(
         COMMAND sh -c \"
-            mkdir -p resources
-            touch resources/.keepme
-            zip -r ${MODULE_LC}.zip ./
-            exit 0
+            FILE=${CMAKE_CURRENT_BINARY_DIR}/fmu3${MODULE_LC}.zip
+            if [ ! -f $FILE ]; then
+                zip -r $FILE ./
+            fi
         \"
         WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${FMU_FMI3_PATH}
     )"
 )
 install(
     FILES
-        ${CMAKE_INSTALL_PREFIX}/${FMU_FMI3_PATH}/${MODULE_LC}.zip
+        ${CMAKE_CURRENT_BINARY_DIR}/fmu3${MODULE_LC}.zip
     DESTINATION
         ${FMU_FMI3_PATH}
     RENAME
         ${MODULE_LC}.fmu
-)
-install(
-    FILES
-        ${CMAKE_INSTALL_PREFIX}/${FMU_FMI3_PATH}/resources/.keepme
-    DESTINATION
-        ${FMU_FMI3_PATH}
 )
