@@ -113,6 +113,9 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.FmiModelDescript
 		}
 	}
 
+	// Write the SignalGroups.
+	fmt.Fprintf(flag.CommandLine.Output(), "Appending file: %s\n", c.outputFile)
+
 	signalVector := kind.SignalGroup{
 		Kind: "SignalGroup",
 		Metadata: &kind.ObjectMetadata{
@@ -124,26 +127,24 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.FmiModelDescript
 		},
 	}
 	signalVector.Spec.Signals = scalarSignals
-
-	networkVector := kind.SignalGroup{
-		Kind: "SignalGroup",
-		Metadata: &kind.ObjectMetadata{
-			Name: stringPtr(fmiMD.ModelName),
-			Labels: &kind.Labels{
-				"channel": "network_vector",
-				"model":   fmiMD.ModelName,
-			},
-			Annotations: &kind.Annotations{
-				"vector_type": "binary",
-			},
-		},
-	}
-	networkVector.Spec.Signals = binarySignals
-
-	// Write the SignalGroups.
-	fmt.Fprintf(flag.CommandLine.Output(), "Appending file: %s\n", c.outputFile)
 	writeYaml(&signalVector, c.outputFile, true)
-	writeYaml(&networkVector, c.outputFile, true)
+	if len(binarySignals) > 0 {
+		networkVector := kind.SignalGroup{
+			Kind: "SignalGroup",
+			Metadata: &kind.ObjectMetadata{
+				Name: stringPtr(fmiMD.ModelName),
+				Labels: &kind.Labels{
+					"channel": "network_vector",
+					"model":   fmiMD.ModelName,
+				},
+				Annotations: &kind.Annotations{
+					"vector_type": "binary",
+				},
+			},
+		}
+		networkVector.Spec.Signals = binarySignals
+		writeYaml(&networkVector, c.outputFile, true)
+	}
 
 	return nil
 }

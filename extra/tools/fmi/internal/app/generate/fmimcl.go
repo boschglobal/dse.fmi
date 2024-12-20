@@ -62,7 +62,7 @@ func (c *FmiMclCommand) Run() error {
 	h := fmi2.XmlFmuHandler{}
 	var fmiMD *fmi2.FmiModelDescription
 	if fmiMD = h.Detect(fmuModelDescriptionFilename); fmiMD == nil {
-		return fmt.Errorf("Could not read FMU Model Description file!")
+		return fmt.Errorf("could not read FMU Model Description file")
 	}
 	if err := c.generateModel(*fmiMD); err != nil {
 		return err
@@ -79,13 +79,26 @@ func _generateChannels(fmiMD fmi2.FmiModelDescription) ([]kind.Channel, error) {
 				"channel": "signal_vector",
 			},
 		},
-		{
-			Alias: stringPtr("network_channel"),
-			Selectors: &kind.Labels{
-				"model":   fmiMD.ModelName,
-				"channel": "network_vector",
+	}
+	binarySignalCount := func() int {
+		count := 0
+		for _, s := range fmiMD.ModelVariables.ScalarVariable {
+			if s.String != nil {
+				count++
+			}
+		}
+		return count
+	}()
+	if binarySignalCount > 0 {
+		channels = append(channels,
+			kind.Channel{
+				Alias: stringPtr("network_channel"),
+				Selectors: &kind.Labels{
+					"model":   fmiMD.ModelName,
+					"channel": "network_vector",
+				},
 			},
-		},
+		)
 	}
 	return channels, nil
 }

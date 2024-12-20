@@ -36,6 +36,10 @@ yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[0].alias signal_channe
 yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[0].selectors.model Test
 yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[0].selectors.channel signal_vector
 
+! yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[1].alias network_channel
+! yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[1].selectors.model Test
+! yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[1].selectors.channel network_vector
+
 yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].arch amd64
 yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].os linux
 yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].path lib/libfmimcl.so

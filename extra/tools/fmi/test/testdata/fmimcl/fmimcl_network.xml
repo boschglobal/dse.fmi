@@ -1,0 +1,43 @@
+<fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{0bc3244a-e274-4c4a-8205-b2a5a18af23a}"
+    description="" author="" version="1.1" generationTool="" generationDateAndTime=""
+    variableNamingConvention="" numberOfEventIndicators="">
+    <CoSimulation modelIdentifier="target" canHandleVariableCommunicationStepSize=""
+        canInterpolateInputs=""></CoSimulation>
+    <DefaultExperiment startTime="0" stopTime="42" stepSize="0.0005"></DefaultExperiment>
+    <ModelVariables>
+        <ScalarVariable name="scalar_1" valueReference="1" causality="input" initial=""
+            variability="">
+            <Real start="42" reinit="" derivative=""></Real>
+        </ScalarVariable>
+        <ScalarVariable name="scalar_2" valueReference="2" causality="output" initial=""
+            variability="">
+            <Real></Real>
+        </ScalarVariable>
+        <ScalarVariable name="scalar_3" valueReference="3" initial="" variability="">
+            <Real></Real>
+        </ScalarVariable>
+        <ScalarVariable name="boolean_1" valueReference="4" causality="input" variability="discrete">
+            <Boolean start="false"></Boolean>
+        </ScalarVariable>
+        <ScalarVariable name="boolean_2" valueReference="5" causality="output" variability="">
+            <Boolean></Boolean>
+        </ScalarVariable>
+        <ScalarVariable name="scalar_4" valueReference="6" causality="local" initial=""
+            variability="">
+            <Real></Real>
+        </ScalarVariable>
+        <ScalarVariable name="string_7" valueReference="7" causality="input" initial=""
+            variability="">
+            <String></String>
+        </ScalarVariable>
+        <ScalarVariable name="string_8" valueReference="8" causality="output" initial=""
+            variability="">
+            <String></String>
+        </ScalarVariable>
+    </ModelVariables>
+    <ModelStructure>
+        <Outputs></Outputs>
+        <Derivatives></Derivatives>
+        <InitialUnknowns></InitialUnknowns>
+    </ModelStructure>
+</fmiModelDescription>

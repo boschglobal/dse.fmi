@@ -1,0 +1,48 @@
+env FMUXML=$REPO_DIR/extra/tools/fmi/test/testdata/fmimcl/fmimcl_network.xml
+
+# Create the simulation folder (Simer layout)
+env
+mkdir sim/lib
+exec touch sim/lib/libfmimcl.so
+mkdir sim/fmu/fmi2fmu
+mkdir sim/fmu/fmi2fmu/binaries/linux64
+mkdir sim/fmu/fmi2fmu/resources
+cp $FMUXML sim/fmu/fmi2fmu/modelDescription.xml
+exec touch sim/fmu/fmi2fmu/binaries/linux64/libfmi2fmu.so
+exec ls -R $WORK/sim
+
+# Generate the FMI MCL configuration
+env
+cd sim
+exec fmi gen-mcl -fmu fmu/fmi2fmu -outdir model/fmi2fmu -mcl lib/libfmimcl.so
+cd ..
+exec ls -R $WORK/sim
+exists sim/model/fmi2fmu/model.yaml
+
+# Check the generated files
+exec cat sim/model/fmi2fmu/model.yaml
+yamlcontains sim/model/fmi2fmu/model.yaml $.kind Model
+
+yamlcontains sim/model/fmi2fmu/model.yaml $.metadata.name Test
+yamlcontains sim/model/fmi2fmu/model.yaml $.metadata.annotations.fmi_guid {0bc3244a-e274-4c4a-8205-b2a5a18af23a}
+yamlcontains sim/model/fmi2fmu/model.yaml $.metadata.annotations.fmi_model_cosim true
+yamlcontains sim/model/fmi2fmu/model.yaml $.metadata.annotations.fmi_model_version 1.1
+yamlcontains sim/model/fmi2fmu/model.yaml $.metadata.annotations.fmi_resource_dir fmu/fmi2fmu/resources
+yamlcontains sim/model/fmi2fmu/model.yaml $.metadata.annotations.fmi_stepsize 0.0005
+yamlcontains sim/model/fmi2fmu/model.yaml $.metadata.annotations.mcl_adapter fmi
+yamlcontains sim/model/fmi2fmu/model.yaml $.metadata.annotations.mcl_version 2.0
+
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[0].alias signal_channel
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[0].selectors.model Test
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[0].selectors.channel signal_vector
+
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[1].alias network_channel
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[1].selectors.model Test
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.channels[1].selectors.channel network_vector
+
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].arch amd64
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].os linux
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.dynlib[0].path lib/libfmimcl.so
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].arch amd64
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].os linux
+yamlcontains sim/model/fmi2fmu/model.yaml $.spec.runtime.mcl[0].path fmu/fmi2fmu/binaries/linux64/target.so
