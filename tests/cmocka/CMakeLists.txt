@@ -61,6 +61,7 @@ FetchContent_MakeAvailable(dse_clib)
 set(DSE_CLIB_SOURCE_DIR ${dse_clib_SOURCE_DIR}/dse/clib)
 set(DSE_CLIB_SOURCE_FILES
     ${DSE_CLIB_SOURCE_DIR}/util/binary.c
+    ${DSE_CLIB_SOURCE_DIR}/util/strings.c
     ${DSE_CLIB_SOURCE_DIR}/util/yaml.c
     ${DSE_CLIB_SOURCE_DIR}/collections/hashmap.c
     ${DSE_CLIB_SOURCE_DIR}/collections/set.c
@@ -225,3 +226,4 @@ install(
 
 add_subdirectory(fmimodelc)
 add_subdirectory(fmu)
+add_subdirectory(fmigateway)

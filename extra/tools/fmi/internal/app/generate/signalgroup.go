@@ -127,7 +127,10 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.FmiModelDescript
 		},
 	}
 	signalVector.Spec.Signals = scalarSignals
-	writeYaml(&signalVector, c.outputFile, true)
+	if err := writeYaml(&signalVector, c.outputFile, true); err != nil {
+		return err
+	}
+
 	if len(binarySignals) > 0 {
 		networkVector := kind.SignalGroup{
 			Kind: "SignalGroup",
@@ -143,7 +146,9 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.FmiModelDescript
 			},
 		}
 		networkVector.Spec.Signals = binarySignals
-		writeYaml(&networkVector, c.outputFile, true)
+		if err := writeYaml(&networkVector, c.outputFile, true); err != nil {
+			return err
+		}
 	}
 
 	return nil

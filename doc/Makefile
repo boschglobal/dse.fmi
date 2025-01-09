@@ -45,8 +45,15 @@ DOC_OUTPUT_fmu := doc/content/apis/fmi/fmu/index.md
 DOC_LINKTITLE_fmu := "FMU"
 DOC_TITLE_fmu := "FMU API Reference"
 
+# Module "fmu"
+DOC_INPUT_fmigateway := dse/fmigateway/fmigateway.h
+DOC_CDIR_fmigateway := dse/fmigateway/fmigateway.c,dse/fmigateway/parser.c,dse/fmigateway/index.c,dse/fmigateway/session.c,dse/fmigateway/session_win32.c
+DOC_OUTPUT_fmigateway := doc/content/apis/fmi/fmigateway/index.md
+DOC_LINKTITLE_fmigateway := "Gateway FMU"
+DOC_TITLE_fmigateway := "FMI Gateway FMU API Reference"
+
 # Targets
-DOC_C_MODULES := fmimcl fmimodelc fmu
+DOC_C_MODULES := fmimcl fmimodelc fmu fmigateway
 
 
 .PHONY: examples

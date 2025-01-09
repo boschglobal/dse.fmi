@@ -20,45 +20,60 @@
 #define VREF_KEY_LEN (10 + 1)
 
 
+/**
+default_log
+===========
+
+Default logging function in case the FMU caller does not provide any logger.
+*/
 void default_log(fmi2ComponentEnvironment componentEnvironment,
     fmi2String instanceName, fmi2Status status, fmi2String category,
     fmi2String message, ...)
 {
     UNUSED(componentEnvironment);
+    UNUSED(instanceName);
 
     static const char* statusString[] = { "OK", "Warning", "Discard", "Error",
         "Fatal", "Pending" };
 
-    printf("[%s] %s: ", category, instanceName);
-    va_list args;
-    va_start(args, message);
-    vprintf(message, args);
-    va_end(args);
-    printf(" (%s)\n", statusString[status]);
+    printf("[%s:%s] %s\n", category, statusString[status], message);
     fflush(stdout);
 }
 
-static void _log(const char* format, ...)
+
+void fmu_log(FmuInstanceData* fmu, const int status, const char* category,
+    const char* message, ...)
 {
-    printf("FMU: ");
+    if (fmu->instance.log_enabled == fmi2False) return;
+
     va_list args;
-    va_start(args, format);
-    vprintf(format, args);
+    va_start(args, message);
+    char format[1024];
+    vsnprintf(format, sizeof(format), message, args);
     va_end(args);
-    printf("\n");
-    fflush(stdout);
+
+    ((void (*)())fmu->instance.logger)(
+        NULL, fmu->instance.name, status, category, format);
 }
-static void _log_binary_signal(FmuSignalVectorIndex* idx)
+
+
+static void _log_binary_signal(FmuInstanceData* fmu, FmuSignalVectorIndex* idx)
 {
     if (idx == NULL || idx->sv->binary == NULL) return;
     uint32_t index = idx->vi;
-    _log("      - name       : %s", idx->sv->signal[index]);
-    _log("        length     : %d", idx->sv->length[index]);
-    _log("        buffer len : %d", idx->sv->buffer_size[index]);
+
+    fmu_log(fmu, fmi2OK, "Debug",
+        "\n      - name       : %s"
+        "\n        length     : %d"
+        "\n        buffer len : %d",
+        idx->sv->signal[index], idx->sv->length[index],
+        idx->sv->buffer_size[index]);
+
     uint8_t* buffer = *idx->sv->binary;
     for (uint32_t j = 0; j + 16 < idx->sv->length[index]; j += 16) {
-        _log("          %02x %02x %02x %02x %02x %02x %02x %02x "
-             "%02x %02x %02x %02x %02x %02x %02x %02x",
+        fmu_log(fmu, fmi2OK, "Debug",
+            "\n          %02x %02x %02x %02x %02x %02x %02x %02x "
+            "%02x %02x %02x %02x %02x %02x %02x %02x",
             buffer[j + 0], buffer[j + 1], buffer[j + 2], buffer[j + 3],
             buffer[j + 4], buffer[j + 5], buffer[j + 6], buffer[j + 7],
             buffer[j + 8], buffer[j + 9], buffer[j + 10], buffer[j + 11],
@@ -91,7 +106,6 @@ fmi2Component fmi2Instantiate(fmi2String instance_name, fmi2Type fmu_type,
     UNUSED(visible);
 
     /* Create the FMU Model Instance Data. */
-    _log("Create the FMU Model Instance Data");
     FmuInstanceData* fmu = calloc(1, sizeof(FmuInstanceData));
     fmu->instance.name = strdup(instance_name);
     fmu->instance.type = fmu_type;
@@ -111,8 +125,7 @@ fmi2Component fmi2Instantiate(fmi2String instance_name, fmi2Type fmu_type,
     } else {
         fmu->instance.logger = default_log;
     }
-    ((void (*)())fmu->instance.logger)(
-        NULL, fmu->instance.name, fmi2OK, "Debug", "FMU Model instantiated");
+    fmu_log(fmu, fmi2OK, "Debug", "FMU Model instantiated");
 
     /**
      *  Calculate the offset needed to trim/correct the resource location.
@@ -130,11 +143,11 @@ fmi2Component fmi2Instantiate(fmi2String instance_name, fmi2Type fmu_type,
         resource_path_offset = strlen(FILE_URI_SHORT_SCHEME);
     }
     fmu->instance.resource_location += resource_path_offset;
-    ((void (*)())fmu->instance.logger)(NULL, fmu->instance.name, fmi2OK,
-        "Debug", "Resource location: %s", fmu->instance.resource_location);
 
-    ((void (*)())fmu->instance.logger)(
-        NULL, fmu->instance.name, fmi2OK, "Debug", "Build indexes...");
+    fmu_log(fmu, fmi2OK, "Debug", "Resource location: %s",
+        fmu->instance.resource_location);
+
+    fmu_log(fmu, fmi2OK, "Debug", "Build indexes...");
     hashmap_init(&fmu->variables.scalar.input);
     hashmap_init(&fmu->variables.scalar.output);
     hashmap_init(&fmu->variables.binary.rx);
@@ -150,8 +163,9 @@ fmi2Component fmi2Instantiate(fmi2String instance_name, fmi2Type fmu_type,
     hashlist_init(&fmu->variables.binary.free_list, 1024);
 
     /* Specialised Model. */
-    fmu_create(fmu);
-
+    if (fmu_create(fmu) != fmi2OK) {
+        fmu_log(fmu, fmi2Error, "Error", "The FMU was not created correctly!");
+    }
     /* Return the created instance object. */
     return (fmi2Component)fmu;
 }
@@ -182,7 +196,7 @@ fmi2Status fmi2ExitInitializationMode(fmi2Component c)
     assert(c);
     FmuInstanceData* fmu = (FmuInstanceData*)c;
 
-    int rc = fmu_init(fmu);
+    int32_t rc = fmu_init(fmu);
 
     return (rc == 0 ? fmi2OK : fmi2Error);
 }
@@ -282,7 +296,7 @@ fmi2Status fmi2GetString(fmi2Component c, const fmi2ValueReference vr[],
         if (data == NULL || data_len == 0) continue;
 
         /* Write the requested string, encode if configured. */
-        _log_binary_signal(idx);
+        _log_binary_signal(fmu, idx);
         EncodeFunc ef = hashmap_get(&fmu->variables.binary.encode_func, vr_idx);
         if (ef) {
             value[i] = ef((char*)data, data_len);
@@ -406,7 +420,7 @@ fmi2Status fmi2SetString(fmi2Component c, const fmi2ValueReference vr[],
         /* Append the binary string to the Binary Signal. */
         dse_buffer_append(&idx->sv->binary[idx->vi], &idx->sv->length[idx->vi],
             &idx->sv->buffer_size[idx->vi], (void*)data, data_len);
-        _log_binary_signal(idx);
+        _log_binary_signal(fmu, idx);
 
         /* Release the decode string/memory. Caller owns value[]. */
         if (data != value[i]) free(data);
@@ -461,7 +475,8 @@ fmi2Status fmi2DoStep(fmi2Component c, fmi2Real currentCommunicationPoint,
     if (fmu->variables.vtable.reset) fmu->variables.vtable.reset(fmu);
 
     /* Step the model. */
-    int rc = fmu_step(fmu, currentCommunicationPoint, communicationStepSize);
+    int32_t rc =
+        fmu_step(fmu, currentCommunicationPoint, communicationStepSize);
 
     /* Reset the binary signal reset mechanism. */
     fmu->variables.signals_reset = false;
@@ -487,15 +502,13 @@ void fmi2FreeInstance(fmi2Component c)
     assert(c);
     FmuInstanceData* fmu = (FmuInstanceData*)c;
 
-    if (fmu_destroy(fmu) < 0) {
-        ((void (*)())fmu->instance.logger)(NULL, fmu->instance.name, fmi2OK,
-            "Error", "Could not release model");
+    if (fmu_destroy(fmu) < fmi2OK) {
+        fmu_log(fmu, fmi2Error, "Error", "Could not release model");
     }
 
     if (fmu->variables.vtable.remove) fmu->variables.vtable.remove(fmu);
 
-    ((void (*)())fmu->instance.logger)(
-        NULL, fmu->instance.name, fmi2OK, "Debug", "Destroy the index");
+    fmu_log(fmu, fmi2OK, "Debug", "Destroy the index");
     hashmap_destroy(&fmu->variables.scalar.input);
     hashmap_destroy(&fmu->variables.scalar.output);
     hashmap_destroy(&fmu->variables.binary.rx);
@@ -504,8 +517,7 @@ void fmi2FreeInstance(fmi2Component c)
     hashmap_destroy(&fmu->variables.binary.decode_func);
     hashlist_destroy(&fmu->variables.binary.free_list);
 
-    ((void (*)())fmu->instance.logger)(NULL, fmu->instance.name, fmi2OK,
-        "Debug", "Release FMI instance resources");
+    fmu_log(fmu, fmi2OK, "Debug", "Release FMI instance resources");
     free(fmu->instance.name);
     free(fmu->instance.guid);
     free(fmu->instance.save_resource_location);

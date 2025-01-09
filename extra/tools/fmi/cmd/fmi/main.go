@@ -20,6 +20,7 @@ var (
 		generate.NewFmiMclCommand("gen-mcl"),
 		generate.NewGenSignalGroupCommand("gen-signalgroup"),
 		generate.NewGenFmuAnnotationCommand("gen-annotations"),
+		generate.NewFmiGatewayCommand("gen-gateway"),
 		patch.NewPatchSignalGroupCommand("patch-signalgroup"),
 	}
 )

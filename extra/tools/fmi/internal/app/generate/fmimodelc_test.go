@@ -24,26 +24,24 @@ func TestFmiModelc_ModelDescription(t *testing.T) {
 	assert.Equal(t, "{11111111-2222-3333-4444-555555555555}", fmiMD.Guid, "Guid should match")
 	assert.Equal(t, "fmi2modelcfmu", fmiMD.CoSimulation.ModelIdentifier, "ModelIdentifier should match")
 
-	ann := &[]fmi2.Annotations{
-		{
-			Tool: []fmi2.Tool{
-				{
-					Name: "dse.standards.fmi-ls-binary-codec",
-					Annotation: &[]fmi2.Annotation{
-						{Name: "mimetype", Text: "application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; node_id=2; interface_id=0"},
-					},
+	ann := &fmi2.Annotations{
+		Tool: []fmi2.Tool{
+			{
+				Name: "dse.standards.fmi-ls-binary-codec",
+				Annotation: []fmi2.Annotation{
+					{Name: "mimetype", Text: "application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; node_id=2; interface_id=0"},
 				},
-				{
-					Name: "dse.standards.fmi-ls-binary-to-text",
-					Annotation: &[]fmi2.Annotation{
-						{Name: "encoding", Text: "ascii85"},
-					},
+			},
+			{
+				Name: "dse.standards.fmi-ls-binary-to-text",
+				Annotation: []fmi2.Annotation{
+					{Name: "encoding", Text: "ascii85"},
 				},
-				{
-					Name: "dse.standards.fmi-ls-bus-topology",
-					Annotation: &[]fmi2.Annotation{
-						{Name: "bus_id", Text: "1"},
-					},
+			},
+			{
+				Name: "dse.standards.fmi-ls-bus-topology",
+				Annotation: []fmi2.Annotation{
+					{Name: "bus_id", Text: "1"},
 				},
 			},
 		},

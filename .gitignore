@@ -11,6 +11,7 @@ extra/tools/*/bin
 !extra/tools/*/build
 extra/tools/*/build/stage
 .task/
+.vscode
 
 # Prerequisites
 *.d

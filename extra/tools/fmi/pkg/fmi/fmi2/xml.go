@@ -230,10 +230,10 @@ func BinarySignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelD
 	for _, signal := range signalGroupSpec.Signals {
 		var rx_vref []interface{}
 		var tx_vref []interface{}
-		if rx_vref := (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.rx_vref"]; rx_vref == nil {
+		if rx_vref = (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.rx_vref"].([]interface{}); rx_vref == nil {
 			return fmt.Errorf("Could not get rx_vref for signal %s", signal.Signal)
 		}
-		if tx_vref := (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.tx_vref"]; tx_vref == nil {
+		if tx_vref = (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.tx_vref"].([]interface{}); tx_vref == nil {
 			return fmt.Errorf("Could not get tx_vref for signal %s", signal.Signal)
 		}
 		if len(rx_vref) != len(tx_vref) {

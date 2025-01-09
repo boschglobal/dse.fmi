@@ -44,6 +44,14 @@ tasks:
     cmds:
       - task: gen-fmu
 
+  generate-fmigateway:
+    desc: Generate a FMI Gateway FMU from existing Signalgroups.
+    run: always
+    dir: '{{.USER_WORKING_DIR}}'
+    label: dse:fmi:generate-fmigateway
+    cmds:
+      - task: gen-gateway
+
   gen-mcl:
     internal: true
     run: always
@@ -111,6 +119,32 @@ tasks:
             {{.UUID}}
     requires:
       vars: [SIM, FMU_NAME]
+
+  gen-gateway:
+    internal: true
+    run: always
+    dir: '{{.USER_WORKING_DIR}}'
+    label: dse:fmi:gen-gateway
+    vars:
+      SIGNAL_GROUPS: '{{.SIGNAL_GROUPS | default "SIGNAL_GROUPS_NOT_SPECIFIED"}}'
+      OUT_DIR: '{{.OUT_DIR | default "out"}}'
+      SESSION: "{{if .SESSION}}--session '{{.SESSION}}'{{else}}{{end}}"
+      VERSION: "{{if .VERSION}}--version '{{.VERSION}}'{{else}}{{end}}"
+      FMI_VERSION: "{{if .FMIVERSION}}--fmiVersion '{{.FMIVERSION}}'{{else}}{{end}}"
+      UUID: "{{if .UUID}}--uuid '{{.UUID}}'{{else}}{{end}}"
+    cmds:
+      - docker run --rm
+          -v {{.ENTRYDIR}}:/sim
+          {{.FMI_IMAGE}}:{{.FMI_TAG}}
+          gen-gateway
+            --signalgroups {{.SIGNAL_GROUPS}}
+            --outdir {{.OUT_DIR}}
+            {{.SESSION}}
+            {{.VERSION}}
+            {{.FMI_VERSION}}
+            {{.UUID}}
+    requires:
+      vars: [SIGNAL_GROUPS]
 
   patch-signalgroup:
     run: always

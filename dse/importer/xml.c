@@ -188,12 +188,12 @@ void _parse_fmi2_model_desc(HashMap* vr_rx_real, HashMap* vr_tx_real,
 
 
 static inline void _parse_fmi3_scalar(
-    xmlNodePtr child, xmlChar* vr, xmlChar* causality, xmlChar* start,
-    HashMap* vr_rx_real, HashMap* vr_tx_real)
+    xmlNodePtr child, xmlChar* vr, xmlChar* causality, HashMap* vr_rx_real,
+    HashMap* vr_tx_real)
 {
     if (xmlStrcmp(child->name, (xmlChar*)"Float64")) return;
 
-    start = xmlGetProp(child, (xmlChar*)"start");
+    xmlChar* start = xmlGetProp(child, (xmlChar*)"start");
     double _start = 0.0;
     if (start) _start = atof((char*)start);
 
@@ -202,15 +202,19 @@ static inline void _parse_fmi3_scalar(
     } else if (xmlStrcmp(causality, (xmlChar*)"output") == 0) {
         hashmap_set_double(vr_tx_real, (char*)vr, _start);
     }
+
+    /* Cleanup. */
+    if (start) xmlFree(start);
 }
 
 
 static inline void _parse_fmi3_binary(
-    xmlNodePtr child, xmlChar* vr, xmlChar* causality, xmlChar* start,
-    HashMap* vr_rx_binary, HashMap* vr_tx_binary)
+    xmlNodePtr child, xmlChar* vr, xmlChar* causality, HashMap* vr_rx_binary,
+    HashMap* vr_tx_binary)
 {
     if (xmlStrcmp(child->name, (xmlChar*)"Binary")) return;
 
+    xmlChar* start = NULL;
     for (xmlNodePtr _child = child->children; _child;
             _child = _child->next) {
         if (_child->type != XML_ELEMENT_NODE) continue;
@@ -220,10 +224,14 @@ static inline void _parse_fmi3_binary(
     }
 
     if (strcmp((char*)causality, "input") == 0) {
-        hashmap_set_string(vr_rx_binary, (char*)vr, (char*)start);
+        hashmap_set_string(
+            vr_rx_binary, (char*)vr, start ? (char*)start : (char*)"");
     } else if (strcmp((char*)causality, "output") == 0) {
         hashmap_set_string(vr_tx_binary, (char*)vr, (char*)"");
     }
+
+    /* Cleanup. */
+    if (start) xmlFree(start);
 }
 
 
@@ -240,20 +248,18 @@ static inline void _parse_fmi3_model_desc(HashMap* vr_rx_real, HashMap* vr_tx_re
 
             xmlChar* vr = xmlGetProp(child, (xmlChar*)"valueReference");
             xmlChar* causality = xmlGetProp(child, (xmlChar*)"causality");
-            xmlChar* start = NULL;
 
             if (vr == NULL || causality == NULL) goto next;
 
             _parse_fmi3_scalar(
-                child, vr, causality, start, vr_rx_real, vr_tx_real);
+                child, vr, causality, vr_rx_real, vr_tx_real);
             _parse_fmi3_binary(
-                child, vr, causality, start, vr_rx_binary, vr_tx_binary);
+                child, vr, causality, vr_rx_binary, vr_tx_binary);
 
         /* Cleanup. */
         next:
             if (vr) xmlFree(vr);
             if (causality) xmlFree(causality);
-            if (start) xmlFree(start);
         }
     }
     xmlXPathFreeObject(xml_sv_obj);

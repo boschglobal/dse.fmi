@@ -94,6 +94,14 @@ task: Available tasks for this project:
 * generate-fmimcl:          Generate an FMI MCL from an existing FMU.
 * generate-fmimodelc:       Generate a FMI ModelC FMU from an existing (DSE/ModelC) Simer simulation.
 
+# FMI Gateway with the generate-fmigateway command:
+$ task generate-fmigateway \
+    FMI_VERSION=2 \
+    SIGNAL_GROUPS="extra/tools/fmi/test/testdata/fmigateway/SG1.yaml,extra/tools/fmi/test/testdata/fmigateway/SG2.yaml"
+Running FMI Toolset command: gen-gateway
+Adding SignalGroup Model_1 to out/fmu.yaml
+Adding SignalGroup Model_2 to out/fmu.yaml
+Creating Model YAML: gateway (out/model.yaml)
 
 # FMI MCL with the generate-fmimcl command:
 $ task generate-fmimcl \

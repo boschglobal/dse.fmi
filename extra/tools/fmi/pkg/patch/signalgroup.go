@@ -20,9 +20,9 @@ type PatchSignalGroupCommand struct {
 	name string
 	fs   *flag.FlagSet
 
-	signalGroupFile   string
-	signalPatchFile   string
-	removeUnknown     bool
+	signalGroupFile string
+	signalPatchFile string
+	removeUnknown   bool
 }
 
 func NewPatchSignalGroupCommand(name string) *PatchSignalGroupCommand {
@@ -44,7 +44,6 @@ func (c PatchSignalGroupCommand) FlagSet() *flag.FlagSet {
 func (c *PatchSignalGroupCommand) Parse(args []string) error {
 	return c.fs.Parse(args)
 }
-
 
 func (c *PatchSignalGroupCommand) Run() error {
 	inputYaml, err := os.ReadFile(c.signalGroupFile)
@@ -73,7 +72,6 @@ func (c *PatchSignalGroupCommand) Run() error {
 	}
 	return nil
 }
-
 
 func patchSignals(sigGroup *kind.SignalGroup, patchFile string, removeUnknown bool) error {
 	// Load the CSV patch file.

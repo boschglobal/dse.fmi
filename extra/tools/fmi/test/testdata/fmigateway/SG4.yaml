@@ -1,0 +1,15 @@
+---
+kind: SignalGroup
+metadata:
+  labels:
+    channel: E2M_M2E
+    model: Model_4
+  name: Model_4
+spec:
+  signals:
+    - signal: signal_1
+      annotations:
+        direction: input
+    - signal: signal_2
+      annotations:
+        direction: output

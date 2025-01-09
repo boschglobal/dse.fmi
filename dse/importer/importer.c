@@ -61,7 +61,7 @@ static struct option long_options[] = {
     { "help", no_argument, NULL, 'h' },
     { "version", required_argument, NULL, 'V' },
     { "fmu", required_argument, NULL, 'F' },
-    { "stepSize", required_argument, NULL, 'S' },
+    { "step_size", required_argument, NULL, 'S' },
     { "steps", required_argument, NULL, 'N' },
 };
 
@@ -97,7 +97,7 @@ static int _run_fmu2_cosim(
         return EINVAL;
     }
     fmu = instantiate(
-        "fmu", fmi2CoSimulation, "guid", "resources", NULL, true, false);
+        "fmu", fmi2CoSimulation, "guid", "resources", NULL, true, true);
     if (fmu == NULL) return EINVAL;
 
     /* fmi2ExitInitializationMode */
@@ -391,8 +391,10 @@ int main(int argc, char** argv)
     }
     if (desc->binary.vr_tx_binary) free(desc->binary.vr_tx_binary);
     if (desc->binary.val_tx_binary) free(desc->binary.val_tx_binary);
+    if (desc->binary.val_size_tx_binary) free(desc->binary.val_size_tx_binary);
     if (desc->binary.vr_rx_binary) free(desc->binary.vr_rx_binary);
     if (desc->binary.val_rx_binary) free(desc->binary.val_rx_binary);
+    if (desc->binary.val_size_rx_binary) free(desc->binary.val_size_rx_binary);
     if (desc->real.vr_tx_real) free(desc->real.vr_tx_real);
     if (desc->real.val_tx_real) free(desc->real.val_tx_real);
     if (desc->real.vr_rx_real) free(desc->real.vr_rx_real);

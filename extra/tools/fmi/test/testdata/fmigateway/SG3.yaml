@@ -1,0 +1,25 @@
+---
+kind: SignalGroup
+metadata:
+  labels:
+    channel: E2M_M2E
+    model: Model_3
+  name: Model_3
+spec:
+  signals:
+    - annotations:
+        direction: input
+        mcl_fmi_variable_id: '1342177280'
+        mcl_fmi_variable_name: fmu_signal_1
+        mcl_fmi_variable_start: '0.0'
+        mcl_fmi_variable_type: Real
+        org-fmu-name: fmu_signal_1
+      signal: fmu_signal_1_changed
+    - annotations:
+        direction: output
+        mcl_fmi_variable_id: '1342177280'
+        mcl_fmi_variable_name: fmu_signal_2
+        mcl_fmi_variable_start: '0.0'
+        mcl_fmi_variable_type: Real
+        org-fmu-name: fmu_signal_2
+      signal: fmu_signal_2_changed

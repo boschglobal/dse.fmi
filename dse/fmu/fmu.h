@@ -223,6 +223,8 @@ DLL_PRIVATE int32_t fmu_init(FmuInstanceData* fmu);
 DLL_PRIVATE int32_t fmu_step(
     FmuInstanceData* fmu, double communication_point, double step_size);
 DLL_PRIVATE int32_t fmu_destroy(FmuInstanceData* fmu);
+DLL_PRIVATE void    fmu_log(FmuInstanceData* fmu, const int status,
+       const char* category, const char* message, ...);
 
 /* FMU Signal Interface (optional)  */
 DLL_PUBLIC void fmu_signals_reset(FmuInstanceData* fmu);

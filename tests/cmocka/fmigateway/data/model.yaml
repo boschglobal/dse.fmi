@@ -1,0 +1,52 @@
+---
+kind: Model
+metadata:
+  name: Gateway
+  annotations:
+    adapter: 'fmi'
+    fmi_version: '2.0'
+    fmi_model_cosim: true
+    fmi_model_version: '1.48'
+    fmi_stepsize: '0.0005'
+    fmi_endtime: '0.002'
+    fmi_guid: '{11111111-2222-3333-4444-555555555555}'
+    fmi_resource_dir: 'data'
+    set_init_values: true
+    loglevel: 6
+spec:
+  runtime:
+    gateway: {}
+  channels:
+    - alias: scalar_vector
+      selectors:
+        channel: scalar
+    - alias: binary_vector
+      selectors:
+        channel: binary
+---
+kind: Model
+metadata:
+  name: Target
+spec:
+  runtime:
+    dynlib:
+      - os: linux
+        arch: amd64
+        path: model/libgatewaytarget.so
+      - os: linux
+        arch: x86
+        path: model/libgatewaytarget.so
+      - os: windows
+        arch: x64
+        path: model/libgatewaytarget.dll
+      - os: windows
+        arch: x86
+        path: model/libgatewaytarget.dll
+  channels:
+    - alias: scalar_vector
+      selectors:
+        side: scalar_vector
+    - alias: binary_vector
+      selectors:
+        channel: binary
+---

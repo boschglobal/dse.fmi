@@ -1,0 +1,58 @@
+---
+kind: Model
+metadata:
+  name: Gateway
+  annotations:
+    adapter: 'fmi'
+    fmi_version: '2.0'
+    fmi_model_cosim: true
+    fmi_model_version: '1.48'
+    fmi_stepsize: '0.005'
+    fmi_endtime: '0.02'
+    fmi_guid: '{11111111-2222-3333-4444-555555555555}'
+    fmi_resource_dir: 'data'
+    set_init_values: true
+    loglevel: 6
+    loglocation: 'foo/bar'
+    session:
+      initialization:
+        path: 'foo'
+        file: 'bar'
+      shutdown:
+        path: 'foo_shutdown'
+        file: 'bar_shutdown'
+      windows:
+        - model: 'Model_1'
+          annotations:
+            stepsize: 0.1
+            endtime: 0.2
+            loglevel: 6
+            timeout: 60.0
+            path: 'foo'
+            file: 'bar'
+            yaml: 'foo;bar'
+            show: true
+        - model: 'Model_2'
+          annotations:
+            stepsize: 0.15
+            endtime: 0.25
+            loglevel: 5
+            timeout: 61.0
+            path: 'foo_2'
+            file: 'bar_2'
+            yaml: 'foo_2;bar_2'
+            show: false
+      linux:
+        local:
+          path: 'foo'
+          file: 'bar'
+spec:
+  runtime:
+    gateway: {}
+  channels:
+    - alias: scalar_vector
+      selectors:
+        channel: scalar
+    - alias: binary_vector
+      selectors:
+        channel: binary

@@ -1,0 +1,29 @@
+---
+kind: SignalGroup
+metadata:
+  labels:
+    channel: E2M_M2E
+    model: Model_1
+  name: Model_1
+spec:
+  signals:
+    - annotations:
+        softecu_access_function: E2M+M2E
+        softecu_direction: M2E
+        softecu_name: softecu_name_1
+      signal: softecu_name_1_changed
+    - annotations:
+        softecu_access_function: E2M+M2E
+        softecu_direction: E2M
+        softecu_name: softecu_name_2
+      signal: softecu_name_2_changed
+    - annotations:
+        softecu_access_function: E2M+M2E
+        softecu_direction: M2E
+        softecu_name: softecu_name_3
+      signal: softecu_name_3_changed
+    - annotations:
+        softecu_access_function: E2M+M2E
+        softecu_direction: E2M
+        softecu_name: softecu_name_4
+      signal: softecu_name_4_changed

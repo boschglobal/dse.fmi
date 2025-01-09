@@ -1,0 +1,90 @@
+---
+kind: SignalGroup
+metadata:
+  name: scalar_vector
+  labels:
+    channel: scalar
+  annotations:
+    vector_type: scalar
+spec:
+  signals:
+    - signal: scalar_in
+      annotations:
+        fmi_variable_vref: 1001
+        fmi_variable_name: scalar_in
+        fmi_variable_type: Real
+        fmi_variable_causality: input
+    - signal: scalar_out
+      annotations:
+        fmi_variable_vref: 1002
+        fmi_variable_name: scalar_out
+        fmi_variable_type: Real
+        fmi_variable_causality: output
+# - signal: scalar_param
+#   annotations:
+#     fmi_variable_vref: 1003
+#     fmi_variable_name: scalar_param
+#     fmi_variable_type: Real
+#     fmi_variable_causality: parameter
+---
+kind: SignalGroup
+metadata:
+  name: scalar_vector2
+  labels:
+    channel: scalar
+  annotations:
+    vector_type: scalar
+spec:
+  signals:
+    - signal: scalar_in2
+      annotations:
+        fmi_variable_vref: 1004
+        fmi_variable_name: scalar_in2
+        fmi_variable_type: Real
+        fmi_variable_causality: input
+    - signal: scalar_out2
+      annotations:
+        fmi_variable_vref: 1005
+        fmi_variable_name: scalar_out2
+        fmi_variable_type: Real
+        fmi_variable_causality: output
+# - signal: scalar_param
+#   annotations:
+#     fmi_variable_vref: 1003
+#     fmi_variable_name: scalar_param
+#     fmi_variable_type: Real
+#     fmi_variable_causality: parameter
+---
+kind: SignalGroup
+metadata:
+  name: binary_vector
+  labels:
+    channel: binary
+    type: binary
+  annotations:
+    vector_type: binary
+    vector_name: network_vector
+spec:
+  signals:
+    - signal: can
+      annotations:
+        mime_type: 'application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; node_id=2; interface_id=0'
+        #
+        # FMI Value Reference
+        # -------------------
+        fmi_variable_vref: 4
+        fmi_variable_vref_input: 4
+        fmi_variable_vref_output: 5
+        #
+        # FMI LS Text Encoding (applied to FMI String Variables):
+        # --------------------
+        dse.standards.fmi-ls-binary-to-text.encoding: ascii85
+        # (supporting annotations to avoid XML parsing)
+        dse.standards.fmi-ls-binary-to-text.vref: [2, 3, 4, 5, 6, 7, 8, 9]
+        #
+        # FMI LS Bus Topology (applied to FMI String/Binary Variables):
+        # -------------------
+        dse.standards.fmi-ls-bus-topology.bus_id: 1
+        # (supporting annotations to avoid XML parsing)
+        dse.standards.fmi-ls-bus-topology.rx_vref: [2, 4, 6, 8]
+        dse.standards.fmi-ls-bus-topology.tx_vref: [3, 5, 7, 9]

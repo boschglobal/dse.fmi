@@ -26,12 +26,6 @@ type FmiMclCommand struct {
 	logLevel int
 }
 
-type channel []struct {
-	Alias    string            `json:"alias"`
-	Name     string            `json:"name"`
-	Selector map[string]string `json:"selector"`
-}
-
 func NewFmiMclCommand(name string) *FmiMclCommand {
 	c := &FmiMclCommand{commandName: name, fs: flag.NewFlagSet(name, flag.ExitOnError)}
 	c.fs.StringVar(&c.fmupath, "fmu", "", "Path to FMU")

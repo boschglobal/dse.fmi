@@ -116,6 +116,20 @@ set(XML_INSTALL_DIR "${INSTALL_DIR}")
 file(MAKE_DIRECTORY "${XML_SOURCE_DIR}/include")
 file(MAKE_DIRECTORY "${XML_INSTALL_DIR}/include/libxml2")
 
+# External Project - DSE Network Codec (unit test only)
+# -----------------
+ExternalProject_Add(dse_ncodec
+    URL                 ${ExternalProject__DSE_NCODEC__URL}
+    HTTP_USERNAME       ${ExternalProject__DSE_NCODEC__USERNAME}
+    HTTP_PASSWORD       ${ExternalProject__DSE_NCODEC__PASSWORD}
+    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse_ncodec"
+    SOURCE_SUBDIR       "dse/ncodec/libs/automotive-bus"
+    BINARY_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse_ncodec"
+    CMAKE_ARGS
+        -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+    INSTALL_COMMAND     ""
+)
+
 # dlfcn-win32
 # -----------
 if(NOT WIN32)

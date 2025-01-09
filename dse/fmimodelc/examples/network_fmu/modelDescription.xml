@@ -1,36 +1,54 @@
-<ModelVariables>
-    <ScalarVariable name="counter" valueReference="1" causality="output" initial="" variability="">
-        <Real start="42" reinit="" derivative=""></Real>
-    </ScalarVariable>
-    <ScalarVariable name="network_1_1_rx" valueReference="2" causality="input" initial="" variability="">...</ScalarVariable>
-    <ScalarVariable name="network_1_1_tx" valueReference="3" causality="output" initial="" variability="">...</ScalarVariable>
-    <ScalarVariable name="network_1_2_rx" valueReference="4" causality="input" initial="" variability="">
-        <String start=""></String>
-            <Annotations>
-                <Tool name="dse.standards.fmi-ls-binary-codec">
-                    <Annotation name="mimetype">application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; interface_id=3</Annotation>
-                </Tool>
-                <Tool name="dse.standards.fmi-ls-binary-to-text">
-                    <Annotation name="encoding">ascii85</Annotation>
-                </Tool>
-                <Tool name="dse.standards.fmi-ls-bus-topology">
-                    <Annotation name="bus_id">1</Annotation>
-                </Tool>
-            </Annotations>
-    </ScalarVariable>
-    <ScalarVariable name="network_1_2_tx" valueReference="5" causality="output" initial="" variability="">
-        <String start=""></String>
-            <Annotations>
-                <Tool name="dse.standards.fmi-ls-binary-to-text">
-                    <Annotation name="encoding">ascii85</Annotation>
-                </Tool>
-                <Tool name="dse.standards.fmi-ls-bus-topology">
-                    <Annotation name="bus_id">1</Annotation>
-                </Tool>
-            </Annotations>
-    </ScalarVariable>
-    <ScalarVariable name="network_1_3_rx" valueReference="6" causality="input" initial="" variability="">...</ScalarVariable>
-    <ScalarVariable name="network_1_3_tx" valueReference="7" causality="output" initial="" variability="">...</ScalarVariable>
-    <ScalarVariable name="network_1_4_rx" valueReference="8" causality="input" initial="" variability="">...</ScalarVariable>
-    <ScalarVariable name="network_1_4_tx" valueReference="9" causality="output" initial="" variability="">...</ScalarVariable>
-</ModelVariables>
+<?xml version="1.0" encoding="utf-8"?>
+<fmiModelDescription modelName="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" fmiVersion="" guid="">
+	<CoSimulation modelIdentifier=""></CoSimulation>
+	<DefaultExperiment stepSize="0.0005"></DefaultExperiment>
+    <ModelVariables>
+        <ScalarVariable name="counter" valueReference="1" causality="output" initial="" variability="">
+            <Real start="42" reinit="" derivative=""></Real>
+        </ScalarVariable>
+        <ScalarVariable name="network_1_1_rx" valueReference="2" causality="input" initial="" variability="">
+            <String start=""></String>
+        </ScalarVariable>
+        <ScalarVariable name="network_1_1_tx" valueReference="3" causality="output" initial="" variability="">
+            <String start=""></String>
+        </ScalarVariable>
+        <ScalarVariable name="network_1_2_rx" valueReference="4" causality="input" initial="" variability="">
+            <String start=""></String>
+                <Annotations>
+                    <Tool name="dse.standards.fmi-ls-binary-codec">
+                        <Annotation name="mimetype">application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; interface_id=3</Annotation>
+                    </Tool>
+                    <Tool name="dse.standards.fmi-ls-binary-to-text">
+                        <Annotation name="encoding">ascii85</Annotation>
+                    </Tool>
+                    <Tool name="dse.standards.fmi-ls-bus-topology">
+                        <Annotation name="bus_id">1</Annotation>
+                    </Tool>
+                </Annotations>
+        </ScalarVariable>
+        <ScalarVariable name="network_1_2_tx" valueReference="5" causality="output" initial="" variability="">
+            <String start=""></String>
+                <Annotations>
+                    <Tool name="dse.standards.fmi-ls-binary-to-text">
+                        <Annotation name="encoding">ascii85</Annotation>
+                    </Tool>
+                    <Tool name="dse.standards.fmi-ls-bus-topology">
+                        <Annotation name="bus_id">1</Annotation>
+                    </Tool>
+                </Annotations>
+        </ScalarVariable>
+        <ScalarVariable name="network_1_3_rx" valueReference="6" causality="input" initial="" variability="">
+            <String start=""></String>
+        </ScalarVariable>
+        <ScalarVariable name="network_1_3_tx" valueReference="7" causality="output" initial="" variability="">
+            <String start=""></String>
+        </ScalarVariable>
+        <ScalarVariable name="network_1_4_rx" valueReference="8" causality="input" initial="" variability="">
+            <String start=""></String>
+        </ScalarVariable>
+        <ScalarVariable name="network_1_4_tx" valueReference="9" causality="output" initial="" variability="">
+            <String start=""></String>
+        </ScalarVariable>
+    </ModelVariables>
+	<ModelStructure></ModelStructure>
+</fmiModelDescription>

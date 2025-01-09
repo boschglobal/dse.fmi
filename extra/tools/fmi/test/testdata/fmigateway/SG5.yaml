@@ -1,0 +1,20 @@
+---
+kind: SignalGroup
+metadata:
+  labels:
+    channel: com_phys
+  name: Model_5
+spec:
+  signals:
+    - annotations:
+        direction: input
+      signal: signal_1
+    - annotations:
+        direction: output
+      signal: signal_2
+    - annotations:
+        direction: input
+      signal: signal_3
+    - annotations:
+        direction: output
+      signal: signal_4

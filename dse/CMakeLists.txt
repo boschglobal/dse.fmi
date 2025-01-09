@@ -142,6 +142,7 @@ endif()
 # ===========
 add_subdirectory(fmimcl)
 add_subdirectory(fmimodelc)
+add_subdirectory(fmigateway)
 add_subdirectory(fmu)
 add_subdirectory(importer)
 add_subdirectory(examples)

@@ -85,6 +85,25 @@ Appending file: out/model/signalgroup.yaml
 $ ls  out/model
 model.yaml*  signalgroup.yaml*
 
+
+$ task generate-fmigateway \
+    SIGNAL_GROUPS="extra/tools/fmi/test/testdata/fmigateway/SG1.yaml,extra/tools/fmi/test/testdata/fmigateway/SG2.yaml"
+Running FMI Toolset command: gen-gateway
+Options:
+  fmiVersion     : 2
+  libroot        : /usr/local
+  log            : 4
+  outdir         : out
+  session        : 
+  signalgroups   : extra/tools/fmi/test/testdata/fmigateway/SG1.yaml,extra/tools/fmi/test/testdata/fmigateway/SG2.yaml
+  uuid           : 
+  version        : 0.0.1
+Adding SignalGroup Model_1 to out/fmu.yaml
+Adding SignalGroup Model_2 to out/fmu.yaml
+Creating Model YAML: gateway (out/model.yaml)
+
+$ ls out/
+fmu.yaml  modelDescription.xml  model.yaml
 ```
 
 

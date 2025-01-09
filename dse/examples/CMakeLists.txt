@@ -5,4 +5,5 @@
 if($ENV{PACKAGE_ARCH} STREQUAL "linux-amd64")
 add_subdirectory(fmu/counter)
 add_subdirectory(fmu/linear)
+add_subdirectory(gateway)
 endif()

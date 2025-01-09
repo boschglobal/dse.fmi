@@ -104,8 +104,8 @@ It is called in the `FreeInstance()` Method of the FMU.
 
 Parameters
 ----------
-model (ModelDesc*)
-: Model descriptor object.
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
 
 Returns
 -------
@@ -117,3 +117,27 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
     UNUSED(fmu);
     return 0;
 }
+
+
+/**
+fmu_log
+=======
+
+Write a log message to the logger defined by the FMU.
+
+Parameters
+----------
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+status (const int)
+: The status of the message to be logged.
+
+category (const char*)
+: The category the message belongs to.
+
+message (const char*)
+: The message to be logged by the FMU.
+*/
+extern void fmu_log(FmuInstanceData* fmu, const int status,
+    const char* category, const char* message, ...);
