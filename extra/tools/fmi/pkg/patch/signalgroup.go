@@ -99,7 +99,11 @@ func patchSignals(sigGroup *kind.SignalGroup, patchFile string, removeUnknown bo
 	// Replace the source signal with target signal.
 	patch := map[string]string{}
 	for _, record := range records {
-		patch[record[0]] = record[1]
+		if record[1] != "" {
+			patch[record[0]] = record[1]
+		} else {
+			patch[record[0]] = record[0]
+		}
 	}
 
 	// Apply the patch (remove if target=inactive or removeUnknown=true).

@@ -1,0 +1,5 @@
+source,target
+input_1,input_1_patched
+input_2,input_2_patched
+output_1,output_1_patched
+output_2,inactive
