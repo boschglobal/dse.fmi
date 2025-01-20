@@ -139,6 +139,7 @@ set_target_properties(gatewayfmi2fmu
     PROPERTIES
         OUTPUT_NAME
             fmi2gateway
+        PREFIX ""
 )
 install(
     TARGETS
@@ -201,6 +202,7 @@ set_target_properties(gatewayfmi3fmu
     PROPERTIES
         OUTPUT_NAME
             fmi3gateway
+        PREFIX ""
 )
 install(
     TARGETS

@@ -19,8 +19,8 @@ exec cp -R $EXAMPLE/model $SIM/model
 # TEST: FMI Gateway with FMI3
 exec sh -e $WORK/test.sh
 
-stdout 'Importer: Cwd: /sim/fmu'
-stdout 'Importer: Loading FMU: binaries/x86_64-linux/libfmi3gateway.so'
+stdout 'Importer: FMU Dir: /sim/fmu'
+stdout 'Importer: Loading FMU: binaries/x86_64-linux/fmi3gateway.so'
 stdout 'FMU Model instantiated'
 stdout 'Resource location: resources'
 stdout 'Setting up the Simbus connection...'
@@ -47,7 +47,7 @@ docker run --name gateway -i --rm -v $ENTRYWORKDIR/$SIM:/sim \
     --net="host" \
     --entrypoint="" $SIMER \
     bash -c "cd fmu; valgrind -q --leak-check=yes --error-exitcode=808 \
-    ../bin/fmuImporter -V 3 -F binaries/x86_64-linux/libfmi3gateway.so" &
+    ../bin/fmuImporter" &
 
 docker run --name simer -i --rm -v $ENTRYWORKDIR/$SIM:/sim \
     --env SIMBUS_LOGLEVEL=4 \

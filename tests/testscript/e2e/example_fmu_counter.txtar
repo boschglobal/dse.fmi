@@ -20,12 +20,12 @@ docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
     -e FMU_DIR=$FMU_DIR \
     -e FMU_SO=$FMU_SO \
     $SIMER \
-        bash -c "ls -R; cd $FMU_DIR; \
-            /repo/$IMPORTER -V 2 -F $FMU_SO"
+        bash -c "ls -R; \
+            /repo/$IMPORTER $FMU_DIR"
 
 
 # TODO: run with valgrind.
 # bash -c "cd $FMU_DIR; valgrind -q --leak-check=yes --error-exitcode=808 \
-#            /repo/$IMPORTER -V 2 -F $FMU_SO"
+#            /repo/$IMPORTER $FMU_DIR"
 
 # TODO: add case for FMI 3.

@@ -38,9 +38,14 @@ center footer Dynamic Simulation Environment
 
 
 typedef struct modelDescription {
-    char* modelName;
-    char* fmiVersion;
+    char* name;
+    char* version;
     char* guid;
+
+    /* Calculated properties. */
+    char* fmu_lib_path;
+
+    /* Storage. */
     struct {
         unsigned int* vr_rx_real;
         unsigned int* vr_tx_real;
@@ -63,7 +68,8 @@ typedef struct modelDescription {
 
 
 /* xml.c */
-DLL_PRIVATE modelDescription* parse_model_desc(char* docname, uint8_t version);
+DLL_PRIVATE modelDescription* parse_model_desc(
+    const char* docname, const char* platform);
 
 
 #endif  // DSE_IMPORTER_IMPORTER_H_

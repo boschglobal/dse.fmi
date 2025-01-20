@@ -52,18 +52,28 @@ typedef int32_t (*fmi3DoStep)();
 typedef void (*fmi3FreeInstance)();
 
 
-#define UNUSED(x)     ((void)x)
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
+#define UNUSED(x)      ((void)x)
+#define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
+#define MODEL_XML_FILE "modelDescription.xml"
 
 
-#define OPT_LIST      "hV:F:S:N:"
+#define OPT_LIST       "hs:X:P:"
 static struct option long_options[] = {
     { "help", no_argument, NULL, 'h' },
-    { "version", required_argument, NULL, 'V' },
-    { "fmu", required_argument, NULL, 'F' },
-    { "step_size", required_argument, NULL, 'S' },
-    { "steps", required_argument, NULL, 'N' },
+    { "step_size", optional_argument, NULL, 's' },
+    { "steps", optional_argument, NULL, 'X' },
+    { "platform", optional_argument, NULL, 'P' },
 };
+
+static inline void print_usage()
+{
+    printf("usage: fmuImporter [options] [<fmu_path>]\n\n");
+    printf("      [<fmu_path>] (defaults to working directory)\n");
+    printf("      [-h, --help]\n");
+    printf("      [-s, --step_size]\n");
+    printf("      [-X, --steps]\n");
+    printf("      [-P, --platform] (defaults to linux-amd64)\n");
+}
 
 static void _log(const char* format, ...)
 {
@@ -78,7 +88,7 @@ static void _log(const char* format, ...)
 
 
 static int _run_fmu2_cosim(
-    modelDescription* desc, void* handle, double step_size, double steps)
+    modelDescription* desc, void* handle, double step_size, unsigned int steps)
 {
     /* Setup the FMU
      * ============= */
@@ -90,7 +100,8 @@ static int _run_fmu2_cosim(
     fmi2Instantiate instantiate = dlsym(handle, "fmi2Instantiate");
     dlerror_str = dlerror();
     if (dlerror_str || instantiate == NULL) {
-        _log("ERROR: could not load fmi2Instantiate() from FMU: %s", dlerror_str);
+        _log("ERROR: could not load fmi2Instantiate() from FMU: %s",
+            dlerror_str);
         return EINVAL;
     }
     if (instantiate == NULL) {
@@ -130,7 +141,7 @@ static int _run_fmu2_cosim(
     fmi2DoStep do_step = dlsym(handle, "fmi2DoStep");
     if (do_step == NULL) return EINVAL;
 
-    for (int i = 0; i < steps; i++) {
+    for (unsigned int i = 0; i < steps; i++) {
         /* Loopback the binary data. */
         for (size_t i = 0; i < desc->binary.tx_count; i++) {
             if (desc->binary.val_tx_binary[i]) {
@@ -195,7 +206,7 @@ static int _run_fmu2_cosim(
 
 
 static int _run_fmu3_cosim(
-    modelDescription* desc, void* handle, double step_size, double steps)
+    modelDescription* desc, void* handle, double step_size, unsigned int steps)
 {
     /* Setup the FMU
      * ============= */
@@ -239,7 +250,7 @@ static int _run_fmu3_cosim(
     fmi3DoStep do_step = dlsym(handle, "fmi3DoStep");
     if (do_step == NULL) return EINVAL;
 
-    for (int i = 0; i < steps; i++) {
+    for (unsigned int i = 0; i < steps; i++) {
         /* Loopback the binary data. */
         for (size_t i = 0; i < desc->binary.tx_count; i++) {
             if (desc->binary.val_tx_binary[i]) {
@@ -305,54 +316,89 @@ static int _run_fmu3_cosim(
 }
 
 
-int main(int argc, char** argv)
+static inline void _parse_arguments(int argc, char** argv, double* step_size,
+    unsigned int* steps, const char** fmu_path, const char** platform)
 {
     extern int   optind, optopt;
     extern char* optarg;
     int          c;
+    /* Parse the named options. */
+    optind = 1;
+    while ((c = getopt_long(argc, argv, OPT_LIST, long_options, NULL)) != -1) {
+        switch (c) {
+        case 'h': {
+            print_usage();
+            exit(0);
+        }
+        default:
+            break;
+        }
+    }
 
-    uint8_t     version = 2;
-    const char* fmu_lib_path = NULL;
-    double      step_size = 0.0005;
-    double      steps = 10;
-
+    optind = 1;
     while ((c = getopt_long(argc, argv, OPT_LIST, long_options, NULL)) != -1) {
         switch (c) {
         case 'h':
             break;
-        case 'V':
-            version = atoi(optarg);
+        case 's':
+            *step_size = atof(optarg);
             break;
-        case 'F':
-            fmu_lib_path = optarg;
+        case 'X':
+            *steps = atoi(optarg);
             break;
-        case 'S':
-            step_size = atof(optarg);
-            break;
-        case 'N':
-            steps = atof(optarg);
+        case 'P':
+            *platform = optarg;
             break;
         default:
             exit(1);
         }
     }
 
-    static char _cwd[PATH_MAX];
-    getcwd(_cwd, PATH_MAX);
-    _log("Cwd: %s", _cwd);
+    // get the fmu Path
+    if ((optind + 1) <= argc) {
+        *fmu_path = argv[optind];
+    }
+}
 
-    modelDescription* desc =
-        parse_model_desc((char*)"modelDescription.xml", version);
+int main(int argc, char** argv)
+{
+    double       step_size = 0.0005;
+    unsigned int steps = 10;
+    const char*  fmu_path = NULL;
+    const char*  platform = "linux-amd64";
+    static char  _cwd[PATH_MAX];
+
+
+    /* Parse arguments
+     * =============== */
+    _parse_arguments(argc, argv, &step_size, &steps, &fmu_path, &platform);
+    getcwd(_cwd, PATH_MAX);
+    if (fmu_path == NULL) {
+        fmu_path = _cwd;
+    }
+    errno = 0;
+    if (chdir(fmu_path)) {
+        _log("ERROR: Could not change to FMU path: %s", fmu_path);
+        return errno || EINVAL;
+    }
+    getcwd(_cwd, PATH_MAX);
+    _log("FMU Dir: %s", _cwd);
+    _log("Step Size: %f", step_size);
+    _log("Steps: %u", steps);
+    _log("Platform: %s", platform);
+    _log("Loading FMU Definition: %s", MODEL_XML_FILE);
+    modelDescription* desc = parse_model_desc(MODEL_XML_FILE, platform);
     if (desc == NULL) {
-        _log("Could not parse the modelDescription.xml correctly!");
+        _log("ERROR: Could not parse the model correctly!");
         return EINVAL;
     }
+    _log("FMU Version: %d", atoi(desc->version));
 
     /* Load the FMU
      * ============ */
-    _log("Loading FMU: %s", fmu_lib_path);
+    _log("Loading FMU: %s", desc->fmu_lib_path);
     dlerror();
-    void* handle = dlopen(fmu_lib_path, RTLD_NOW | RTLD_GLOBAL);
+    void* handle = dlopen(desc->fmu_lib_path, RTLD_NOW | RTLD_GLOBAL);
     if (handle == NULL) {
         _log("ERROR: dlopen call failed: %s", dlerror());
         _log("Model library not loaded!");
@@ -362,7 +408,7 @@ int main(int argc, char** argv)
     /* Run a CoSimulation
      * ================== */
     int rc = 0;
-    switch (version) {
+    switch (atoi(desc->version)) {
     case 2:
         rc = _run_fmu2_cosim(desc, handle, step_size, steps);
         break;
@@ -370,13 +416,14 @@ int main(int argc, char** argv)
         rc = _run_fmu3_cosim(desc, handle, step_size, steps);
         break;
     default:
-        _log("Unsupported FMI version (%d)!", version);
+        _log("Unsupported FMI version (%d)!", desc->version);
         return EINVAL;
     }
     _log("Simulation return value: %d", rc);
 
     /* Release allocated resources
      * =========================== */
+    free(desc->version);
     for (size_t i = 0; i < desc->binary.tx_count; i++) {
         if (desc->binary.val_tx_binary[i]) {
             free(desc->binary.val_tx_binary[i]);
@@ -389,17 +436,17 @@ int main(int argc, char** argv)
             desc->binary.val_rx_binary[i] = NULL;
         }
     }
-    if (desc->binary.vr_tx_binary) free(desc->binary.vr_tx_binary);
-    if (desc->binary.val_tx_binary) free(desc->binary.val_tx_binary);
-    if (desc->binary.val_size_tx_binary) free(desc->binary.val_size_tx_binary);
-    if (desc->binary.vr_rx_binary) free(desc->binary.vr_rx_binary);
-    if (desc->binary.val_rx_binary) free(desc->binary.val_rx_binary);
-    if (desc->binary.val_size_rx_binary) free(desc->binary.val_size_rx_binary);
-    if (desc->real.vr_tx_real) free(desc->real.vr_tx_real);
-    if (desc->real.val_tx_real) free(desc->real.val_tx_real);
-    if (desc->real.vr_rx_real) free(desc->real.vr_rx_real);
-    if (desc->real.val_rx_real) free(desc->real.val_rx_real);
-    if (desc) free(desc);
+    free(desc->binary.vr_tx_binary);
+    free(desc->binary.val_tx_binary);
+    free(desc->binary.val_size_tx_binary);
+    free(desc->binary.vr_rx_binary);
+    free(desc->binary.val_rx_binary);
+    free(desc->binary.val_size_rx_binary);
+    free(desc->real.vr_tx_real);
+    free(desc->real.val_tx_real);
+    free(desc->real.vr_rx_real);
+    free(desc->real.val_rx_real);
+    free(desc);
 
     dlclose(handle);
 

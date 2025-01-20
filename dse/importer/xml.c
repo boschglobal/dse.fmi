@@ -36,8 +36,7 @@ xmlChar*
 NULL
 : The annotation was not found.
 */
-__attribute__((unused))
-static xmlChar* parse_tool_anno(
+__attribute__((unused)) static xmlChar* parse_tool_anno(
     xmlNode* node, const char* tool, const char* name)
 {
     xmlChar* result = NULL;
@@ -113,9 +112,9 @@ static inline void _alloc_var(HashMap map, void** vr_ptr, void** val_ptr,
 }
 
 
-static inline void _parse_fmi2_scalar(
-    xmlNodePtr child, xmlChar* vr, xmlChar* causality, xmlChar* start,
-    HashMap* vr_rx_real, HashMap* vr_tx_real)
+static inline void _parse_fmi2_scalar(xmlNodePtr child, xmlChar* vr,
+    xmlChar* causality, xmlChar* start, HashMap* vr_rx_real,
+    HashMap* vr_tx_real)
 {
     if (xmlStrcmp(child->name, (xmlChar*)"Real")) return;
 
@@ -128,9 +127,9 @@ static inline void _parse_fmi2_scalar(
 }
 
 
-static inline void _parse_fmi2_string(
-    xmlNodePtr child, xmlChar* vr, xmlChar* causality, xmlChar* start,
-    HashMap* vr_rx_binary, HashMap* vr_tx_binary)
+static inline void _parse_fmi2_string(xmlNodePtr child, xmlChar* vr,
+    xmlChar* causality, xmlChar* start, HashMap* vr_rx_binary,
+    HashMap* vr_tx_binary)
 {
     if (xmlStrcmp(child->name, (xmlChar*)"String")) return;
 
@@ -187,14 +186,13 @@ void _parse_fmi2_model_desc(HashMap* vr_rx_real, HashMap* vr_tx_real,
 }
 
 
-static inline void _parse_fmi3_scalar(
-    xmlNodePtr child, xmlChar* vr, xmlChar* causality, HashMap* vr_rx_real,
-    HashMap* vr_tx_real)
+static inline void _parse_fmi3_scalar(xmlNodePtr child, xmlChar* vr,
+    xmlChar* causality, HashMap* vr_rx_real, HashMap* vr_tx_real)
 {
     if (xmlStrcmp(child->name, (xmlChar*)"Float64")) return;
 
     xmlChar* start = xmlGetProp(child, (xmlChar*)"start");
-    double _start = 0.0;
+    double   _start = 0.0;
     if (start) _start = atof((char*)start);
 
     if (xmlStrcmp(causality, (xmlChar*)"input") == 0) {
@@ -208,15 +206,13 @@ static inline void _parse_fmi3_scalar(
 }
 
 
-static inline void _parse_fmi3_binary(
-    xmlNodePtr child, xmlChar* vr, xmlChar* causality, HashMap* vr_rx_binary,
-    HashMap* vr_tx_binary)
+static inline void _parse_fmi3_binary(xmlNodePtr child, xmlChar* vr,
+    xmlChar* causality, HashMap* vr_rx_binary, HashMap* vr_tx_binary)
 {
     if (xmlStrcmp(child->name, (xmlChar*)"Binary")) return;
 
     xmlChar* start = NULL;
-    for (xmlNodePtr _child = child->children; _child;
-            _child = _child->next) {
+    for (xmlNodePtr _child = child->children; _child; _child = _child->next) {
         if (_child->type != XML_ELEMENT_NODE) continue;
         if (strcmp((char*)_child->name, "Start") == 0) {
             start = xmlGetProp(_child, (xmlChar*)"value");
@@ -235,8 +231,9 @@ static inline void _parse_fmi3_binary(
 }
 
 
-static inline void _parse_fmi3_model_desc(HashMap* vr_rx_real, HashMap* vr_tx_real,
-    HashMap* vr_rx_binary, HashMap* vr_tx_binary, xmlXPathContext* ctx)
+static inline void _parse_fmi3_model_desc(HashMap* vr_rx_real,
+    HashMap* vr_tx_real, HashMap* vr_rx_binary, HashMap* vr_tx_binary,
+    xmlXPathContext* ctx)
 {
     xmlXPathObject* xml_sv_obj = xmlXPathEvalExpression(
         (xmlChar*)"/fmiModelDescription/ModelVariables", ctx);
@@ -251,8 +248,7 @@ static inline void _parse_fmi3_model_desc(HashMap* vr_rx_real, HashMap* vr_tx_re
 
             if (vr == NULL || causality == NULL) goto next;
 
-            _parse_fmi3_scalar(
-                child, vr, causality, vr_rx_real, vr_tx_real);
+            _parse_fmi3_scalar(child, vr, causality, vr_rx_real, vr_tx_real);
             _parse_fmi3_binary(
                 child, vr, causality, vr_rx_binary, vr_tx_binary);
 
@@ -266,7 +262,87 @@ static inline void _parse_fmi3_model_desc(HashMap* vr_rx_real, HashMap* vr_tx_re
 }
 
 
-modelDescription* parse_model_desc(char* docname, uint8_t version)
+static char* _get_fmu_binary_path(
+    xmlXPathContext* ctx, const char* platform, int version)
+{
+    char*       path = NULL;
+    const char* dir = "linux64";
+    const char* extension = "so";
+
+    /* Find the model_identifier. */
+    xmlXPathObject* obj = xmlXPathEvalExpression(
+        (xmlChar*)"/fmiModelDescription/CoSimulation", ctx);
+    xmlNode* node = obj->nodesetval->nodeTab[0];
+    xmlChar* model_identifier = xmlGetProp(node, (xmlChar*)"modelIdentifier");
+
+    /* Determine the OS/Arch path segment. */
+    char* _platform = strdup(platform);
+    char* os = _platform;
+    char* arch = strchr(_platform, '-');
+    if (arch) {
+        *arch = '\0';
+        arch++;
+    }
+    switch (version) {
+    case 2:
+        if (strcmp(os, "linux") == 0) {
+            if (strcmp(arch, "amd64") == 0) dir = "linux64";
+            if (strcmp(arch, "x86") == 0) dir = "linux32";
+            if (strcmp(arch, "i386") == 0) dir = "linux32";
+        } else if (strcmp(os, "windows") == 0) {
+            extension = "dll";
+            if (strcmp(arch, "x64") == 0) dir = "win64";
+            if (strcmp(arch, "x86") == 0) dir = "win32";
+        }
+        break;
+    case 3:
+        if (strcmp(os, "linux") == 0) {
+            if (strcmp(arch, "amd64") == 0) dir = "x86_64-linux";
+            if (strcmp(arch, "x86") == 0) dir = "x86_32-linux";
+            if (strcmp(arch, "i386") == 0) dir = "x86_32-linux";
+        } else if (strcmp(os, "windows") == 0) {
+            extension = "dll";
+            if (strcmp(arch, "x64") == 0) dir = "x86_64-windows";
+            if (strcmp(arch, "x86") == 0) dir = "x86_64-windows";
+        }
+        break;
+    default:
+        break;
+    }
+
+    /* Build the binary path. */
+    const char* format = "binaries/%s/%s.%s";
+    size_t len = snprintf(path, 0, format, dir, model_identifier, extension);
+    if (len) {
+        path = malloc(len + 1);
+        snprintf(path, len + 1, format, dir, model_identifier, extension);
+    }
+
+    /* Cleanup. */
+    free(_platform);
+    xmlFree(model_identifier);
+
+    return path;
+}
+
+
+static inline char* _get_fmu_version(xmlXPathContext* ctx)
+{
+    char* result = NULL;
+
+    xmlXPathObject* obj =
+        xmlXPathEvalExpression((xmlChar*)"/fmiModelDescription", ctx);
+    xmlNodePtr node = obj->nodesetval->nodeTab[0];
+    xmlChar*   version = xmlGetProp(node, (xmlChar*)"fmiVersion");
+    if (version) {
+        result = strdup((char*)version);
+        xmlFree(version);
+    }
+
+    return result;
+}
+
+modelDescription* parse_model_desc(const char* docname, const char* platform)
 {
     xmlDocPtr doc;
 
@@ -290,14 +366,18 @@ modelDescription* parse_model_desc(char* docname, uint8_t version)
 
     modelDescription* desc = calloc(1, sizeof(modelDescription));
 
-    switch (version) {
+    /* Parse the Model Desc based on version.*/
+    desc->version = _get_fmu_version(ctx);
+    switch (atoi(desc->version)) {
     case 2:
         _parse_fmi2_model_desc(
             &vr_rx_real, &vr_tx_real, &vr_rx_binary, &vr_tx_binary, ctx);
+        desc->fmu_lib_path = _get_fmu_binary_path(ctx, platform, 2);
         break;
     case 3:
         _parse_fmi3_model_desc(
             &vr_rx_real, &vr_tx_real, &vr_rx_binary, &vr_tx_binary, ctx);
+        desc->fmu_lib_path = _get_fmu_binary_path(ctx, platform, 3);
         break;
     default:
         return NULL;
