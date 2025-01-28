@@ -139,6 +139,64 @@ void test_fmu_default_signals_reset(void** state)
 }
 
 
+typedef struct {
+    double var_1;
+    double var_2;
+} VarTable;
+
+void test_fmu_var_table(void** state)
+{
+    /* Setup the FMU. */
+    FmuInstanceData* fmu = *state;
+    fmu->variables.vtable.setup(fmu);
+    assert_non_null(fmu->data);
+    double* var_1 = hashmap_get(&fmu->variables.scalar.input, "1");
+    double* var_2 = hashmap_get(&fmu->variables.scalar.output, "2");
+    assert_non_null(var_1);
+    assert_non_null(var_2);
+
+    /* Configure the Var Table. */
+    VarTable* vt = malloc(sizeof(VarTable));
+    *vt = (VarTable){
+        .var_1 = fmu_register_var(fmu, 1, true, offsetof(VarTable, var_1)),
+        .var_2 = fmu_register_var(fmu, 2, false, offsetof(VarTable, var_2)),
+    };
+    fmu_register_var_table(fmu, vt);
+    assert_double_equal(vt->var_1, 0, 0);
+    assert_double_equal(vt->var_2, 0, 0);
+
+    /* Check the marshalling. */
+    VarTable* v = fmu_var_table(fmu);
+    assert_non_null(v);
+    assert_ptr_equal(v, vt);
+    *var_1 = 42;
+    *var_2 = 24;
+    for (FmuVarTableMarshalItem* mi = fmu->var_table.marshal_list;
+         mi && mi->variable; mi++) {
+        *mi->variable = *mi->signal;
+    }
+    assert_double_equal(v->var_1, 42, 0);
+    assert_double_equal(v->var_2, 24, 0);
+    assert_double_equal(*var_1, 42, 0);
+    assert_double_equal(*var_2, 24, 0);
+    v->var_1 = 24;
+    v->var_2 = 42;
+    for (FmuVarTableMarshalItem* mi = fmu->var_table.marshal_list;
+         mi && mi->variable; mi++) {
+        *mi->signal = *mi->variable;
+    }
+    assert_double_equal(v->var_1, 24, 0);
+    assert_double_equal(v->var_2, 42, 0);
+    assert_double_equal(*var_1, 24, 0);
+    assert_double_equal(*var_2, 42, 0);
+
+    /* Finished. */
+    fmu->variables.vtable.remove(fmu);
+    free(fmu->var_table.table);
+    free(fmu->var_table.marshal_list);
+}
+
+
 int run_fmu_default_signal_tests(void)
 {
     void* s = test_fmu_default_signal_setup;
@@ -147,6 +205,7 @@ int run_fmu_default_signal_tests(void)
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(test_fmu_default_signals, s, t),
         cmocka_unit_test_setup_teardown(test_fmu_default_signals_reset, s, t),
+        cmocka_unit_test_setup_teardown(test_fmu_var_table, s, t),
     };
 
     return cmocka_run_group_tests_name("DEFAULT SIGNALS", tests, NULL, NULL);

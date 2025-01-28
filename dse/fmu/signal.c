@@ -33,6 +33,7 @@ fmu (FmuInstanceData*)
 
 */
 extern void fmu_signals_reset(FmuInstanceData* fmu);
+
 /**
 fmu_signals_setup
 =================
@@ -305,4 +306,105 @@ void fmu_load_signal_handlers(FmuInstanceData* fmu)
         fmu->variables.vtable.remove =
             dlsym(handle, FMU_SIGNALS_REMOVE_FUNC_NAME);
     }
+}
+
+
+/**
+fmu_register_var
+================
+
+Register a variable with the FMU Variable Table mechanism.
+
+Parameters
+----------
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+vref (uint32_t)
+: Variable reference of the variable being registered.
+input (bool)
+: Set `true` for input, and `false` for output variable causality.
+offset (size_t)
+: Offse of the variable (type double) in the FMU provided variable table.
+
+Returns
+-------
+start_value (double)
+: The configured FMU Variable start value, or 0.
+*/
+double fmu_register_var(
+    FmuInstanceData* fmu, uint32_t vref, bool input, size_t offset)
+{
+    double* signal = NULL;
+    char    key[HASHLIST_KEY_LEN];
+
+    /* Lookup the signal. */
+    snprintf(key, HASHLIST_KEY_LEN, "%i", vref);
+    if (input) {
+        signal = hashmap_get(&fmu->variables.scalar.input, key);
+    } else {
+        signal = hashmap_get(&fmu->variables.scalar.output, key);
+    }
+    if (signal == NULL) return 0;
+
+    /* Create the marshal list. */
+    FmuVarTableMarshalItem* mi = malloc(sizeof(FmuVarTableMarshalItem));
+    *mi = (FmuVarTableMarshalItem){
+        .variable = (void*)offset,  // Corrected in fmu_register_var_table.
+        .signal = signal,
+    };
+    if (fmu->var_table.var_list.hash_map.hash_function == NULL) {
+        hashlist_init(&fmu->var_table.var_list, 128);
+    }
+    hashlist_append(&fmu->var_table.var_list, mi);
+    return 0;
+}
+
+
+/**
+fmu_register_var_table
+======================
+
+Register the Variable Table. The previouly registered variables, via calls to
+`fmu_register_var`, are configured and the FMU Variable Table mechanism
+is enabled.
+
+Parameters
+----------
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+table (void*)
+: Pointer to the Variable Table being registered.
+*/
+void fmu_register_var_table(FmuInstanceData* fmu, void* table)
+{
+    fmu->var_table.table = table;
+    fmu->var_table.marshal_list = hashlist_ntl(
+        &fmu->var_table.var_list, sizeof(FmuVarTableMarshalItem), true);
+    for (FmuVarTableMarshalItem* mi = fmu->var_table.marshal_list;
+         mi && mi->signal; mi++) {
+        /* Correct the varaible pointer offset, to vt base. */
+        mi->variable = (double*)(table + (size_t)mi->variable);
+    }
+}
+
+
+/**
+fmu_var_table
+=============
+
+Return a reference to the previously registered Variable Table.
+
+Parameters
+----------
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+Returns
+-------
+table (void*)
+: Pointer to the Variable Table.
+*/
+void* fmu_var_table(FmuInstanceData* fmu)
+{
+    return fmu->var_table.table;
 }

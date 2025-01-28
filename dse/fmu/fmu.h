@@ -18,6 +18,7 @@
 #define DLL_PRIVATE __attribute__((visibility("hidden")))
 #endif
 
+#define UNUSED(x) ((void)x)
 
 /**
 FMU API
@@ -25,20 +26,30 @@ FMU API
 
 The FMU API provides a simplified FMU inteface with an abstracted varaible
 interface (indexing and storage). The FMU Interface includes the methods:
-* `[fmu_create()]({{< ref "#fmu_create" >}})`
-* `[fmu_init()]({{< ref "#fmu_init" >}})`
-* `[fmu_step()]({{< ref "#fmu_step" >}})`
-* `[fmu_destroy()]({{< ref "#fmu_destroy" >}})`
+* Implemented by FMU developer:
+    * `[fmu_create()]({{< ref "#fmu_create" >}})`
+    * `[fmu_init()]({{< ref "#fmu_init" >}})`
+    * `[fmu_step()]({{< ref "#fmu_step" >}})`
+    * `[fmu_destroy()]({{< ref "#fmu_destroy" >}})`
+* Additional provided functions:
+    * `[fmu_log()]({{< ref "#fmu_log" >}})` - logging function
+* Supporting Variable Table mechanism:
+    * `[fmu_register_var()]({{< ref "#fmu_register_var" >}})`
+    * `[fmu_register_var_table()]({{< ref "#fmu_register_var_table" >}})`
+    * `[fmu_var_table()]({{< ref "#fmu_var_table" >}})`
+
 
 An additional FMU Signal Interface is available for more complex integrations:
 * `[fmu_signals_reset()]({{< ref "#fmu_signals_reset" >}})`
 * `[fmu_signals_setup()]({{< ref "#fmu_signals_setup" >}})`
 * `[fmu_signals_remove()]({{< ref "#fmu_signals_remove" >}})`
 
+
 FMUs imlemented using this simplified FMU API can be built for both FMI 2
 and FMI 3 standards by linking to the relevant implementations:
 * `fmi2fmu.c` for and FMI 2 FMU
 * `fmi3fmu.c` for and FMI 3 FMU
+
 
 Binary variables are supported for FMI 3 and FMI 2 standards.
 In FMUs built to the FMI 2 standard, binary variables are implemented via
@@ -170,6 +181,12 @@ typedef struct FmuSignalVectorIndex {
 } FmuSignalVectorIndex;
 
 
+typedef struct FmuVarTableMarshalItem {
+    double* variable;  // Pointer to FMU allocated storage.
+    double* signal;    // Pointer to FmuSignalVector storage (i.e. scalar).
+} FmuVarTableMarshalItem;
+
+
 typedef struct FmuInstanceData {
     /* FMI Instance Data. */
     struct {
@@ -207,6 +224,15 @@ typedef struct FmuInstanceData {
 
     /* FMU Instance Data (additional). */
     void* data;
+
+    /* FMU Variable Table, used for indirect variable access. */
+    struct {
+        void*    table;
+        HashList var_list;
+
+        /* NLT for var/signal mirroring. */
+        FmuVarTableMarshalItem* marshal_list;
+    } var_table;
 } FmuInstanceData;
 
 
@@ -215,7 +241,11 @@ DLL_PRIVATE char* ascii85_encode(const char* source, size_t len);
 DLL_PRIVATE char* ascii85_decode(const char* source, size_t* len);
 
 /* signal.c (default implementations for generic FMU) */
-DLL_PRIVATE void fmu_load_signal_handlers(FmuInstanceData* fmu);
+DLL_PRIVATE void   fmu_load_signal_handlers(FmuInstanceData* fmu);
+DLL_PRIVATE double fmu_register_var(
+    FmuInstanceData* fmu, uint32_t vref, bool input, size_t offset);
+DLL_PRIVATE void  fmu_register_var_table(FmuInstanceData* fmu, void* table);
+DLL_PRIVATE void* fmu_var_table(FmuInstanceData* fmu);
 
 /* FMU Interface (example implementation in fmu.c)  */
 DLL_PRIVATE int32_t fmu_create(FmuInstanceData* fmu);

@@ -182,11 +182,15 @@ fmi3Instance fmi3InstantiateCoSimulation(fmi3String instanceName,
     /* Lazy free list. */
     hashlist_init(&fmu->variables.binary.free_list, 1024);
 
-    /* Specialised Model. */
+    /* Create the FMU. */
     if (fmu_create(fmu) != fmi3OK) {
         fmu_log(fmu, fmi3Error, "Error", "The FMU was not created correctly!");
     }
+    if (fmu->var_table.table == NULL) {
+        fmu_log(fmu, fmi3OK, "Debug", "FMU Var Table is not configured");
+    }
 
+    /* Return the created instance object. */
     return (fmi3Instance)fmu;
 }
 
@@ -222,6 +226,13 @@ void fmi3FreeInstance(fmi3Instance instance)
     }
 
     if (fmu->variables.vtable.remove) fmu->variables.vtable.remove(fmu);
+
+    fmu_log(fmu, fmi3OK, "OK", "Release var table");
+    free(fmu->var_table.table);
+    free(fmu->var_table.marshal_list);
+    if (fmu->var_table.var_list.hash_map.hash_function) {
+        hashlist_destroy(&fmu->var_table.var_list);
+    }
 
     fmu_log(fmu, fmi3OK, "Ok", "Destroy the index");
     hashmap_destroy(&fmu->variables.scalar.input);
@@ -1142,11 +1153,21 @@ fmi3Status fmi3DoStep(fmi3Instance instance,
 
     /* Make sure that all binary signals were reset at some point. */
     if (fmu->variables.vtable.reset) fmu->variables.vtable.reset(fmu);
+    /* Marshal Signal Vectors to the VarTable. */
+    for (FmuVarTableMarshalItem* mi = fmu->var_table.marshal_list;
+         mi && mi->variable; mi++) {
+        *mi->variable = *mi->signal;
+    }
 
     /* Step the model. */
     int32_t rc =
         fmu_step(fmu, currentCommunicationPoint, communicationStepSize);
 
+    /* Marshal the VarTable to the Signal Vectors. */
+    for (FmuVarTableMarshalItem* mi = fmu->var_table.marshal_list;
+         mi && mi->variable; mi++) {
+        *mi->signal = *mi->variable;
+    }
     /* Reset the binary signal reset mechanism. */
     fmu->variables.signals_reset = false;
 
