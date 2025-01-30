@@ -40,15 +40,13 @@ Example
 
 typedef struct WindowsModel {
     /* process Information */
-    const char* path;
-    const char* file;
-    bool        show_process;
+    const char* exe;
     /* Model information. */
     const char* name;
     double      step_size;
     double      end_time;
     int         log_level;
-    const char* yaml;
+    char*       yaml;
     double      current_step;
     double      timeout;
     /* Windows Information. */
@@ -56,17 +54,22 @@ typedef struct WindowsModel {
 } WindowsModel;
 
 typedef struct FmiGatewaySession {
+    const char*   model_stack;
+    YamlNode*     model_stack_file;
     WindowsModel* w_models;
+    WindowsModel* simbus;
+    WindowsModel* transport;
     struct {
-        const char* path;
-        const char* file;
-    } init;
-    struct {
-        const char* path;
-        const char* file;
-    } shutdown;
+        bool models;
+        bool simbus;
+        bool transport;
+    } visibility;
+    /* cmds. */
+    const char* init_cmd;
+    const char* shutdown_cmd;
+    HashMap     envar;
     /* Additional information. */
-    double last_step;
+    double      last_step;
 } FmiGatewaySession;
 
 typedef struct FmiGateway {
@@ -97,6 +100,7 @@ DLL_PRIVATE void fmigateway_parse(FmuInstanceData* fmu);
 /* session.c */
 DLL_PRIVATE void fmigateway_session_configure(FmuInstanceData* fmu);
 DLL_PRIVATE void fmigateway_session_end(FmuInstanceData* fmu);
+DLL_PRIVATE int  fmigateway_setenv(const char* name, const char* value);
 
 /* session_win32.c */
 DLL_PRIVATE void fmigateway_session_windows_start(FmuInstanceData* fmu);

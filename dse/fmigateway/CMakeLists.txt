@@ -61,6 +61,7 @@ add_library(fmi2gateway SHARED
     session.c
     parser.c
     $<$<BOOL:${WIN32}>:session_win32.c>
+    $<$<BOOL:${UNIX}>:session_unix.c>
 )
 target_include_directories(fmi2gateway
     PRIVATE
@@ -109,6 +110,7 @@ add_library(fmi3gateway SHARED
     session.c
     parser.c
     $<$<BOOL:${WIN32}>:session_win32.c>
+    $<$<BOOL:${UNIX}>:session_unix.c>
 )
 target_include_directories(fmi3gateway
     PRIVATE

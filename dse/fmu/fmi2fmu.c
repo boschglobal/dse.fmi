@@ -150,6 +150,8 @@ fmi2Component fmi2Instantiate(fmi2String instance_name, fmi2Type fmu_type,
     fmu_log(fmu, fmi2OK, "Debug", "Build indexes...");
     hashmap_init(&fmu->variables.scalar.input);
     hashmap_init(&fmu->variables.scalar.output);
+    hashmap_init(&fmu->variables.string.input);
+    hashmap_init(&fmu->variables.string.output);
     hashmap_init(&fmu->variables.binary.rx);
     hashmap_init(&fmu->variables.binary.tx);
     hashmap_init(&fmu->variables.binary.encode_func);
@@ -411,7 +413,11 @@ fmi2Status fmi2SetString(fmi2Component c, const fmi2ValueReference vr[],
         snprintf(vr_idx, VREF_KEY_LEN, "%i", vr[i]);
         FmuSignalVectorIndex* idx =
             hashmap_get(&fmu->variables.binary.rx, vr_idx);
-        if (idx == NULL) continue;
+        if (idx == NULL) {
+            hashmap_set_string(
+                &fmu->variables.string.input, vr_idx, (char*)value[i]);
+            continue;
+        };
 
         /* Get the input binary string, decode if configured. */
         char*      data = (char*)value[i];
@@ -532,6 +538,8 @@ void fmi2FreeInstance(fmi2Component c)
     fmu_log(fmu, fmi2OK, "Debug", "Destroy the index");
     hashmap_destroy(&fmu->variables.scalar.input);
     hashmap_destroy(&fmu->variables.scalar.output);
+    hashmap_destroy(&fmu->variables.string.input);
+    hashmap_destroy(&fmu->variables.string.output);
     hashmap_destroy(&fmu->variables.binary.rx);
     hashmap_destroy(&fmu->variables.binary.tx);
     hashmap_destroy(&fmu->variables.binary.encode_func);

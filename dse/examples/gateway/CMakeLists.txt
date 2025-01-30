@@ -71,6 +71,7 @@ set(FMIGATEWAY_FILES
     ${FMIGATEWAY_FILES}/session.c
     ${FMIGATEWAY_FILES}/parser.c
     $<$<BOOL:${WIN32}>:${FMIGATEWAY_FILES}/session_win32.c>
+    $<$<BOOL:${UNIX}>:${FMIGATEWAY_FILES}/session_unix.c>
 )
 
 # Targets

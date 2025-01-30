@@ -1,0 +1,49 @@
+---
+kind: Stack
+metadata:
+  name: stack_models
+spec:
+  connection:
+    transport:
+      redispubsub:
+        uri: redis://localhost:6379
+        timeout: 60
+  models:
+    - name: Model_1
+      uid: 42
+      model:
+        name: Model_1
+      annotations:
+        cli:
+          step_size: 0.0005
+          end_time: 20.0
+          log_level: 1
+          timeout: 600.0
+          exe: "different.exe"
+      runtime:
+        files:
+          - stack.yaml
+          - model.yaml
+          - signalgroup.yaml
+      channels:
+        - name: E2M_M2E
+          alias: signal_channel
+          selectors:
+            model: Model_1
+            channel: signal_vector
+
+    - name: Model_2
+      uid: 45
+      model:
+        name: Model_2
+      runtime:
+        files:
+          - stack.yaml
+          - model.yaml
+          - signalgroup.yaml
+      channels:
+        - name: com_phys
+          alias: signal_channel
+          selectors:
+            model: Model_2
+            channel: signal_vector

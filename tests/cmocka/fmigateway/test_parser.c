@@ -28,8 +28,6 @@ int test_fmigateway__parser_setup(void** state)
         strdup("../../../../tests/cmocka/fmigateway/data");
 
     fmi_gw->settings.yaml_files = calloc(2, sizeof(char*));
-    fmi_gw->settings.yaml_files[0] =
-        dse_path_cat(fmu->instance.resource_location, "model_parser.yaml");
 
     *state = fmu;
     return 0;
@@ -49,9 +47,20 @@ int test_fmigateway__parser_teardown(void** state)
         free(fmu->instance.resource_location);
 
         if (fmu->data) {
+            FmiGatewaySession* session = fmi_gw->settings.session;
             free(fmi_gw->settings.yaml_files);
-            free(fmi_gw->settings.session->w_models);
-            free(fmi_gw->settings.session);
+            dse_yaml_destroy_node(session->model_stack_file);
+
+            if (session->simbus) free(session->simbus->yaml);
+            free(session->simbus);
+            free(session->transport);
+            for (WindowsModel* model = session->w_models; model && model->name;
+                 model++) {
+                free(model->yaml);
+            }
+            free(session->w_models);
+            hashmap_destroy(&session->envar);
+            free(session);
             free(fmi_gw->model);
             free(fmi_gw);
         }
@@ -61,69 +70,172 @@ int test_fmigateway__parser_teardown(void** state)
     return 0;
 }
 
-void test_fmigateway__parser(void** state)
+
+void test_fmigateway__parser_gw_stack_default(void** state)
 {
     FmuInstanceData* fmu = *state;
     FmiGateway*      fmi_gw = fmu->data;
 
-    // Test conditions.
-    WindowsModel pi[] = {
-        {
-            .name = "Model_1",
-            .step_size = 0.1,
-            .end_time = 0.2,
-            .log_level = 6,
-            .timeout = 60.0,
-            .path = "foo",
-            .file = "bar",
-            .yaml = "foo;bar",
-            .show_process = true,
-        },
-        {
-            .name = "Model_2",
-            .step_size = 0.15,
-            .end_time = 0.25,
-            .log_level = 5,
-            .timeout = 61.0,
-            .path = "foo_2",
-            .file = "bar_2",
-            .yaml = "foo_2;bar_2",
-            .show_process = false,
-        },
-    };
+    fmi_gw->settings.yaml_files[0] = dse_path_cat(
+        fmu->instance.resource_location, "stack_gw_parser_default.yaml");
 
-    assert_null(fmi_gw->settings.end_time);
-    assert_null(fmi_gw->settings.log_level);
-    assert_null(fmi_gw->settings.session);
+    // Test conditions.
+    WindowsModel simbus = {
+        .name = "simbus",
+        .step_size = 0.0005,
+        .end_time = 36000.0,
+        .log_level = 6,
+        .timeout = 60.0,
+        .exe = "simbus.exe",
+        .yaml = (char*)"stack.yaml",
+    };
 
     fmigateway_parse(fmu);
 
+    /* Test Stack parsing. */
+    assert_false(fmi_gw->settings.session->visibility.models);
+    assert_false(fmi_gw->settings.session->visibility.simbus);
+    assert_false(fmi_gw->settings.session->visibility.transport);
+
+    /* Test Gateway parsing. */
+    assert_non_null(fmi_gw->settings.doc_list);
+    assert_double_equal(fmi_gw->settings.end_time, 36000.0, 0.0);
+    assert_double_equal(fmi_gw->settings.step_size, 0.0005, 0.0);
+    assert_int_equal(fmi_gw->settings.log_level, 6);
+    assert_string_equal(
+        fmi_gw->settings.log_location, fmu->instance.resource_location);
+
+    /* Test script parsing. */
+    assert_null(fmi_gw->settings.session->init_cmd);
+    assert_null(fmi_gw->settings.session->shutdown_cmd);
+
+    /* Test Simbus parsing. */
+    assert_non_null(fmi_gw->settings.session->simbus);
+    WindowsModel* w_model = fmi_gw->settings.session->simbus;
+    WindowsModel* TC_sim = &simbus;
+    assert_string_equal(TC_sim->name, w_model->name);
+    assert_string_equal(TC_sim->exe, w_model->exe);
+    assert_string_equal(TC_sim->yaml, w_model->yaml);
+    assert_double_equal(TC_sim->step_size, w_model->step_size, 0.0);
+    assert_double_equal(TC_sim->end_time, w_model->end_time, 0.0);
+    assert_double_equal(TC_sim->timeout, w_model->timeout, 0.0);
+    assert_int_equal(TC_sim->log_level, w_model->log_level);
+}
+
+
+void test_fmigateway__parser_gw_stack(void** state)
+{
+    FmuInstanceData* fmu = *state;
+    FmiGateway*      fmi_gw = fmu->data;
+
+    fmi_gw->settings.yaml_files[0] =
+        dse_path_cat(fmu->instance.resource_location, "stack_gw_parser.yaml");
+
+    // Test conditions.
+    WindowsModel simbus = {
+        .name = "simbus",
+        .step_size = 0.005,
+        .end_time = 0.020,
+        .log_level = 4,
+        .timeout = 600.0,
+        .exe = "simbus.exe",
+        .yaml = (char*)"stack.yaml",
+    };
+    WindowsModel connection = {
+        .name = "connection",
+        .exe = "redis.exe",
+    };
+
+    fmigateway_parse(fmu);
+
+    /* Test Stack parsing. */
+    assert_true(fmi_gw->settings.session->visibility.models);
+    assert_true(fmi_gw->settings.session->visibility.simbus);
+    assert_true(fmi_gw->settings.session->visibility.transport);
+
+    /* Test Gateway parsing. */
     assert_non_null(fmi_gw->settings.doc_list);
     assert_double_equal(fmi_gw->settings.end_time, 0.02, 0.0);
     assert_double_equal(fmi_gw->settings.step_size, 0.005, 0.0);
-    assert_int_equal(fmi_gw->settings.log_level, 6);
-    assert_string_equal(fmi_gw->settings.log_location, "foo/bar");
-    assert_non_null(fmi_gw->settings.session);
-    assert_string_equal(fmi_gw->settings.session->init.path, "foo");
-    assert_string_equal(fmi_gw->settings.session->init.file, "bar");
+    assert_int_equal(fmi_gw->settings.log_level, 4);
+    assert_string_equal(fmi_gw->settings.log_location, "./here");
     assert_string_equal(
-        fmi_gw->settings.session->shutdown.path, "foo_shutdown");
+        hashmap_get(&fmi_gw->settings.session->envar, "envar0"), "0");
     assert_string_equal(
-        fmi_gw->settings.session->shutdown.file, "bar_shutdown");
+        hashmap_get(&fmi_gw->settings.session->envar, "envar1"), "1");
+    assert_string_equal(
+        hashmap_get(&fmi_gw->settings.session->envar, "envar2"), "2");
+
+    /* Test script parsing. */
+    assert_string_equal(fmi_gw->settings.session->init_cmd, "init_cmd");
+    assert_string_equal(fmi_gw->settings.session->shutdown_cmd, "shutdown_cmd");
+
+    /* Test Redis parsing. */
+    assert_non_null(fmi_gw->settings.session->transport);
+    WindowsModel* w_con = fmi_gw->settings.session->transport;
+    WindowsModel* TC_con = &connection;
+    assert_string_equal(TC_con->name, w_con->name);
+    assert_string_equal(TC_con->exe, w_con->exe);
+
+    /* Test Simbus parsing. */
+    assert_non_null(fmi_gw->settings.session->simbus);
+    WindowsModel* w_model = fmi_gw->settings.session->simbus;
+    WindowsModel* TC_sim = &simbus;
+    assert_string_equal(TC_sim->name, w_model->name);
+    assert_string_equal(TC_sim->exe, w_model->exe);
+    assert_string_equal(TC_sim->yaml, w_model->yaml);
+    assert_double_equal(TC_sim->step_size, w_model->step_size, 0.0);
+    assert_double_equal(TC_sim->end_time, w_model->end_time, 0.0);
+    assert_double_equal(TC_sim->timeout, w_model->timeout, 0.0);
+    assert_int_equal(TC_sim->log_level, w_model->log_level);
+}
+
+
+void test_fmigateway__parser_model_stack(void** state)
+{
+    FmuInstanceData* fmu = *state;
+    FmiGateway*      fmi_gw = fmu->data;
+
+    fmi_gw->settings.yaml_files[0] =
+        dse_path_cat(fmu->instance.resource_location, "stack_gw_parser.yaml");
+
+    // Test conditions.
+    WindowsModel TC_models[] = {
+        {
+            .name = "Model_1",
+            .step_size = 0.0005,
+            .end_time = 20.0,
+            .log_level = 1,
+            .timeout = 600.0,
+            .exe = "different.exe",
+            .yaml = (char*)"stack.yaml model.yaml signalgroup.yaml",
+        },
+        {
+            /* Model with default values. */
+            .name = "Model_2",
+            .step_size = 0.0005,
+            .end_time = 36000.0,
+            .log_level = 6,
+            .timeout = 60.0,
+            .exe = "modelc.exe",
+            .yaml = (char*)"stack.yaml model.yaml signalgroup.yaml",
+        },
+    };
+
+    fmigateway_parse(fmu);
 
     assert_non_null(fmi_gw->settings.session->w_models);
-    for (size_t i = 0; i < ARRAY_SIZE(pi); i++) {
-        WindowsModel* w_model = &fmi_gw->settings.session->w_models[i];
-        WindowsModel* TC_model = &pi[i];
-        assert_string_equal(TC_model->name, w_model->name);
-        assert_string_equal(TC_model->path, w_model->path);
-        assert_string_equal(TC_model->file, w_model->file);
-        assert_string_equal(TC_model->yaml, w_model->yaml);
-        assert_double_equal(TC_model->step_size, w_model->step_size, 0.0);
-        assert_double_equal(TC_model->end_time, w_model->end_time, 0.0);
-        assert_double_equal(TC_model->timeout, w_model->timeout, 0.0);
-        assert_int_equal(TC_model->log_level, w_model->log_level);
-        assert_int_equal(TC_model->show_process, w_model->show_process);
+    for (size_t i = 0; i < ARRAY_SIZE(TC_models); i++) {
+        /* Test Simbus parsing. */
+        WindowsModel* model = &fmi_gw->settings.session->w_models[i];
+        WindowsModel* tc_model = &TC_models[i];
+        assert_string_equal(tc_model->name, model->name);
+        assert_string_equal(tc_model->exe, model->exe);
+        assert_string_equal(tc_model->yaml, model->yaml);
+        assert_double_equal(tc_model->step_size, model->step_size, 0.0);
+        assert_double_equal(tc_model->end_time, model->end_time, 0.0);
+        assert_double_equal(tc_model->timeout, model->timeout, 0.0);
+        assert_int_equal(tc_model->log_level, model->log_level);
     }
 }
 
@@ -133,8 +245,13 @@ int run_fmigateway__parser_tests(void)
     void* s = test_fmigateway__parser_setup;
     void* t = test_fmigateway__parser_teardown;
 
-    const struct CMUnitTest tests[] = { cmocka_unit_test_setup_teardown(
-        test_fmigateway__parser, s, t) };
+    const struct CMUnitTest tests[] = {
+        cmocka_unit_test_setup_teardown(
+            test_fmigateway__parser_gw_stack_default, s, t),
+        cmocka_unit_test_setup_teardown(test_fmigateway__parser_gw_stack, s, t),
+        cmocka_unit_test_setup_teardown(
+            test_fmigateway__parser_model_stack, s, t)
+    };
 
     return cmocka_run_group_tests_name("PARSER", tests, NULL, NULL);
 }

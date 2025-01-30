@@ -1,7 +1,6 @@
 package patch
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -16,18 +15,24 @@ func TestPatchSignalGrpCommand_Run(t *testing.T) {
 
 	// Copy the original file to a temporary location
 	tempFile := signalgroup_file + ".temp"
-	input, _ := ioutil.ReadFile(signalgroup_file)
-	err := ioutil.WriteFile(tempFile, input, 0644)
+
+	input, _ := os.ReadFile(signalgroup_file)
+	if err := os.WriteFile(tempFile, input, 0644); err != nil {
+		t.Fatalf("Failed writing: %v", err)
+	}
+
 	defer os.Remove(tempFile)
 
 	cmd := NewPatchSignalGroupCommand("test")
 	args := []string{"-input", tempFile, "-patch", csv_file}
 
 	// Parse and run the command
-	if err = cmd.Parse(args); err != nil {
+
+	if err := cmd.Parse(args); err != nil {
 		t.Fatalf("Error parsing arguments: %v", err)
 	}
-	if err = cmd.Run(); err != nil {
+	if err := cmd.Run(); err != nil {
+
 		t.Fatalf("Error running command: %v", err)
 	}
 }
@@ -38,8 +43,10 @@ func TestPatchedSignalGrpAnnotations(t *testing.T) {
 
 	// Copy the original file to a temporary location
 	tempFile := signalgroup_file + ".temp"
-	input, _ := ioutil.ReadFile(signalgroup_file)
-	err := ioutil.WriteFile(tempFile, input, 0644)
+	input, _ := os.ReadFile(signalgroup_file)
+	if err := os.WriteFile(tempFile, input, 0644); err != nil {
+		t.Fatalf("Failed writing: %v", err)
+	}
 	defer os.Remove(tempFile)
 
 	cmd := NewPatchSignalGroupCommand("test")
@@ -75,8 +82,10 @@ func TestPatchedSignalGrpSignals(t *testing.T) {
 
 	// Copy the original file to a temporary location
 	tempFile := signalgroup_file + ".temp"
-	input, _ := ioutil.ReadFile(signalgroup_file)
-	err := ioutil.WriteFile(tempFile, input, 0644)
+	input, _ := os.ReadFile(signalgroup_file)
+	if err := os.WriteFile(tempFile, input, 0644); err != nil {
+		t.Fatalf("Failed writing: %v", err)
+	}
 	defer os.Remove(tempFile)
 
 	cmd := NewPatchSignalGroupCommand("test")
@@ -101,18 +110,19 @@ func TestPatchedSignalGrpSignals(t *testing.T) {
 
 	test_data := []map[string]interface{}{
 		{
-			"Signal":                 "input_1_patched",
-			"softecu_direction":      "M2E",
+			"Signal":                  "input_1_patched",
+			"softecu_direction":       "M2E",
 			"softecu_access_function": "E2M+M2E",
 		},
 		{
-			"Signal":                 "input_2_patched",
-			"softecu_direction":      "M2E",
+			"Signal":                  "input_2_patched",
+			"softecu_direction":       "M2E",
 			"softecu_access_function": "E2M+M2E",
 		},
 		{
-			"Signal":                 "output_1_patched",
-			"softecu_direction":      "E2M",
+			"Signal":                  "output_1_patched",
+			"softecu_direction":       "E2M",
+
 			"softecu_access_function": "E2M+M2E",
 		},
 	}

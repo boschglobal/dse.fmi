@@ -6,143 +6,282 @@
 #include <dse/testing.h>
 #include <dse/logger.h>
 #include <dse/clib/collections/hashlist.h>
+#include <dse/clib/util/strings.h>
 #include <dse/modelc/schema.h>
 #include <dse/modelc/model.h>
 #include <dse/fmu/fmu.h>
 #include <dse/fmigateway/fmigateway.h>
 
 
-#define UNUSED(x)      ((void)x)
-#define ARRAY_SIZE(x)  (sizeof(x) / sizeof(x[0]))
-#define MODEL_MAX_TIME 60 * 60 * 10  // 10 minutes
-#define STEP_SIZE      0.0005
+#define UNUSED(x)            ((void)x)
+#define ARRAY_SIZE(x)        (sizeof(x) / sizeof(x[0]))
+#define DEFAULT_END_TIME     60 * 60 * 10  // 10 minutes
+#define DEFAULT_STEP_SIZE    0.0005
+#define DEFAULT_LOG_LEVEL    6
+#define DEFAULT_TIMEOUT      60.0
+#define GATEWAY_INIT_CMD     "GATEWAY_INIT_CMD"
+#define GATEWAY_SHUTDOWN_CMD "GATEWAY_SHUTDOWN_CMD"
+#define REDIS_EXE_PATH       "REDIS_EXE_PATH"
+#define MODELC_EXE_PATH      "MODELC_EXE_PATH"
+#define SIMBUS_EXE_PATH      "SIMBUS_EXE_PATH"
 
 
-static inline void* _gwfmu_model_generator(ModelInstanceSpec* mi, void* data)
+static inline WindowsModel* _gwfmu_model_generator(
+    YamlNode* data, YamlNode* gw_doc, const char* exe)
 {
-    UNUSED(mi);
-    YamlNode* n = dse_yaml_find_node((YamlNode*)data, "model");
+    YamlNode* n = dse_yaml_find_node((YamlNode*)data, "name");
     if (n && n->scalar) {
         WindowsModel* w_model = calloc(1, sizeof(WindowsModel));
 
-        w_model->name = n->scalar;
-        if (dse_yaml_get_double(
-                data, "annotations/stepsize", &w_model->step_size)) {
-            w_model->step_size = STEP_SIZE;
+        if (dse_yaml_get_string(data, "name", &w_model->name)) {
+            log_error("Name is required for model.");
+            free(w_model);
+            return NULL;
         };
         if (dse_yaml_get_double(
-                data, "annotations/endtime", &w_model->end_time)) {
-            w_model->end_time = MODEL_MAX_TIME;
+                data, "annotations/cli/step_size", &w_model->step_size)) {
+            w_model->step_size = DEFAULT_STEP_SIZE;
+        };
+        if (dse_yaml_get_double(
+                data, "annotations/cli/end_time", &w_model->end_time)) {
+            w_model->end_time = DEFAULT_END_TIME;
         };
         if (dse_yaml_get_int(
-                data, "annotations/loglevel", &w_model->log_level)) {
-            w_model->log_level = -1;
+                data, "annotations/cli/log_level", &w_model->log_level)) {
+            w_model->log_level = DEFAULT_LOG_LEVEL;
         };
         if (dse_yaml_get_double(
-                data, "annotations/timeout", &w_model->timeout)) {
-            w_model->timeout = 60.0;
+                data, "annotations/cli/timeout", &w_model->timeout)) {
+            w_model->timeout = DEFAULT_TIMEOUT;
         };
-        dse_yaml_get_string(data, "annotations/path", &w_model->path);
-        dse_yaml_get_string(data, "annotations/file", &w_model->file);
-        dse_yaml_get_string(data, "annotations/yaml", &w_model->yaml);
-        dse_yaml_get_bool(data, "annotations/show", &w_model->show_process);
+
+        /* Check if an exe is given for this model. */
+        if (dse_yaml_get_string(data, "annotations/cli/exe", &w_model->exe)) {
+            YamlNode* e_node = dse_yaml_find_node(gw_doc, "spec/runtime/env");
+            if (e_node == NULL) {
+                free(w_model);
+                return NULL;
+            }
+            w_model->exe = getenv(exe);
+            if (w_model->exe == NULL) {
+                dse_yaml_get_string(e_node, exe, &w_model->exe);
+            }
+        }
+
+        YamlNode* f_node = dse_yaml_find_node(data, "runtime/files");
+        if (f_node) {
+            int offset = 0;
+            w_model->yaml = malloc(1);
+            w_model->yaml[0] = '\0';
+
+            for (uint32_t i = 0; i < hashlist_length(&f_node->sequence); i++) {
+                YamlNode* fi_node = hashlist_at(&f_node->sequence, i);
+                char*     file = fi_node->scalar;
+                size_t buffer_size = strlen(w_model->yaml) + strlen(file) + 2;
+                w_model->yaml = realloc(w_model->yaml, buffer_size);
+                if (offset) {
+                    offset += snprintf(
+                        w_model->yaml + offset, buffer_size, " %s", file);
+                } else {
+                    offset += snprintf(
+                        w_model->yaml + offset, buffer_size, "%s", file);
+                }
+            }
+        }
 
         log_notice("%s", w_model->name);
-        log_notice("  Path: %s", w_model->path);
-        log_notice("  File: %s", w_model->file);
+        if (w_model->exe) {
+            log_notice("  exe: %s", w_model->exe);
+        } else {
+            log_notice("  exe: using environment variable");
+        }
         log_notice("  Yaml: %s", w_model->yaml);
         log_notice("  Stepsize: %lf", w_model->step_size);
         log_notice("  Endtime: %lf", w_model->end_time);
         log_notice("  Timout: %lf", w_model->timeout);
         log_notice("  Loglevel: %d", w_model->log_level);
-        log_notice("  Show: %d", w_model->show_process);
+
         return w_model;
     }
     return NULL;
 }
 
 
-static inline void _parse_session_script(FmuInstanceData* fmu, YamlNode* node,
-    const char* node_path, const char** path, const char** file)
+static inline void _parse_script_envar(
+    FmuInstanceData* fmu, YamlNode* node, HashMap* envar)
 {
-    YamlNode* _node = dse_yaml_find_node(node, node_path);
-    if (_node) {
-        if (dse_yaml_get_string(_node, "path", path)) {
-            *path = fmu->instance.resource_location;
+    UNUSED(fmu);
+
+    YamlNode* n_env = dse_yaml_find_node(node, "annotations/cmd_envvars");
+    if (n_env) {
+        /* Node type 2 is sequence. */
+        if (n_env == NULL || n_env->node_type != 2) return;
+        uint32_t len = hashlist_length(&n_env->sequence);
+        if (len == 0) return;
+
+        hashmap_init(envar);
+        /* Enumerate over the envars. */
+        for (uint32_t i = 0; i < len; i++) {
+            YamlNode* _env = hashlist_at(&n_env->sequence, i);
+            if (_env == NULL) continue;
+            static char vr_idx[128];
+            snprintf(vr_idx, sizeof(vr_idx), "%i", i);
+            hashmap_set_string(envar, _env->name, vr_idx);
         }
-        dse_yaml_get_string(_node, "file", file);
     }
 }
 
 
-static inline void _gwfmu_parse_session(ModelInstanceSpec* mi, SchemaObject* o,
-    FmuInstanceData* fmu, YamlNode* s_node)
+static inline WindowsModel* _parse_redis(FmuInstanceData* fmu, YamlNode* root)
 {
-    FmiGateway* fmi_gw = fmu->data;
+    UNUSED(fmu);
+    YamlNode* n_env = dse_yaml_find_node(root, "spec/runtime/env");
+    if (n_env == NULL) return NULL;
+
+    WindowsModel* redis_instance = calloc(1, sizeof(WindowsModel));
+    redis_instance->name = "connection";
+
+    redis_instance->exe = getenv(REDIS_EXE_PATH);
+    if (redis_instance->exe == NULL) {
+        if (dse_yaml_get_string(n_env, REDIS_EXE_PATH, &redis_instance->exe)) {
+            free(redis_instance);
+            return NULL;
+        }
+    }
+
+    return redis_instance;
+}
+
+
+static inline WindowsModel* _parse_simbus(FmuInstanceData* fmu, YamlNode* root)
+{
+    const char* selector[] = { "name" };
+    const char* value[] = { "simbus" };
+    /* Model Instance: locate in stack. */
+    YamlNode*   simbus_node = dse_yaml_find_node_in_seq(
+          root, "spec/models", selector, value, ARRAY_SIZE(selector));
+    if (simbus_node == NULL) {
+        fmu_log(fmu, 0, "Notice", "Simbus not running on windows.");
+        return NULL;
+    }
+
+    WindowsModel* simbus =
+        _gwfmu_model_generator(simbus_node, root, SIMBUS_EXE_PATH);
+
+    return simbus;
+}
+
+static inline int _parse_gateway(FmuInstanceData* fmu, YamlNode* doc)
+{
+    FmiGateway*        fmi_gw = fmu->data;
+    FmiGatewaySession* session = fmi_gw->settings.session;
+
+    const char* selector[] = { "name" };
+    const char* value[] = { "gateway" };
+
+    /* Model Instance: locate in stack. */
+    YamlNode* gateway_node = dse_yaml_find_node_in_seq(
+        doc, "spec/models", selector, value, ARRAY_SIZE(selector));
+    if (gateway_node == NULL) return -1;
+
+    /* Get and set runtime parameters. */
+    if (dse_yaml_get_double(gateway_node, "annotations/step_size",
+            &(fmi_gw->settings.step_size))) {
+        fmi_gw->settings.step_size = DEFAULT_STEP_SIZE;
+    }
+    if (dse_yaml_get_double(gateway_node, "annotations/end_time",
+            &(fmi_gw->settings.end_time))) {
+        fmi_gw->settings.end_time = DEFAULT_END_TIME;
+    }
+    if (dse_yaml_get_int(gateway_node, "annotations/log_level",
+            &(fmi_gw->settings.log_level))) {
+        fmi_gw->settings.log_level = DEFAULT_LOG_LEVEL;
+    }
+    if (dse_yaml_get_string(gateway_node, "annotations/log_location",
+            &(fmi_gw->settings.log_location))) {
+        fmi_gw->settings.log_location = fmu->instance.resource_location;
+    }
+
+    session->init_cmd = getenv(GATEWAY_INIT_CMD);
+    if (session->init_cmd == NULL) {
+        dse_yaml_get_string(
+            gateway_node, "runtime/env/GATEWAY_INIT_CMD", &session->init_cmd);
+    }
+
+    session->shutdown_cmd = getenv(GATEWAY_SHUTDOWN_CMD);
+    if (session->shutdown_cmd == NULL) {
+        dse_yaml_get_string(gateway_node, "runtime/env/GATEWAY_SHUTDOWN_CMD",
+            &session->shutdown_cmd);
+    }
+
+    _parse_script_envar(fmu, gateway_node, &session->envar);
+
+    return 0;
+}
+
+static inline void _parse_model_stack(FmuInstanceData* fmu, YamlNode* gw_doc)
+{
+    FmiGateway*        fmi_gw = fmu->data;
+    FmiGatewaySession* session = fmi_gw->settings.session;
+
+    char* model_stack = dse_path_cat(
+        fmu->instance.resource_location, fmi_gw->settings.session->model_stack);
+    session->model_stack_file = dse_yaml_load_single_doc(model_stack);
+    free(model_stack);
+
+    if (session->model_stack_file == NULL) return;
+
+    YamlNode* n_models =
+        dse_yaml_find_node(session->model_stack_file, "spec/models");
+    if (n_models) {
+        /* Node type 2 is sequence. */
+        if (n_models == NULL || n_models->node_type != 2) return;
+        uint32_t len = hashlist_length(&n_models->sequence);
+        if (len == 0) return;
+        HashList m_list;
+        hashlist_init(&m_list, 100);
+
+        /* Enumerate over the envars. */
+        for (uint32_t i = 0; i < len; i++) {
+            YamlNode* model = hashlist_at(&n_models->sequence, i);
+            if (model == NULL) continue;
+            WindowsModel* w_model =
+                _gwfmu_model_generator(model, gw_doc, MODELC_EXE_PATH);
+            if (w_model == NULL) continue;
+            hashlist_append(&m_list, w_model);
+        }
+        session->w_models = hashlist_ntl(&m_list, sizeof(WindowsModel), true);
+    }
+}
+
+static inline int _stack_match_handler(ModelInstanceSpec* mi, SchemaObject* o)
+{
+    UNUSED(mi);
+    FmuInstanceData* fmu = o->data;
+    FmiGateway*      fmi_gw = fmu->data;
     assert(fmi_gw);
 
     fmi_gw->settings.session = calloc(1, sizeof(FmiGatewaySession));
     FmiGatewaySession* session = fmi_gw->settings.session;
 
-    _parse_session_script(fmu, s_node, "initialization", &session->init.path,
-        &session->init.file);
-    _parse_session_script(fmu, s_node, "shutdown", &session->shutdown.path,
-        &session->shutdown.file);
+    /* Visibility options. */
+    dse_yaml_get_bool(o->doc, "metadata/annotations/redis_show",
+        &session->visibility.transport);
+    dse_yaml_get_bool(o->doc, "metadata/annotations/simbus_show",
+        &session->visibility.simbus);
+    dse_yaml_get_bool(o->doc, "metadata/annotations/models_show",
+        &session->visibility.models);
 
-    YamlNode* w_node = dse_yaml_find_node(s_node, "windows");
-    if (w_node) {
-        /* Enumerate over the models. */
-        uint32_t      index = 0;
-        WindowsModel* w_model;
-        HashList      m_list;
-        hashlist_init(&m_list, 100);
-        do {
-            w_model = schema_object_enumerator(mi, o,
-                "metadata/annotations/session/windows", &index,
-                _gwfmu_model_generator);
-            if (w_model == NULL) break;
-            if (w_model->name) {
-                hashlist_append(&m_list, w_model);
-            } else {
-                free(w_model);
-            }
-        } while (1);
-        /* Convert to a NTL. */
-        session->w_models = hashlist_ntl(&m_list, sizeof(WindowsModel), true);
-    }
-}
+    session->transport = _parse_redis(fmu, o->doc);
 
+    session->simbus = _parse_simbus(fmu, o->doc);
 
-static inline int _model_match_handler(ModelInstanceSpec* mi, SchemaObject* o)
-{
-    FmuInstanceData* fmu = o->data;
-    FmiGateway*      fmi_gw = fmu->data;
-    assert(fmi_gw);
+    _parse_gateway(fmu, o->doc);
 
-    /* Get and set runtime parameters. */
-    if (dse_yaml_get_double(o->doc, "metadata/annotations/fmi_stepsize",
-            &(fmi_gw->settings.step_size))) {
-        fmi_gw->settings.step_size = STEP_SIZE;
-    }
-    if (dse_yaml_get_double(o->doc, "metadata/annotations/fmi_endtime",
-            &(fmi_gw->settings.end_time))) {
-        fmi_gw->settings.end_time = MODEL_MAX_TIME;
-    }
-    if (dse_yaml_get_int(o->doc, "metadata/annotations/loglevel",
-            &(fmi_gw->settings.log_level))) {
-        fmi_gw->settings.log_level = 6;
-    }
-    if (dse_yaml_get_string(o->doc, "metadata/annotations/loglocation",
-            &(fmi_gw->settings.log_location))) {
-        fmi_gw->settings.log_location = ".";
-    }
-
-
-    /* Create Session if specified in the doc. */
-    YamlNode* session_node =
-        dse_yaml_find_node(o->doc, "metadata/annotations/session");
-    if (session_node) {
-        _gwfmu_parse_session(mi, o, fmu, session_node);
+    dse_yaml_get_string(
+        o->doc, "metadata/annotations/model_stack", &session->model_stack);
+    if (session->model_stack) {
+        _parse_model_stack(fmu, o->doc);
     }
 
     return 0;
@@ -174,10 +313,12 @@ void fmigateway_parse(FmuInstanceData* fmu)
 
     /* Parse the FMU Model. */
     SchemaObjectSelector m_sel = {
-        .kind = "Model",
-        .name = "Gateway",
+        .kind = "Stack",
+        .name = "gateway",
         .data = fmu,
     };
     ModelInstanceSpec mi = { .yaml_doc_list = fmi_gw->settings.doc_list };
-    schema_object_search(&mi, &m_sel, _model_match_handler);
+    if (schema_object_search(&mi, &m_sel, _stack_match_handler)) {
+        fmu_log(fmu, 5, "Fatal", "Could not locate stack.yaml");
+    }
 }

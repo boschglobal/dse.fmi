@@ -1,7 +1,7 @@
 ---
 kind: Stack
 metadata:
-  name: stack
+  name: gateway
 spec:
   connection:
     transport:
@@ -21,6 +21,10 @@ spec:
       uid: 42
       model:
         name: Gateway
+      annotations:
+        step_size: 0.0005
+        end_time: 0.00200
+        log_level: 6
       channels:
         - name: scalar
           alias: scalar_vector

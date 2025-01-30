@@ -43,7 +43,7 @@ type FmiInteger struct {
 }
 
 type FmiString struct {
-	Start string `xml:"start,attr,omitempty"`
+	Start string `xml:"start,attr"`
 }
 
 type FmiBoolean struct {
@@ -55,13 +55,37 @@ type ScalarVariable struct {
 	Name           string       `xml:"name,attr"`
 	ValueReference string       `xml:"valueReference,attr"`
 	Causality      string       `xml:"causality,attr"`
-	Initial        string       `xml:"initial,attr"`
-	Variability    string       `xml:"variability,attr"`
+	Initial        *string      `xml:"initial,attr,omitempty"`
+	Variability    *string      `xml:"variability,attr,omitempty"`
 	Real           *FmiReal     `xml:"Real,omitempty"`
 	String         *FmiString   `xml:"String,omitempty"`
 	Boolean        *FmiBoolean  `xml:"Boolean,omitempty"`
 	Integer        *FmiInteger  `xml:"Integer,omitempty"`
 	Annotations    *Annotations `xml:"Annotations,omitempty"`
+}
+
+type Outputs struct {
+	Text    string `xml:",chardata"`
+	Unknown []struct {
+		Text  string `xml:",chardata"`
+		Index string `xml:"index,attr"`
+	} `xml:"Unknown"`
+}
+
+type Derivates struct {
+	Text    string `xml:",chardata"`
+	Unknown []struct {
+		Text  string `xml:",chardata"`
+		Index string `xml:"index,attr"`
+	} `xml:"Unknown"`
+}
+
+type InitialUnknowns struct {
+	Text    string `xml:",chardata"`
+	Unknown []struct {
+		Text  string `xml:",chardata"`
+		Index string `xml:"index,attr"`
+	} `xml:"Unknown"`
 }
 
 // FmiModelDescription was generated 2023-05-23 07:27:35 by https://xml-to-go.github.io/ in Ukraine.
@@ -74,10 +98,10 @@ type FmiModelDescription struct {
 	Description              string   `xml:"description,attr"`
 	Author                   string   `xml:"author,attr"`
 	Version                  string   `xml:"version,attr"`
-	GenerationTool           string   `xml:"generationTool,attr"`
-	GenerationDateAndTime    string   `xml:"generationDateAndTime,attr"`
-	VariableNamingConvention string   `xml:"variableNamingConvention,attr"`
-	NumberOfEventIndicators  string   `xml:"numberOfEventIndicators,attr"`
+	GenerationTool           *string  `xml:"generationTool,attr,omitempty"`
+	GenerationDateAndTime    *string  `xml:"generationDateAndTime,attr,omitempty"`
+	VariableNamingConvention *string  `xml:"variableNamingConvention,attr,omitempty"`
+	NumberOfEventIndicators  *string  `xml:"numberOfEventIndicators,attr,omitempty"`
 	CoSimulation             struct {
 		Text                                   string `xml:",chardata"`
 		ModelIdentifier                        string `xml:"modelIdentifier,attr"`
@@ -95,28 +119,10 @@ type FmiModelDescription struct {
 		ScalarVariable []ScalarVariable `xml:"ScalarVariable"`
 	} `xml:"ModelVariables"`
 	ModelStructure struct {
-		Text    string `xml:",chardata"`
-		Outputs struct {
-			Text    string `xml:",chardata"`
-			Unknown []struct {
-				Text  string `xml:",chardata"`
-				Index string `xml:"index,attr"`
-			} `xml:"Unknown"`
-		} `xml:"Outputs"`
-		Derivatives struct {
-			Text    string `xml:",chardata"`
-			Unknown []struct {
-				Text  string `xml:",chardata"`
-				Index string `xml:"index,attr"`
-			} `xml:"Unknown"`
-		} `xml:"Derivatives"`
-		InitialUnknowns struct {
-			Text    string `xml:",chardata"`
-			Unknown []struct {
-				Text  string `xml:",chardata"`
-				Index string `xml:"index,attr"`
-			} `xml:"Unknown"`
-		} `xml:"InitialUnknowns"`
+		Text            string           `xml:",chardata"`
+		Outputs         *Outputs         `xml:"Outputs,omitempty"`
+		Derivatives     *Derivates       `xml:"Derivatives,omitempty"`
+		InitialUnknowns *InitialUnknowns `xml:"InitialUnknowns,omitempty"`
 	} `xml:"ModelStructure"`
 }
 
@@ -154,18 +160,22 @@ func getXmlData(file string) ([]byte, error) {
 func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelDescription) error {
 	for _, signal := range signalGroupSpec.Signals {
 
+		causality := (*signal.Annotations)["fmi_variable_causality"].(string)
 		start := ""
+		if causality == "input" {
+			start = "0.0"
+		}
 		if (*signal.Annotations)["fmi_variable_start_value"] != nil {
 			start = strconv.Itoa((*signal.Annotations)["fmi_variable_start_value"].(int))
 		}
 		if (*signal.Annotations)["fmi_variable_vref"] == nil {
-			return fmt.Errorf("Could not get value reference for signal %s", signal.Signal)
+			return fmt.Errorf("could not get value reference for signal %s", signal.Signal)
 		}
 
 		ScalarVariable := ScalarVariable{
 			Name:           signal.Signal,
 			ValueReference: strconv.Itoa((*signal.Annotations)["fmi_variable_vref"].(int)),
-			Causality:      (*signal.Annotations)["fmi_variable_causality"].(string),
+			Causality:      causality,
 			Real: &FmiReal{
 				Start: start,
 			},
@@ -231,10 +241,10 @@ func BinarySignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelD
 		var rx_vref []interface{}
 		var tx_vref []interface{}
 		if rx_vref = (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.rx_vref"].([]interface{}); rx_vref == nil {
-			return fmt.Errorf("Could not get rx_vref for signal %s", signal.Signal)
+			return fmt.Errorf("could not get rx_vref for signal %s", signal.Signal)
 		}
 		if tx_vref = (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.tx_vref"].([]interface{}); tx_vref == nil {
-			return fmt.Errorf("Could not get tx_vref for signal %s", signal.Signal)
+			return fmt.Errorf("could not get tx_vref for signal %s", signal.Signal)
 		}
 		if len(rx_vref) != len(tx_vref) {
 			return errors.New("rx-tx mismatch")
@@ -250,6 +260,31 @@ func BinarySignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelD
 			)
 		}
 
+	}
+	return nil
+}
+
+func StringSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelDescription) error {
+	for _, signal := range signalGroupSpec.Signals {
+
+		causality := (*signal.Annotations)["fmi_variable_causality"].(string)
+		start := ""
+		if causality == "input" {
+			start = ""
+		}
+		if (*signal.Annotations)["fmi_variable_vref"] == nil {
+			return fmt.Errorf("could not get value reference for signal %s", signal.Signal)
+		}
+
+		ScalarVariable := ScalarVariable{
+			Name:           signal.Signal,
+			ValueReference: strconv.Itoa((*signal.Annotations)["fmi_variable_vref"].(int)),
+			Causality:      causality,
+			String: &FmiString{
+				Start: start,
+			},
+		}
+		FmiXml.ModelVariables.ScalarVariable = append(FmiXml.ModelVariables.ScalarVariable, ScalarVariable)
 	}
 	return nil
 }

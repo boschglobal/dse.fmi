@@ -2,17 +2,6 @@
 kind: Model
 metadata:
   name: Gateway
-  annotations:
-    adapter: 'fmi'
-    fmi_version: '2.0'
-    fmi_model_cosim: true
-    fmi_model_version: '1.48'
-    fmi_stepsize: '0.0005'
-    fmi_endtime: '0.002'
-    fmi_guid: '{11111111-2222-3333-4444-555555555555}'
-    fmi_resource_dir: 'data'
-    set_init_values: true
-    loglevel: 4
 spec:
   runtime:
     gateway: {}

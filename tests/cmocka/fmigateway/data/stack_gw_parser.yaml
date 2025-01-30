@@ -1,0 +1,67 @@
+---
+kind: Stack
+metadata:
+  name: gateway
+  annotations:
+    redis_show: true
+    simbus_show: true
+    models_show: true
+    model_stack: stack_models_parser.yaml
+spec:
+  connection:
+    transport:
+      redispubsub:
+        uri: redis://localhost:6379
+        timeout: 60
+  runtime:
+    env:
+      REDIS_EXE_PATH: redis.exe
+      SIMBUS_EXE_PATH: simbus.exe
+      MODELC_EXE_PATH: modelc.exe
+  models:
+    - name: simbus
+      model:
+        name: simbus
+      annotations:
+        cli:
+          step_size: 0.005
+          end_time: 0.02
+          log_level: 4
+          timeout: 600.0
+      runtime:
+        env:
+          SIMBUS_LOGLEVEL: 6
+        files:
+          - stack.yaml
+      channels:
+        - name: E2M_M2E
+          expectedModelCount: 2
+        - name: com_phys
+          expectedModelCount: 2
+    - name: gateway
+      uid: 40004
+      model:
+        name: Gateway
+      annotations:
+        step_size: 0.0050
+        end_time: 0.0200
+        log_level: 4
+        log_location: "./here"
+        cmd_envvars:
+          - envar0
+          - envar1
+          - envar2
+      runtime:
+        env:
+          # Gateway scripts.
+          GATEWAY_INIT_CMD: "init_cmd"
+          GATEWAY_SHUTDOWN_CMD: "shutdown_cmd"
+      channels:
+        - name: E2M_M2E
+          alias: E2M_M2E
+          selectors:
+            channel: E2M_M2E
+        - name: com_phys
+          alias: com_phys
+          selectors:
+            channel: com_phys

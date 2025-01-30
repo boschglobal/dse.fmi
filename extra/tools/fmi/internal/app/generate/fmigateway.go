@@ -28,13 +28,19 @@ type GenFmiGatewayCommand struct {
 	commandName string
 	fs          *flag.FlagSet
 
+	// CLI arguments
 	logLevel     int
 	signalGroups string
 	uuid         string
 	version      string
 	fmiVersion   string
 	outdir       string
-	session      string
+	stack        string
+
+	// Model parameter
+	startTime float64
+	endTime   float64
+	stepSize  float64
 
 	libRootPath string
 }
@@ -44,14 +50,19 @@ func NewFmiGatewayCommand(name string) *GenFmiGatewayCommand {
 
 	c.fs.IntVar(&c.logLevel, "log", 4, "Loglevel")
 	c.fs.StringVar(&c.signalGroups, "signalgroups", "", "A list of signalgroups separated by comma")
+	c.fs.StringVar(&c.stack, "stack", "", "Path to the stack.yaml")
+	c.fs.StringVar(&c.outdir, "outdir", "out", "Output directory for the FMU file")
 	c.fs.StringVar(&c.uuid, "uuid", "", "UUID to assign to the FMU, set to '' to generate a new UUID")
 	c.fs.StringVar(&c.version, "version", "0.0.1", "Version to assign to the FMU")
 	c.fs.StringVar(&c.fmiVersion, "fmiVersion", "2", "Modelica FMI Version")
-	c.fs.StringVar(&c.outdir, "outdir", "out", "Output directory for the FMU file")
-	c.fs.StringVar(&c.session, "session", "", "Yaml file containing the session annotation")
 
 	// Supports unit testing.
 	c.fs.StringVar(&c.libRootPath, "libroot", "/usr/local", "System lib root path (where lib & lib32 directory are found)")
+
+	// Default values
+	c.startTime = 0.0
+	c.endTime = 9999.0
+	c.stepSize = 0.0005
 
 	return c
 }
@@ -80,7 +91,13 @@ func (c *GenFmiGatewayCommand) Run() error {
 	if err := c.mergeSignalGroups(c.signalGroups, c.outdir); err != nil {
 		return err
 	}
-	fmuXml, channels, err := c.createFmuXml()
+
+	envars, err := c.parseStack()
+	if err != nil {
+		return err
+	}
+
+	fmuXml, channels, err := c.createFmuXml(envars)
 	if err != nil {
 		return err
 	}
@@ -147,7 +164,7 @@ func (c *GenFmiGatewayCommand) mergeSignalGroups(signalGroups string, outDir str
 	if len(signalGroups) > 0 {
 		signalGroupList = strings.Split(signalGroups, ",")
 	}
-	vr := 0
+	vr := 1000
 	var signal_list []string
 	for _, signalGroup := range signalGroupList {
 
@@ -185,19 +202,19 @@ func (c *GenFmiGatewayCommand) mergeSignalGroups(signalGroups string, outDir str
 
 func (c *GenFmiGatewayCommand) setGeneralXmlFields(fmuXml *fmi2.FmiModelDescription) {
 	// Basic FMU Information.
-	fmuXml.ModelName = "gateway"
-	fmuXml.FmiVersion = c.fmiVersion
+	fmuXml.ModelName = "Gateway"
+	fmuXml.FmiVersion = fmt.Sprintf("%s.0", c.fmiVersion)
 	fmuXml.Guid = fmt.Sprintf("{%s}", c.uuid)
-	fmuXml.GenerationTool = "DSE FMI - FMU Gateway"
-	fmuXml.GenerationDateAndTime = time.Now().String()
+	fmuXml.GenerationTool = stringPtr("DSE FMI - FMU Gateway")
+	fmuXml.GenerationDateAndTime = stringPtr(time.Now().Format("2006-01-02T15:04:05Z"))
 	fmuXml.Author = "Robert Bosch GmbH"
 	fmuXml.Version = c.version
 	fmuXml.Description = "Gateway to connect to the DSE Simbus"
 
 	// Runtime Information.
-	fmuXml.DefaultExperiment.StartTime = "0.0"
-	fmuXml.DefaultExperiment.StopTime = "9999"
-	fmuXml.DefaultExperiment.StepSize = "0.0005"
+	fmuXml.DefaultExperiment.StartTime = fmt.Sprintf("%f", c.startTime)
+	fmuXml.DefaultExperiment.StopTime = fmt.Sprintf("%f", c.endTime)
+	fmuXml.DefaultExperiment.StepSize = fmt.Sprintf("%f", c.stepSize)
 
 	// Model Information.
 	fmuXml.CoSimulation.ModelIdentifier = fmt.Sprintf("libfmi%sgateway", c.fmiVersion) // This is the packaged SO/DLL file.
@@ -205,8 +222,15 @@ func (c *GenFmiGatewayCommand) setGeneralXmlFields(fmuXml *fmi2.FmiModelDescript
 	fmuXml.CoSimulation.CanInterpolateInputs = "true"
 }
 
-func (c *GenFmiGatewayCommand) buildXmlSignals(fmuXml *fmi2.FmiModelDescription, index *index.YamlFileIndex) ([]string, error) {
+func (c *GenFmiGatewayCommand) buildXmlSignals(fmuXml *fmi2.FmiModelDescription, index *index.YamlFileIndex, envars *schema_kind.SignalGroupSpec) ([]string, error) {
 	var channels []string
+
+	if envars != nil {
+		if err := fmi2.StringSignal(*envars, fmuXml); err != nil {
+			slog.Warn(fmt.Sprintf("could not set envars in xml (Error: %s)", err.Error()))
+		}
+	}
+
 	if signalGroupDocs, ok := index.DocMap["SignalGroup"]; ok {
 		for _, doc := range signalGroupDocs {
 			fmt.Fprintf(flag.CommandLine.Output(), "Adding SignalGroup %s to %s\n", doc.Metadata.Name, doc.File)
@@ -229,7 +253,7 @@ func (c *GenFmiGatewayCommand) buildXmlSignals(fmuXml *fmi2.FmiModelDescription,
 	return channels, nil
 }
 
-func (c *GenFmiGatewayCommand) createFmuXml() (*fmi2.FmiModelDescription, []string, error) {
+func (c *GenFmiGatewayCommand) createFmuXml(envars *schema_kind.SignalGroupSpec) (*fmi2.FmiModelDescription, []string, error) {
 	fmuXml := fmi2.FmiModelDescription{}
 	c.setGeneralXmlFields(&fmuXml)
 
@@ -245,11 +269,54 @@ func (c *GenFmiGatewayCommand) createFmuXml() (*fmi2.FmiModelDescription, []stri
 		}
 		index.DocMap[doc.Kind] = append(index.DocMap[doc.Kind], doc)
 	}
-	channels, err := c.buildXmlSignals(&fmuXml, index)
+	channels, err := c.buildXmlSignals(&fmuXml, index, envars)
 	if err != nil {
 		return nil, nil, err
 	}
 	return &fmuXml, channels, nil
+}
+
+func (c *GenFmiGatewayCommand) parseStack() (*schema_kind.SignalGroupSpec, error) {
+	envvar_count := 0
+	signal_spec := schema_kind.SignalGroupSpec{}
+	// Load the Stack.
+	stack_file, err := os.ReadFile(c.stack)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read stack.yaml")
+	}
+	stack := schema_kind.Stack{}
+	if err := yaml.Unmarshal(stack_file, &stack); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal stack.yaml")
+	}
+	for _, model := range *stack.Spec.Models {
+		if model.Model.Name == "Gateway" {
+			if step_size := (*model.Annotations)["step_size"]; step_size != nil {
+				c.stepSize = step_size.(float64)
+			}
+			if end_time := (*model.Annotations)["end_time"]; end_time != nil {
+				c.endTime = end_time.(float64)
+			}
+			if start_time := (*model.Annotations)["fmi_start_time"]; start_time != nil {
+				c.startTime = start_time.(float64)
+			}
+
+			if envar_list := (*model.Annotations)["cmd_envvars"]; envar_list != nil {
+				for _, envar := range envar_list.([]interface{}) {
+					signal := schema_kind.Signal{
+						Signal: envar.(string),
+						Annotations: &schema_kind.Annotations{
+							"fmi_variable_causality": "input",
+							"fmi_variable_vref":      envvar_count,
+						},
+					}
+					signal_spec.Signals = append(signal_spec.Signals, signal)
+					envvar_count++
+				}
+			}
+		}
+	}
+
+	return &signal_spec, nil
 }
 
 func (c *GenFmiGatewayCommand) generateChannels(channel_map []string) ([]schema_kind.Channel, error) {
@@ -269,47 +336,28 @@ func (c *GenFmiGatewayCommand) generateChannels(channel_map []string) ([]schema_
 func (c *GenFmiGatewayCommand) generateModel(fmiMD fmi2.FmiModelDescription, channel_map []string) error {
 
 	// Build the model.xml
-	nodeExists := func(Node any) string {
-		if Node != nil {
-			return "true"
-		}
-		return "false"
-	}
-
 	model := schema_kind.Model{
 		Kind: "Model",
 		Metadata: &schema_kind.ObjectMetadata{
 			Name: &fmiMD.ModelName,
-			Annotations: &schema_kind.Annotations{
-				"fmi_version":      fmiMD.FmiVersion,
-				"fmi_model_cosim":  nodeExists(fmiMD.CoSimulation),
-				"fmi_stepsize":     fmiMD.DefaultExperiment.StepSize,
-				"fmi_endtime":      fmiMD.DefaultExperiment.StopTime,
-				"fmi_guid":         fmiMD.Guid,
-				"fmi_resource_dir": "resources",
-				"loglevel":         4,
-			},
 		},
-	}
-
-	if len(c.session) != 0 {
-		inputYaml, err := os.ReadFile(c.session)
-		if err != nil {
-			return fmt.Errorf("unable to read input file: %s (%w)", "session.yaml", err)
-		}
-		ann := schema_kind.ObjectMetadata{}
-		if err := yaml.Unmarshal(inputYaml, &ann); err != nil {
-			return fmt.Errorf("unable to unmarshal signalgroup yaml: %s (%w)", "session.yaml", err)
-		}
-		(*model.Metadata.Annotations)["session"] = (*ann.Annotations)["session"]
 	}
 
 	channels, err := c.generateChannels(channel_map)
 	if err != nil {
 		return fmt.Errorf("could not generate channels: (%v)", err)
 	}
+	gw_spec := schema_kind.GatewaySpec{}
 	spec := schema_kind.ModelSpec{
 		Channels: &channels,
+		Runtime: &struct {
+			Dynlib     *[]schema_kind.LibrarySpec    `yaml:"dynlib,omitempty"`
+			Executable *[]schema_kind.ExecutableSpec `yaml:"executable,omitempty"`
+			Gateway    *schema_kind.GatewaySpec      `yaml:"gateway,omitempty"`
+			Mcl        *[]schema_kind.LibrarySpec    `yaml:"mcl,omitempty"`
+		}{
+			Gateway: &gw_spec,
+		},
 	}
 	model.Spec = spec
 
@@ -317,6 +365,7 @@ func (c *GenFmiGatewayCommand) generateModel(fmiMD fmi2.FmiModelDescription, cha
 	if err := os.MkdirAll(c.outdir, 0755); err != nil {
 		return fmt.Errorf("error Creating Directory for Yaml output: %v", err)
 	}
+
 	modelYamlPath := filepath.Join(c.outdir, "model.yaml")
 	fmt.Fprintf(flag.CommandLine.Output(), "Creating Model YAML: %s (%s)\n", *model.Metadata.Name, modelYamlPath)
 	if err := writeYaml(&model, modelYamlPath, false); err != nil {

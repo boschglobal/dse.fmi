@@ -191,6 +191,23 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
     for (size_t i = 0; fmi_gw->settings.yaml_files[i]; i++) {
         free((char*)fmi_gw->settings.yaml_files[i]);
     }
+    FmiGatewaySession* session = fmi_gw->settings.session;
+    if (session) {
+        /* Cleanup Simbus model. */
+        if (session->simbus) free(session->simbus->yaml);
+        free(session->simbus);
+        /* Cleanup transport model. */
+        free(session->transport);
+        /* Cleanup ModelC models. */
+        for (WindowsModel* model = session->w_models; model && model->name;
+             model++) {
+            free(model->yaml);
+        }
+        free(session->w_models);
+        /* Cleanup script envvars. */
+        hashmap_destroy(&session->envar);
+        free(session);
+    }
     free(fmi_gw->settings.yaml_files);
     free(gw);
     free(fmi_gw);

@@ -209,6 +209,10 @@ typedef struct FmuInstanceData {
             HashMap output;
         } scalar;
         struct {
+            HashMap input;
+            HashMap output;
+        } string;
+        struct {
             HashMap  rx;
             HashMap  tx;
             HashMap  encode_func;

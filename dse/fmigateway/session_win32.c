@@ -15,6 +15,7 @@
 
 
 #define MODEL_MAX_TIME 60 * 60 * 10  // 10 minutes
+#define UNUSED(x)      ((void)x)
 
 
 typedef struct WindowsProcess {
@@ -45,7 +46,7 @@ static inline char* _build_cmd(WindowsModel* w_model, const char* path)
     char   cmd[1024];
     size_t max_len = sizeof cmd;
     int    offset =
-        snprintf(cmd, max_len, "cmd /C cd %s && %s", path, w_model->file);
+        snprintf(cmd, max_len, "cmd /C cd %s && %s", path, w_model->exe);
     offset += snprintf(cmd + offset, max_len, " --name %s", w_model->name);
     offset +=
         snprintf(cmd + offset, max_len, " --endtime %lf", w_model->end_time);
@@ -167,11 +168,11 @@ fmu (FmuInstanceData*)
 : The FMU Descriptor object representing an instance of the FMU Model.
 */
 static inline void _start_redis(
-    WindowsModel* w_model, WindowsProcess* w_process, FmuInstanceData* fmu)
+    FmuInstanceData* fmu, WindowsModel* w_model, WindowsProcess* w_process)
 {
     /* Redis Server. */
     char* file_path =
-        dse_path_cat(fmu->instance.resource_location, w_model->file);
+        dse_path_cat(fmu->instance.resource_location, w_model->exe);
 
     if (!CreateProcess(file_path, NULL, NULL, NULL, FALSE,
             CREATE_NEW_CONSOLE | CREATE_NEW_PROCESS_GROUP, NULL, NULL,
@@ -199,18 +200,17 @@ w_process (WindowsProcess)
 fmu (FmuInstanceData*)
 : The FMU Descriptor object representing an instance of the FMU Model.
 */
-static inline void _start_model(
-    WindowsModel* w_model, WindowsProcess* w_process, FmuInstanceData* fmu)
+static inline void _start_model(FmuInstanceData* fmu, WindowsModel* m)
 {
-    FmiGateway* fmi_gw = fmu->data;
-    char*       cmd = _build_cmd(w_model, fmu->instance.resource_location);
-
-    HANDLE _log;
-    if (w_model->log_level >= 0) {
+    FmiGateway*     fmi_gw = fmu->data;
+    WindowsProcess* w_process = m->w_process;
+    char*           cmd = _build_cmd(m, fmu->instance.resource_location);
+    HANDLE          _log;
+    if (m->log_level >= 0) {
         /* Create logfile for modelC models. */
         char log[128];
         snprintf(log, sizeof(log), "%s/%s_log.txt",
-            fmi_gw->settings.log_location, w_model->name);
+            fmi_gw->settings.log_location, m->name);
         _log = _create_file(log);
         if (_log) {
             w_process->s_info.hStdInput = NULL;
@@ -223,34 +223,15 @@ static inline void _start_model(
     if (!CreateProcess(NULL, cmd, NULL, NULL, ((_log) ? TRUE : FALSE),
             CREATE_NEW_CONSOLE | CREATE_NEW_PROCESS_GROUP, NULL, NULL,
             &(w_process->s_info), &(w_process->p_info))) {
-        log_fatal(
-            "Could not start %s (error %d)", w_model->name, GetLastError());
+        log_fatal("Could not start %s (error %d)", m->name, GetLastError());
     }
     free(cmd);
 }
 
 
-/*
-_start_process
-==============
-
-Start a modelC windows process based on information from
-a yaml parameter configuration.
-
-Parameters
-----------
-w_model (WindowsModel)
-: Model Descriptor containing parameter information.
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-*/
-static inline void _start_process(WindowsModel* w_model, FmuInstanceData* fmu)
+static inline void _configure_process(
+    WindowsProcess* w_process, bool visible, const char* name)
 {
-    WindowsProcess* w_process = w_model->w_process;
-
-    log_notice("Starting process: %s", w_model->name);
-
     /* Initialize the process handles and information for
        the windows processes. */
     ZeroMemory(&(w_process->s_info), sizeof(STARTUPINFO));
@@ -260,20 +241,13 @@ static inline void _start_process(WindowsModel* w_model, FmuInstanceData* fmu)
     w_process->s_info.dwFlags = (STARTF_USESTDHANDLES);
 
     /* Display a terminal window. */
-    if (w_model->show_process) {
-        w_process->s_info.lpTitle = (char*)w_model->name;
+    if (visible) {
+        w_process->s_info.lpTitle = (char*)name;
     } else {
         w_process->s_info.dwFlags =
             (STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW);
         w_process->s_info.wShowWindow = SW_HIDE;
     }
-
-    /* Redis requires a different startup. */
-    if (strcasecmp(w_model->name, "redis") == 0) {
-        _start_redis(w_model, w_process, fmu);
-        return;
-    }
-    _start_model(w_model, w_process, fmu);
 }
 
 
@@ -327,9 +301,25 @@ void fmigateway_session_windows_start(FmuInstanceData* fmu)
     FmiGateway*        fmi_gw = fmu->data;
     FmiGatewaySession* session = fmi_gw->settings.session;
 
-    for (WindowsModel* w_m = session->w_models; w_m && w_m->name; w_m++) {
-        w_m->w_process = calloc(1, sizeof(WindowsProcess));
-        _start_process(w_m, fmu);
+    /* Transport process. */
+    fmu_log(fmu, 0, "Debug", "Starting process: %s", session->transport->name);
+    session->transport->w_process = calloc(1, sizeof(WindowsProcess));
+    _configure_process(session->transport->w_process,
+        session->visibility.transport, session->transport->name);
+    _start_redis(fmu, session->transport, session->transport->w_process);
+
+    /* Simbus process. */
+    fmu_log(fmu, 0, "Debug", "Starting process: %s", session->simbus->name);
+    session->simbus->w_process = calloc(1, sizeof(WindowsProcess));
+    _configure_process(session->simbus->w_process, session->visibility.simbus,
+        session->simbus->name);
+    _start_model(fmu, session->simbus);
+
+    for (WindowsModel* m = session->w_models; m && m->name; m++) {
+        m->w_process = calloc(1, sizeof(WindowsProcess));
+        fmu_log(fmu, 0, "Debug", "Starting process: %s", m->name);
+        _configure_process(m->w_process, session->visibility.models, m->name);
+        _start_model(fmu, m);
     }
 }
 
@@ -353,18 +343,8 @@ void fmigateway_session_windows_end(FmuInstanceData* fmu)
     FmiGatewaySession* session = fmi_gw->settings.session;
     ModelGatewayDesc*  gw = fmi_gw->model;
 
-    WindowsModel* redis = NULL;
-    WindowsModel* simbus = NULL;
-
-    for (WindowsModel* w_m = session->w_models; w_m && w_m->name; w_m++) {
-        if (strcasecmp(w_m->name, "simbus") == 0) {
-            simbus = w_m;
-            continue;
-        } else if (strcasecmp(w_m->name, "redis") == 0) {
-            redis = w_m;
-            continue;
-        }
-        _gracefully_termiante_process(w_m);
+    for (WindowsModel* m = session->w_models; m && m->name; m++) {
+        _gracefully_termiante_process(m);
     }
 
     model_gw_sync(
@@ -375,18 +355,20 @@ void fmigateway_session_windows_end(FmuInstanceData* fmu)
     fmu_log(fmu, 0, "Debug", "Gateway exited...");
 
     /* Loop through processes and confirm that all are closed. */
-    for (WindowsModel* w_m = session->w_models; w_m && w_m->name; w_m++) {
-        if (strcasecmp(w_m->name, "redis") == 0 ||
-            strcasecmp(w_m->name, "simbus") == 0) {
-            continue;
-        }
-        _check_shutdown(w_m, 10);
+    for (WindowsModel* m = session->w_models; m && m->name; m++) {
+        _check_shutdown(m, 10);
     }
 
-    if (simbus) {
-        if (_check_shutdown(simbus, 10) < 0) {
-            _gracefully_termiante_process(simbus);
+    if (session->simbus) {
+        if (_check_shutdown(session->simbus, 10) < 0) {
+            _gracefully_termiante_process(session->simbus);
         }
     }
-    if (redis) _terminate_process(redis);
+    if (session->transport) _terminate_process(session->transport);
+}
+
+
+int fmigateway_setenv(const char* name, const char* value)
+{
+    return SetEnvironmentVariable(name, value);
 }

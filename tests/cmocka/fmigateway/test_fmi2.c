@@ -46,21 +46,21 @@ void _fmi2_unit_test_logger(fmi2ComponentEnvironment componentEnvironment,
     UNUSED(instanceName);
 
     static const char* statusString[] = { "OK", "Warning", "Discard", "Error",
-    "Fatal", "Pending" };
+        "Fatal", "Pending" };
 
-    if ((strcmp(category, "Debug") == 0) && ( __log_level__ > LOG_DEBUG)) {
+    if ((strcmp(category, "Debug") == 0) && (__log_level__ > LOG_DEBUG)) {
         return;
     }
-    if ((strcmp(category, "Simbus") == 0) && ( __log_level__ > LOG_SIMBUS)) {
+    if ((strcmp(category, "Simbus") == 0) && (__log_level__ > LOG_SIMBUS)) {
         return;
     }
-    if ((strcmp(category, "Info") == 0) && ( __log_level__ > LOG_INFO)) {
+    if ((strcmp(category, "Info") == 0) && (__log_level__ > LOG_INFO)) {
         return;
     }
-    if ((strcmp(category, "Notice") == 0) && ( __log_level__ > LOG_NOTICE)) {
+    if ((strcmp(category, "Notice") == 0) && (__log_level__ > LOG_NOTICE)) {
         return;
     }
-    if ((strcmp(category, "Quiet") == 0) && ( __log_level__ > LOG_QUIET)) {
+    if ((strcmp(category, "Quiet") == 0) && (__log_level__ > LOG_QUIET)) {
         return;
     }
 

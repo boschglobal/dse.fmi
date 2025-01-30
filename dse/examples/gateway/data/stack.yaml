@@ -21,6 +21,10 @@ spec:
       uid: 42
       model:
         name: Gateway
+      annotations:
+        step_size: 0.0005
+        end_time: 0.002
+        log_level: 6
       channels:
         - name: scalar
           alias: scalar_vector

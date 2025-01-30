@@ -241,8 +241,8 @@ func setGeneralFmuXmlFields(name string, uuid string, version string, fmuXml *fm
 	fmuXml.ModelName = name
 	fmuXml.FmiVersion = "2.0"
 	fmuXml.Guid = fmt.Sprintf("{%s}", uuid)
-	fmuXml.GenerationTool = "DSE FMI - ModelC FMU"
-	fmuXml.GenerationDateAndTime = time.Now().String()
+	fmuXml.GenerationTool = stringPtr("DSE FMI - ModelC FMU")
+	fmuXml.GenerationDateAndTime = stringPtr(time.Now().Format("YYYY-MM-DDThh:mm:ssZ"))
 	fmuXml.Author = "Robert Bosch GmbH"
 	fmuXml.Version = version
 	fmuXml.Description = fmt.Sprintf("Model '%s' via FMI ModelC FMU (using DSE ModelC Runtime).", name)

@@ -1,0 +1,40 @@
+---
+kind: Stack
+metadata:
+  name: gateway
+spec:
+  connection:
+    transport:
+      redispubsub:
+        uri: redis://localhost:6379
+        timeout: 60
+  runtime:
+    env:
+      REDIS_EXE_PATH: redis.exe
+      SIMBUS_EXE_PATH: simbus.exe
+      MODELC_EXE_PATH: modelc.exe
+  models:
+    - name: simbus
+      model:
+        name: simbus
+      runtime:
+        files:
+          - stack.yaml
+      channels:
+        - name: E2M_M2E
+          expectedModelCount: 2
+        - name: com_phys
+          expectedModelCount: 2
+    - name: gateway
+      uid: 40004
+      model:
+        name: Gateway
+      channels:
+        - name: E2M_M2E
+          alias: E2M_M2E
+          selectors:
+            channel: E2M_M2E
+        - name: com_phys
+          alias: com_phys
+          selectors:
+            channel: com_phys
