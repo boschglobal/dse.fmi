@@ -211,7 +211,7 @@ typedef struct FmuInstanceData {
         struct {
             HashMap input;
             HashMap output;
-        } string;
+        } string; // NOLINT(build/include_what_you_use)
         struct {
             HashMap  rx;
             HashMap  tx;
