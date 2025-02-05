@@ -2,34 +2,36 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <dse/clib/util/strings.h>
-#include <dse/clib/collections/hashmap.h>
 #include <dse/fmu/fmu.h>
 
-#define UNUSED(x)    ((void)x)
-#define VR_COUNTER  "1"
+typedef struct {
+    double counter;
+} VarTable;
 
 int fmu_create(FmuInstanceData* fmu)
 {
-    UNUSED(fmu);
+    VarTable* v = malloc(sizeof(VarTable));
+    *v = (VarTable){
+        .counter = fmu_register_var(fmu, 1, false, offsetof(VarTable, counter)),
+    };
+    fmu_register_var_table(fmu, v);
     return 0;
 }
 
 int fmu_init(FmuInstanceData* fmu)
 {
-    hashmap_set_double(&(fmu->variables.scalar.output), VR_COUNTER, 0.0);
+    UNUSED(fmu);
     return 0;
 }
 
-int fmu_step(
-    FmuInstanceData* fmu, double CommunicationPoint, double stepSize)
+int fmu_step(FmuInstanceData* fmu, double CommunicationPoint, double stepSize)
 {
     UNUSED(CommunicationPoint);
     UNUSED(stepSize);
+    VarTable* v = fmu_var_table(fmu);
 
     /* Increment the counter. */
-    double* counter = hashmap_get(&fmu->variables.scalar.output, VR_COUNTER);
-    if (counter) *counter += 1;
+    v->counter += 1;
     return 0;
 }
 

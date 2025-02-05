@@ -59,7 +59,7 @@ DOC_C_MODULES := fmimcl fmimodelc fmu fmigateway
 .PHONY: examples
 examples:
 	cd ..;mkdir -p doc/content/apis/fmi/examples/fmu
-	cd ..;cp dse/examples/fmu/counter/fmu.c doc/content/apis/fmi/examples/fmu/fmu.c
+	cd ..;cp dse/examples/fmu/counter/counter.c doc/content/apis/fmi/examples/fmu/fmu.c
 
 .PHONY: index
 index:

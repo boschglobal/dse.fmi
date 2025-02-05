@@ -7,20 +7,30 @@ linkTitle: FMU
 
 The FMU API provides a simplified FMU inteface with an abstracted varaible
 interface (indexing and storage). The FMU Interface includes the methods:
-* `[fmu_create()]({{< ref "#fmu_create" >}})`
-* `[fmu_init()]({{< ref "#fmu_init" >}})`
-* `[fmu_step()]({{< ref "#fmu_step" >}})`
-* `[fmu_destroy()]({{< ref "#fmu_destroy" >}})`
+* Implemented by FMU developer:
+    * `[fmu_create()]({{< ref "#fmu_create" >}})`
+    * `[fmu_init()]({{< ref "#fmu_init" >}})`
+    * `[fmu_step()]({{< ref "#fmu_step" >}})`
+    * `[fmu_destroy()]({{< ref "#fmu_destroy" >}})`
+* Additional provided functions:
+    * `[fmu_log()]({{< ref "#fmu_log" >}})` - logging function
+* Supporting Variable Table mechanism:
+    * `[fmu_register_var()]({{< ref "#fmu_register_var" >}})`
+    * `[fmu_register_var_table()]({{< ref "#fmu_register_var_table" >}})`
+    * `[fmu_var_table()]({{< ref "#fmu_var_table" >}})`
+
 
 An additional FMU Signal Interface is available for more complex integrations:
 * `[fmu_signals_reset()]({{< ref "#fmu_signals_reset" >}})`
 * `[fmu_signals_setup()]({{< ref "#fmu_signals_setup" >}})`
 * `[fmu_signals_remove()]({{< ref "#fmu_signals_remove" >}})`
 
+
 FMUs imlemented using this simplified FMU API can be built for both FMI 2
 and FMI 3 standards by linking to the relevant implementations:
 * `fmi2fmu.c` for and FMI 2 FMU
 * `fmi3fmu.c` for and FMI 3 FMU
+
 
 Binary variables are supported for FMI 3 and FMI 2 standards.
 In FMUs built to the FMI 2 standard, binary variables are implemented via
@@ -105,9 +115,41 @@ counter.
 
 ```c
 typedef struct FmuInstanceData {
-    struct (anonymous struct at dse/fmu/fmu.h:175:5) instance;
-    struct (anonymous struct at dse/fmu/fmu.h:188:5) variables;
+    struct {
+        char* name;
+        int type;
+        int version;
+        char* resource_location;
+        char* guid;
+        bool log_enabled;
+        void* logger;
+        char* save_resource_location;
+    } instance;
+    struct {
+        struct {
+            int input;
+            int output;
+        } scalar;
+        struct {
+            int input;
+            int output;
+        } string;
+        struct {
+            int rx;
+            int tx;
+            int encode_func;
+            int decode_func;
+            int free_list;
+        } binary;
+        FmuSignalVTable vtable;
+        bool signals_reset;
+    } variables;
     void* data;
+    struct {
+        void* table;
+        int var_list;
+        FmuVarTableMarshalItem* marshal_list;
+    } var_table;
 }
 ```
 
@@ -156,6 +198,15 @@ typedef struct FmuVTable {
 }
 ```
 
+### FmuVarTableMarshalItem
+
+```c
+typedef struct FmuVarTableMarshalItem {
+    double* variable;
+    double* signal;
+}
+```
+
 ## Functions
 
 ### fmu_create
@@ -186,8 +237,8 @@ It is called in the `FreeInstance()` Method of the FMU.
 
 #### Parameters
 
-model (ModelDesc*)
-: Model descriptor object.
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
 
 #### Returns
 
@@ -212,6 +263,63 @@ fmu (FmuInstanceData*)
 
 0 (int32_t)
 : The FMU was created correctly.
+
+
+
+### fmu_log
+
+Write a log message to the logger defined by the FMU.
+
+#### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+status (const int)
+: The status of the message to be logged.
+
+category (const char*)
+: The category the message belongs to.
+
+message (const char*)
+: The message to be logged by the FMU.
+
+
+
+### fmu_register_var
+
+Register a variable with the FMU Variable Table mechanism.
+
+#### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+vref (uint32_t)
+: Variable reference of the variable being registered.
+input (bool)
+: Set `true` for input, and `false` for output variable causality.
+offset (size_t)
+: Offse of the variable (type double) in the FMU provided variable table.
+
+#### Returns
+
+start_value (double)
+: The configured FMU Variable start value, or 0.
+
+
+
+### fmu_register_var_table
+
+Register the Variable Table. The previouly registered variables, via calls to
+`fmu_register_var`, are configured and the FMU Variable Table mechanism
+is enabled.
+
+#### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+table (void*)
+: Pointer to the Variable Table being registered.
 
 
 
@@ -284,6 +392,22 @@ step_size (double)
 
 0 (int32_t)
 : The FMU step was performed correctly.
+
+
+
+### fmu_var_table
+
+Return a reference to the previously registered Variable Table.
+
+#### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+#### Returns
+
+table (void*)
+: Pointer to the Variable Table.
 
 
 

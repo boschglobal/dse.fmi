@@ -243,7 +243,10 @@ model (ModelDesc*)
 typedef struct FmuData {
     int count;
     const char** name;
-    uint32_t* binary_len;
+    struct {
+        double* scalar;
+        void** binary;
+    } binary_len;
     int* kind;
     int* mg_table;
 }
@@ -265,7 +268,12 @@ typedef struct FmuModel {
     void* m_doc;
     void* adapter;
     FmuData data;
-    struct (anonymous struct at dse/fmimcl/fmimcl.h:266:5) measurement;
+    struct {
+        char* file_name;
+        void* file;
+        int* cg;
+        int mdf;
+    } measurement;
 }
 ```
 

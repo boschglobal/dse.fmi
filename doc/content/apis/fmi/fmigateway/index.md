@@ -2,21 +2,6 @@
 title: FMI Gateway FMU API Reference
 linkTitle: Gateway FMU
 ---
-## fmu_signals_reset
-
-
-Resets the binary signals of the gateway to a length of 0, if the signals have
-not been reseted yet.
-
-> Required by FMU.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-
-
 ## fmu_signals_setup
 
 
@@ -155,14 +140,37 @@ fmu (FmuInstanceData*)
 
 
 
+## fmu_signals_reset
+
+
+Resets the binary signals of the gateway to a length of 0, if the signals have
+not been reseted yet.
+
+> Required by FMU.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+
+
 ## Typedefs
 
 ### FmiGateway
 
 ```c
 typedef struct FmiGateway {
-    int * model;
-    struct (anonymous struct at dse/fmigateway/fmigateway.h:75:5) settings;
+    int* model;
+    struct {
+        int* doc_list;
+        const char** yaml_files;
+        double step_size;
+        double end_time;
+        int log_level;
+        const char* log_location;
+        FmiGatewaySession* session;
+    } settings;
     int binary_signals_reset;
 }
 ```
@@ -171,9 +179,19 @@ typedef struct FmiGateway {
 
 ```c
 typedef struct FmiGatewaySession {
-    WindowsModel * w_models;
-    struct (anonymous struct at dse/fmigateway/fmigateway.h:61:5) init;
-    struct (anonymous struct at dse/fmigateway/fmigateway.h:65:5) shutdown;
+    const char* model_stack;
+    int* model_stack_file;
+    WindowsModel* w_models;
+    WindowsModel* simbus;
+    WindowsModel* transport;
+    struct {
+        int models;
+        int simbus;
+        int transport;
+    } visibility;
+    const char* init_cmd;
+    const char* shutdown_cmd;
+    int envar;
     double last_step;
 }
 ```
@@ -182,17 +200,15 @@ typedef struct FmiGatewaySession {
 
 ```c
 typedef struct WindowsModel {
-    const char * path;
-    const char * file;
-    int show_process;
-    const char * name;
+    const char* exe;
+    const char* name;
     double step_size;
     double end_time;
     int log_level;
-    const char * yaml;
+    char* yaml;
     double current_step;
     double timeout;
-    void * w_process;
+    void* w_process;
 }
 ```
 
