@@ -43,7 +43,7 @@ string
 */
 static inline char* _build_cmd(WindowsModel* w_model, const char* path)
 {
-    char   cmd[1024];
+    char   cmd[2048];
     size_t max_len = sizeof cmd;
     int    offset =
         snprintf(cmd, max_len, "cmd /C cd %s && %s", path, w_model->exe);
@@ -348,7 +348,7 @@ void fmigateway_session_windows_end(FmuInstanceData* fmu)
     }
 
     model_gw_sync(
-        gw, session->last_step + (fmi_gw->settings.step_size * 1.001));
+        gw, session->last_step + (session->simbus->step_size * 1.001));
     fmu_log(fmu, 0, "Debug", "Extra step for shutting down models finished...");
 
     model_gw_exit(gw);

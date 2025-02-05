@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <stdlib.h>
+#include <limits.h>
 #include <dse/clib/util/strings.h>
 #include <dse/fmu/fmu.h>
 #include <dse/fmigateway/fmigateway.h>
@@ -27,9 +28,10 @@ static inline void _run_cmd(
 {
     _set_envar(fmu, envars);
 
-    char* cmd = dse_path_cat(fmu->instance.resource_location, cmd_string);
+    char cmd[PATH_MAX];
+    snprintf(cmd, sizeof(cmd), "cd %s && %s", fmu->instance.resource_location, cmd_string);
+    fmu_log(fmu, 0, "Debug", "Run cmd: %s", cmd);
     system(cmd);
-    free(cmd);
 }
 
 /**

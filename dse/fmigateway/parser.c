@@ -171,6 +171,7 @@ static inline WindowsModel* _parse_simbus(FmuInstanceData* fmu, YamlNode* root)
     return simbus;
 }
 
+
 static inline int _parse_gateway(FmuInstanceData* fmu, YamlNode* doc)
 {
     FmiGateway*        fmi_gw = fmu->data;
@@ -219,6 +220,7 @@ static inline int _parse_gateway(FmuInstanceData* fmu, YamlNode* doc)
     return 0;
 }
 
+
 static inline void _parse_model_stack(FmuInstanceData* fmu, YamlNode* gw_doc)
 {
     FmiGateway*        fmi_gw = fmu->data;
@@ -253,6 +255,7 @@ static inline void _parse_model_stack(FmuInstanceData* fmu, YamlNode* gw_doc)
         session->w_models = hashlist_ntl(&m_list, sizeof(WindowsModel), true);
     }
 }
+
 
 static inline int _stack_match_handler(ModelInstanceSpec* mi, SchemaObject* o)
 {
