@@ -6,7 +6,8 @@
 ################
 ## DSE Projects.
 export DSE_CLIB_VERSION ?= 1.0.26
-export DSE_MODELC_VERSION ?= 2.1.9
+export DSE_MODELC_VERSION ?= 2.1.16
+export DSE_NCODEC_VERSION ?= 1.2.0
 
 
 ###############
