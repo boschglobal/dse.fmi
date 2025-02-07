@@ -50,7 +50,8 @@ void fmu_log(FmuInstanceData* fmu, const int status, const char* category,
     vsnprintf(format, sizeof(format), message, args);
     va_end(args);
 
-    ((void (*)())fmu->instance.logger)(NULL, status, category, format);
+    ((void (*)())fmu->instance.logger)(
+        fmu->instance.environment, status, category, format);
 }
 
 
@@ -129,7 +130,6 @@ fmi3Instance fmi3InstantiateCoSimulation(fmi3String instanceName,
     UNUSED(earlyReturnAllowed);
     UNUSED(requiredIntermediateVariables);
     UNUSED(nRequiredIntermediateVariables);
-    UNUSED(instanceEnvironment);
     UNUSED(intermediateUpdate);
 
     /* Create the FMU Model Instance Data. */
@@ -139,6 +139,7 @@ fmi3Instance fmi3InstantiateCoSimulation(fmi3String instanceName,
     fmu->instance.guid = strdup(instantiationToken);
     fmu->instance.log_enabled = loggingOn;
     fmu->instance.version = 3;
+    fmu->instance.environment = instanceEnvironment;
 
     if (logMessage) {
         fmu->instance.logger = logMessage;

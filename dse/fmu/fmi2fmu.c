@@ -52,8 +52,8 @@ void fmu_log(FmuInstanceData* fmu, const int status, const char* category,
     vsnprintf(format, sizeof(format), message, args);
     va_end(args);
 
-    ((void (*)())fmu->instance.logger)(
-        NULL, fmu->instance.name, status, category, format);
+    ((void (*)())fmu->instance.logger)(fmu->instance.environment,
+        fmu->instance.name, status, category, format);
 }
 
 
@@ -115,6 +115,7 @@ fmi2Component fmi2Instantiate(fmi2String instance_name, fmi2Type fmu_type,
     fmu->instance.version = 2;
 
     if (functions) {
+        fmu->instance.environment = functions->componentEnvironment;
         if (functions->logger) {
             fmu->instance.logger = functions->logger;
             /* Callbacks are provided, but no logger. */

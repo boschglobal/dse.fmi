@@ -197,7 +197,7 @@ typedef struct FmuInstanceData {
         char* guid;
         bool  log_enabled;
         void* logger;
-
+        void* environment;
         /* Storage for memory to be explicitly released. */
         char* save_resource_location;
     } instance;
