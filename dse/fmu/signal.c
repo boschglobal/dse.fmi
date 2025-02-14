@@ -8,11 +8,17 @@
 #include <dlfcn.h>
 #include <libxml/xpath.h>
 #include <dse/clib/collections/hashlist.h>
+#include <dse/ncodec/codec.h>
 #include <dse/fmu/fmu.h>
 
 
-#define UNUSED(x)         ((void)x)
-#define FMI2_SCALAR_XPATH "/fmiModelDescription/ModelVariables/ScalarVariable"
+#define UNUSED(x) ((void)x)
+
+
+extern size_t fmu_variable_count(xmlDoc* doc, bool is_binary);
+extern void   fmu_variable_index(
+      xmlDoc* doc, FmuInstanceData* fmu, FmuSignalVector* sv, bool is_binary);
+extern void fmu_sv_stream_destroy(void* stream);
 
 
 /**
@@ -21,7 +27,7 @@ fmu_signals_reset
 
 This method will reset any binary variables which where used by an FMU in the
 previous step. Typically this will mean that indexes into the buffers of
-binary variables are set to 0, hovever the buffers themselves are
+binary variables are set to 0, however the buffers themselves are
 not released (i.e. free() is not called).
 
 > Integrators may provide their own implementation of this method.
@@ -57,7 +63,7 @@ extern void fmu_signals_setup(FmuInstanceData* fmu);
 fmu_signals_remove
 ==================
 
-This method will reomve any buffers used to provide storage for FMU variables.
+This method will remove any buffers used to provide storage for FMU variables.
 If those buffers were allocated (e.g by an implementation
 of `fmu_signals_setup()`) then those buffers should be freed in this method.
 
@@ -71,66 +77,9 @@ fmu (FmuInstanceData*)
 extern void fmu_signals_remove(FmuInstanceData* fmu);
 
 
-static bool __is_scalar_var(xmlNodePtr child)
-{
-    if (xmlStrcmp(child->name, (xmlChar*)"Real") == 0 ||
-        xmlStrcmp(child->name, (xmlChar*)"Integer") == 0 ||
-        xmlStrcmp(child->name, (xmlChar*)"Boolean") == 0 ||
-        xmlStrcmp(child->name, (xmlChar*)"Float64") == 0) {
-        // TODO add FMI3 types.
-        return true;
-    } else {
-        return false;
-    }
-}
-
-
-static bool __is_binary_var(xmlNodePtr child)
-{
-    if (xmlStrcmp(child->name, (xmlChar*)"String") == 0 ||
-        xmlStrcmp(child->name, (xmlChar*)"Binary") == 0) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-
-static size_t __count_variables(xmlDoc* doc, bool is_binary)
-{
-    size_t           count = 0;
-    xmlXPathContext* ctx = xmlXPathNewContext(doc);
-    xmlXPathObject*  obj =
-        xmlXPathEvalExpression((xmlChar*)FMI2_SCALAR_XPATH, ctx);
-    if (obj == NULL) goto cleanup;
-
-    for (int i = 0; i < obj->nodesetval->nodeNr; i++) {
-        xmlNodePtr scalarVariable = obj->nodesetval->nodeTab[i];
-        for (xmlNodePtr child = scalarVariable->children; child;
-             child = child->next) {
-            if (child->type != XML_ELEMENT_NODE) continue;
-            if (is_binary) {
-                if (__is_binary_var(child)) {
-                    count += 1;
-                }
-            } else {
-                if (__is_scalar_var(child)) {
-                    count += 1;
-                }
-            }
-        }
-    }
-
-cleanup:
-    xmlXPathFreeObject(obj);
-    xmlXPathFreeContext(ctx);
-    return count;
-}
-
-
 static FmuSignalVector* __allocate_sv(xmlDoc* doc, bool is_binary)
 {
-    size_t count = __count_variables(doc, is_binary);
+    size_t count = fmu_variable_count(doc, is_binary);
     if (count == 0) return NULL;
 
     FmuSignalVector* sv = calloc(1, sizeof(FmuSignalVector));
@@ -140,77 +89,12 @@ static FmuSignalVector* __allocate_sv(xmlDoc* doc, bool is_binary)
         sv->binary = calloc(count, sizeof(void*));
         sv->length = calloc(count, sizeof(uint32_t));
         sv->buffer_size = calloc(count, sizeof(uint32_t));
+        sv->mime_type = calloc(count, sizeof(char*));
+        sv->ncodec = calloc(count, sizeof(void*));
     } else {
         sv->scalar = calloc(count, sizeof(double));
     }
     return sv;
-}
-
-
-static void __index_variables(
-    xmlDoc* doc, FmuInstanceData* fmu, FmuSignalVector* sv, bool is_binary)
-{
-    xmlXPathContext* ctx = xmlXPathNewContext(doc);
-    xmlXPathObject*  obj =
-        xmlXPathEvalExpression((xmlChar*)FMI2_SCALAR_XPATH, ctx);
-    if (obj == NULL) goto cleanup;
-
-    /* Scan all variables. */
-    uint32_t sv_idx = 0;
-    for (int i = 0; i < obj->nodesetval->nodeNr; i++) {
-        /* ScalarVariable. */
-        xmlNodePtr scalarVariable = obj->nodesetval->nodeTab[i];
-        xmlChar*   name = xmlGetProp(scalarVariable, (xmlChar*)"name");
-        xmlChar*   vr = xmlGetProp(scalarVariable, (xmlChar*)"valueReference");
-        xmlChar* causality = xmlGetProp(scalarVariable, (xmlChar*)"causality");
-
-        /* Search for a supported variable type. */
-        for (xmlNodePtr child = scalarVariable->children; child;
-             child = child->next) {
-            if (child->type != XML_ELEMENT_NODE) continue;
-            if (is_binary) {
-                if (!__is_binary_var(child)) goto next;
-            } else {
-                if (!__is_scalar_var(child)) goto next;
-            }
-
-            /* Index this variable. */
-            assert(sv_idx < sv->count);
-            sv->signal[sv_idx] = strdup((char*)name);
-            if (is_binary) {
-                FmuSignalVectorIndex* idx =
-                    calloc(1, sizeof(FmuSignalVectorIndex));
-                idx->sv = sv;
-                idx->vi = sv_idx;
-                if (xmlStrcmp(causality, (xmlChar*)"output") == 0) {
-                    hashmap_set_alt(
-                        &(fmu->variables.binary.tx), (char*)vr, idx);
-                } else if (xmlStrcmp(causality, (xmlChar*)"input") == 0) {
-                    hashmap_set_alt(
-                        &(fmu->variables.binary.rx), (char*)vr, idx);
-                }
-            } else {
-                if (xmlStrcmp(causality, (xmlChar*)"output") == 0) {
-                    hashmap_set(&(fmu->variables.scalar.output), (char*)vr,
-                        &(sv->scalar[sv_idx]));
-                } else if (xmlStrcmp(causality, (xmlChar*)"input") == 0) {
-                    hashmap_set(&(fmu->variables.scalar.input), (char*)vr,
-                        &(sv->scalar[sv_idx]));
-                }
-            }
-            /* Only increment the index if a variable was indexed. */
-            sv_idx += 1;
-        }
-    next:
-        /* Cleanup. */
-        xmlFree(name);
-        xmlFree(vr);
-        xmlFree(causality);
-    }
-
-cleanup:
-    xmlXPathFreeObject(obj);
-    xmlXPathFreeContext(ctx);
 }
 
 
@@ -222,7 +106,11 @@ static void fmu_default_signals_reset(FmuInstanceData* fmu)
         for (FmuSignalVector* sv = fmu->data; sv && sv->signal; sv++) {
             if (sv->binary == NULL) continue;
             for (uint32_t i = 0; i < sv->count; i++) {
-                sv->length[i] = 0;
+                if (sv->ncodec[i]) {
+                    ncodec_truncate(sv->ncodec[i]);
+                } else {
+                    sv->length[i] = 0;
+                }
             }
         }
         fmu->variables.signals_reset = true;
@@ -256,12 +144,9 @@ static void fmu_default_signals_setup(FmuInstanceData* fmu)
     /* Complete and store the signal vectors. */
     FmuSignalVector* sv = hashlist_ntl(&sv_list, sizeof(FmuSignalVector), true);
     for (FmuSignalVector* _sv = sv; _sv && _sv->signal; _sv++) {
-        if (_sv->scalar) {
-            __index_variables(doc, fmu, _sv, false);
-            continue;
-        }
-        __index_variables(doc, fmu, _sv, true);
+        fmu_variable_index(doc, fmu, _sv, _sv->scalar ? false : true);
     }
+
     fmu->data = sv;
     xmlFreeDoc(doc);
 }
@@ -271,16 +156,43 @@ static void fmu_default_signals_remove(FmuInstanceData* fmu)
 {
     if (fmu->data == NULL) return;
     for (FmuSignalVector* sv = fmu->data; sv && sv->signal; sv++) {
-        for (uint32_t i = 0; i < sv->count; i++) {
-            if (sv->signal[i]) free(sv->signal[i]);
+        if (sv->signal) {
+            for (uint32_t i = 0; i < sv->count; i++) {
+                free(sv->signal[i]);
+            }
+            free(sv->signal);
         }
-        if (sv->signal) free(sv->signal);
-        if (sv->scalar) free(sv->scalar);
-        if (sv->binary) free(sv->binary);
-        if (sv->length) free(sv->length);
-        if (sv->buffer_size) free(sv->buffer_size);
+        if (sv->ncodec) {
+            for (uint32_t i = 0; i < sv->count; i++) {
+                NCodecInstance* nc = sv->ncodec[i];
+                if (nc) {
+                    // ncodec_trace_destroy(nc);
+                    fmu_sv_stream_destroy(nc->stream);
+                    ncodec_close((NCODEC*)nc);
+                    sv->ncodec[i] = NULL;
+                }
+            }
+            free(sv->ncodec);
+        }
+        if (sv->mime_type) {
+            for (uint32_t i = 0; i < sv->count; i++) {
+                free(sv->mime_type[i]);
+            }
+            free(sv->mime_type);
+        }
+        free(sv->scalar);
+        if (sv->binary) {
+            for (uint32_t i = 0; i < sv->count; i++) {
+                free(sv->binary[i]);
+                sv->binary[i] = NULL;
+            }
+            free(sv->binary);
+            sv->binary = NULL;
+        }
+        free(sv->length);
+        free(sv->buffer_size);
     }
-    if (fmu->data) free(fmu->data);
+    free(fmu->data);
 }
 
 
@@ -324,7 +236,7 @@ vref (uint32_t)
 input (bool)
 : Set `true` for input, and `false` for output variable causality.
 offset (size_t)
-: Offse of the variable (type double) in the FMU provided variable table.
+: Offset of the variable (type double) in the FMU provided variable table.
 
 Returns
 -------
@@ -364,7 +276,7 @@ double fmu_register_var(
 fmu_register_var_table
 ======================
 
-Register the Variable Table. The previouly registered variables, via calls to
+Register the Variable Table. The previously registered variables, via calls to
 `fmu_register_var`, are configured and the FMU Variable Table mechanism
 is enabled.
 
@@ -382,7 +294,7 @@ void fmu_register_var_table(FmuInstanceData* fmu, void* table)
         &fmu->var_table.var_list, sizeof(FmuVarTableMarshalItem), true);
     for (FmuVarTableMarshalItem* mi = fmu->var_table.marshal_list;
          mi && mi->signal; mi++) {
-        /* Correct the varaible pointer offset, to vt base. */
+        /* Correct the variable pointer offset, to vt base. */
         mi->variable = (double*)(table + (size_t)mi->variable);
     }
 }

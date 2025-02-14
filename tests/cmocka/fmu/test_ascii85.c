@@ -53,18 +53,11 @@ void test_ascii85__encode(void** state)
                    "DJs`8ARoFb/0JMK@qB4^F!,R<AKZ&-DfTqBG%G>uD.RTpAKYo'+CT/"
                    "5+Cei#DII?(E,9)oF*2M7/c",
         },
-        {
-            .base = "Please encode this",
-            .enc = ":i']OF(HJ*DI[TqAKZ).Bla"
-        },
-        {
-            .base = "This is an encoded sentence 01234567",
-            .enc = "<+oue+DGm>@;[3!DI[TqARlp)ASuU$DI[6#0JP==1c70M"
-        },
-        {
-            .base = "This is an encoded sentence 01234567",
-            .enc = "<+oue+DGm>@;[3!DI[TqARlp)ASuU$DI[6#0JP==1c70M"
-        }
+        { .base = "Please encode this", .enc = ":i']OF(HJ*DI[TqAKZ).Bla" },
+        { .base = "This is an encoded sentence 01234567",
+            .enc = "<+oue+DGm>@;[3!DI[TqARlp)ASuU$DI[6#0JP==1c70M" },
+        { .base = "This is an encoded sentence 01234567",
+            .enc = "<+oue+DGm>@;[3!DI[TqARlp)ASuU$DI[6#0JP==1c70M" }
     };
 
     for (size_t i = 0; i < ARRAY_SIZE(tc); i++) {
@@ -93,14 +86,9 @@ void test_ascii85__decode(void** state)
                     "continued and indefatigable generation of knowledge, "
                     "exceeds the short vehemence of any carnal pleasure.",
         },
-        {
-            .base = "Please encode this",
-            .enc = ":i']OF(HJ*DI[TqAKZ).Bla"
-        },
-        {
-            .base = "This is an encoded sentence 01234567",
-            .enc = "<+oue+DGm>@;[3!DI[TqARlp)ASuU$DI[6#0JP==1c70M"
-        }
+        { .base = "Please encode this", .enc = ":i']OF(HJ*DI[TqAKZ).Bla" },
+        { .base = "This is an encoded sentence 01234567",
+            .enc = "<+oue+DGm>@;[3!DI[TqARlp)ASuU$DI[6#0JP==1c70M" }
     };
     for (size_t i = 0; i < ARRAY_SIZE(tc); i++) {
         size_t dec_len = 0;

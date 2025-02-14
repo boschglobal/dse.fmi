@@ -33,9 +33,25 @@
 
         <ScalarVariable name="bar_1" valueReference="4" causality="input">
             <String start="" reinit="" derivative=""></String>
+            <Annotations>
+                <Tool name="dse.standards.fmi-ls-binary-to-text">
+                    <Annotation name="encoding">ascii85</Annotation>
+                </Tool>
+                <Tool name="dse.standards.fmi-ls-binary-codec">
+                    <Annotation name="mimetype">application/x-automotive-bus; interface=stream; type=pdu; schema=fbs; swc_id=23; ecu_id=5</Annotation>
+                </Tool>
+            </Annotations>
         </ScalarVariable>
         <ScalarVariable name="bar_2" valueReference="5" causality="output">
             <String start="" reinit="" derivative=""></String>
+            <Annotations>
+                <Tool name="dse.standards.fmi-ls-binary-to-text">
+                    <Annotation name="encoding">ascii85</Annotation>
+                </Tool>
+                <Tool name="dse.standards.fmi-ls-binary-codec">
+                    <Annotation name="mimetype">application/x-automotive-bus; interface=stream; type=pdu; schema=fbs; swc_id=23; ecu_id=5</Annotation>
+                </Tool>
+            </Annotations>
         </ScalarVariable>
     </ModelVariables>
 

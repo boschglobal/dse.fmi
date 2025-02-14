@@ -168,10 +168,18 @@ typedef struct FmuSignalVector {
     uint32_t  count;
     char**    signal;
     uint32_t* uid;
-    double*   scalar;
+
+    /* Scalar Signals. */
+    double* scalar;
+
+    /* Binary Signals. */
     void**    binary;
     uint32_t* length;
     uint32_t* buffer_size;
+
+    /* Network Codec Objects (related to binary signals).*/
+    char** mime_type;
+    void** ncodec;
 } FmuSignalVector;
 
 
@@ -211,7 +219,7 @@ typedef struct FmuInstanceData {
         struct {
             HashMap input;
             HashMap output;
-        } string; // NOLINT(build/include_what_you_use)
+        } string;  // NOLINT(build/include_what_you_use)
         struct {
             HashMap  rx;
             HashMap  tx;

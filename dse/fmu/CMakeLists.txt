@@ -30,14 +30,6 @@ list(APPEND C_CXX_WARNING_FLAGS
 add_compile_options(${C_CXX_WARNING_FLAGS})
 
 
-# External Project - DSE C Lib
-# ----------------------------
-FetchContent_Declare(dse_clib
-    URL https://github.com/boschglobal/dse.clib/archive/refs/tags/v$ENV{DSE_CLIB_VERSION}.zip
-)
-FetchContent_MakeAvailable(dse_clib)
-set(DSE_CLIB_SOURCE_DIR ${dse_clib_SOURCE_DIR}/dse)
-set(DSE_CLIB_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/..")
 set(DSE_CLIB_SOURCE_FILES
     ${DSE_CLIB_SOURCE_DIR}/clib/util/strings.c
     ${DSE_CLIB_SOURCE_DIR}/clib/util/binary.c
@@ -45,17 +37,17 @@ set(DSE_CLIB_SOURCE_FILES
 )
 set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
 set(FMI3_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi3/headers")
-
-
 set(FMU_INCLUDE_DIR "../..")
 set(FMI_2_COMMON_FILES
     ascii85.c
     fmi2fmu.c
+    fmi2variable.c
     signal.c
 )
 set(FMI_3_COMMON_FILES
     ascii85.c
     fmi3fmu.c
+    fmi3variable.c
     signal.c
 )
 
@@ -63,8 +55,47 @@ set(FMI_3_COMMON_FILES
 # Targets
 # =======
 
-# FMI2 FMU
-# --------
+# Target - flatcc_runtime
+# -----------------------
+add_library(flatcc_runtime OBJECT
+    ${FLATCC_SOURCE_DIR}/src/builder.c
+    ${FLATCC_SOURCE_DIR}/src/emitter.c
+    ${FLATCC_SOURCE_DIR}/src/refmap.c
+)
+target_include_directories(flatcc_runtime
+    PRIVATE
+        ${FLATCC_INCLUDE_DIR}
+)
+
+
+# Target - network_codec
+# ----------------------
+add_library(network_codec OBJECT
+    ncodec.c
+    stream.c
+    ${DSE_NCODEC_SOURCE_DIR}/codec.c
+    ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/codec.c
+    ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/frame_can_fbs.c
+    ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/pdu_fbs.c
+)
+target_include_directories(network_codec
+    PRIVATE
+        ${DSE_CLIB_INCLUDE_DIR}
+        ${DSE_NCODEC_INCLUDE_DIR}
+        ${DSE_NCODEC_INCLUDE_DIR}/dse/ncodec/libs
+        ${FMU_INCLUDE_DIR}
+        ${FLATCC_INCLUDE_DIR}
+        ${AUTOMOTIVE_BUS_SCHEMA_SOURCE_DIR}
+        ../../..
+)
+target_link_libraries(network_codec
+    PRIVATE
+        flatcc_runtime
+)
+
+
+# Target - FMI2 FMU (for testing)
+# -----------------
 add_library(fmi2fmu SHARED
     ${DSE_CLIB_SOURCE_FILES}
     ${FMI_2_COMMON_FILES}
@@ -74,10 +105,13 @@ target_include_directories(fmi2fmu
     PRIVATE
         ${FMI2_INCLUDE_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
+        ${DSE_NCODEC_INCLUDE_DIR}
         ${FMU_INCLUDE_DIR}
 )
 target_link_libraries(fmi2fmu
     PRIVATE
+        network_codec
+        flatcc_runtime
         xml
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${WIN32}>:dl>

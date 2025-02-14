@@ -32,39 +32,73 @@ include(FetchContent)
 include(ExternalProject)
 
 
-# External Project - DSE C Lib
-# ----------------------------
+# DSE C Lib
+# ---------
 FetchContent_Declare(dse_clib
-    URL                 ${ExternalProject__CLIB__URL}
-    HTTP_USERNAME       ${ExternalProject__CLIB__USERNAME}
-    HTTP_PASSWORD       ${ExternalProject__CLIB__PASSWORD}
+    URL                 $ENV{DSE_CLIB_URL}
+    HTTP_USERNAME       $ENV{DSE_CLIB_URL_USER}
+    HTTP_PASSWORD       $ENV{DSE_CLIB_URL_TOKEN}
     SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse.clib"
 )
 FetchContent_MakeAvailable(dse_clib)
 set(DSE_CLIB_SOURCE_DIR ${dse_clib_SOURCE_DIR}/dse)
 set(DSE_CLIB_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/..")
 
-# External Project - DSE ModelC
-# -----------------------------
+# DSE ModelC
+# ----------
 FetchContent_Declare(dse_modelc
-    URL                 ${ExternalProject__MODELC__URL}
-    HTTP_USERNAME       ${ExternalProject__MODELC__USERNAME}
-    HTTP_PASSWORD       ${ExternalProject__MODELC__PASSWORD}
+    URL                 $ENV{DSE_MODELC_URL}
+    HTTP_USERNAME       $ENV{DSE_MODELC_URL_USER}
+    HTTP_PASSWORD       $ENV{DSE_MODELC_URL_TOKEN}
     SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse.modelc"
 )
 FetchContent_MakeAvailable(dse_modelc)
 set(DSE_MODELC_SOURCE_DIR ${dse_modelc_SOURCE_DIR}/dse/modelc)
 set(DSE_MODELC_INCLUDE_DIR "${DSE_MODELC_SOURCE_DIR}/../..")
 
-# External Project - DSE ModelC LIB
-# ---------------------------------
+# DSE ModelC LIB
+# --------------
 FetchContent_Declare(dse_modelc_lib
-    URL                 ${ExternalProject__MODELC_LIB__URL}
-    HTTP_USERNAME       ${ExternalProject__MODELC_LIB__USERNAME}
-    HTTP_PASSWORD       ${ExternalProject__MODELC_LIB__PASSWORD}
+    URL                 $ENV{DSE_MODELC_LIB_URL}
+    HTTP_USERNAME       $ENV{DSE_MODELC_URL_USER}
+    HTTP_PASSWORD       $ENV{DSE_MODELC_URL_TOKEN}
     SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse.modelc.lib"
 )
 FetchContent_MakeAvailable(dse_modelc_lib)
+
+# DSE Network Codec
+# -----------------
+FetchContent_Declare(dse_network_codec
+    URL                 $ENV{DSE_NCODEC_URL}
+    HTTP_USERNAME       $ENV{DSE_NCODEC_URL_USER}
+    HTTP_PASSWORD       $ENV{DSE_NCODEC_URL_TOKEN}
+    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse.ncodec"
+)
+FetchContent_MakeAvailable(dse_network_codec)
+
+# Automotive Bus Schema
+# ---------------------
+FetchContent_Declare(automotive_bus_schema
+    URL                 $ENV{AUTOMOTIVE_BUS_SCHEMA_URL}
+    HTTP_USERNAME       $ENV{AUTOMOTIVE_BUS_SCHEMA_URL_USER}
+    HTTP_PASSWORD       $ENV{AUTOMOTIVE_BUS_SCHEMA_URL_TOKEN}
+    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/automotive.bus.schema"
+)
+FetchContent_MakeAvailable(automotive_bus_schema)
+
+# DSE Network Codec (unit test only)
+# -----------------
+ExternalProject_Add(dse_ncodec
+    URL                 $ENV{DSE_NCODEC_URL}
+    HTTP_USERNAME       $ENV{DSE_NCODEC_URL_USER}
+    HTTP_PASSWORD       $ENV{DSE_NCODEC_URL_TOKEN}
+    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse_ncodec"
+    SOURCE_SUBDIR       "dse/ncodec/libs/automotive-bus"
+    BINARY_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse_ncodec"
+    CMAKE_ARGS
+        -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+    INSTALL_COMMAND     ""
+)
 
 # External Project - yaml (unit test only)
 # -----------------------
@@ -116,20 +150,6 @@ set(XML_INSTALL_DIR "${INSTALL_DIR}")
 file(MAKE_DIRECTORY "${XML_SOURCE_DIR}/include")
 file(MAKE_DIRECTORY "${XML_INSTALL_DIR}/include/libxml2")
 
-# External Project - DSE Network Codec (unit test only)
-# -----------------
-ExternalProject_Add(dse_ncodec
-    URL                 ${ExternalProject__DSE_NCODEC__URL}
-    HTTP_USERNAME       ${ExternalProject__DSE_NCODEC__USERNAME}
-    HTTP_PASSWORD       ${ExternalProject__DSE_NCODEC__PASSWORD}
-    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse_ncodec"
-    SOURCE_SUBDIR       "dse/ncodec/libs/automotive-bus"
-    BINARY_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse_ncodec"
-    CMAKE_ARGS
-        -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-    INSTALL_COMMAND     ""
-)
-
 # dlfcn-win32
 # -----------
 if(NOT WIN32)
@@ -164,7 +184,9 @@ add_dependencies(oss
     dlfcnwin32-download
     libxml2-download
 )
-oss_copy($ENV{EXTERNAL_BUILD_DIR}/dse.clib      boschglobal/dse.clib)
-oss_copy($ENV{EXTERNAL_BUILD_DIR}/dse.modelc    boschglobal/dse.modelc)
+oss_copy(${dse_clib_SOURCE_DIR}                 boschglobal/dse.clib)
+oss_copy(${dse_modelc_SOURCE_DIR}               boschglobal/dse.modelc)
+oss_copy(${dse_network_codec_SOURCE_DIR}        boschglobal/dse.ncodec)
+oss_copy(${automotive_bus_schema_SOURCE_DIR}    boschglobal/automotive.bus.schema)
 oss_copy($ENV{EXTERNAL_BUILD_DIR}/dlfcnwin32    dlfcn-win32/dlfcn-win32)
 oss_copy($ENV{EXTERNAL_BUILD_DIR}/libxml2       GNOME/libxml2)

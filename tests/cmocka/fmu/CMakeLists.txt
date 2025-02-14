@@ -8,80 +8,74 @@ cmake_minimum_required(VERSION 3.21)
 
 project(test_fmu)
 
-include(ExternalProject)
-
 
 # FMU Code
-# ===============
+# ========
 set(DSE_FMU_SOURCE_DIR ../../../dse/fmu)
 set(DSE_FMU_SOURCE_FILES
     ${DSE_FMU_SOURCE_DIR}/ascii85.c
+    ${DSE_FMU_SOURCE_DIR}/fmu.c
+    ${DSE_FMU_SOURCE_DIR}/fmi2fmu.c
+    ${DSE_FMU_SOURCE_DIR}/fmi2variable.c
     ${DSE_FMU_SOURCE_DIR}/signal.c
 )
 set(DSE_FMU_INCLUDE_DIR "${DSE_FMU_SOURCE_DIR}/../..")
 
-set(DSE_CLIB_SOURCE_FILES
-    ${DSE_CLIB_SOURCE_DIR}/collections/hashmap.c
-)
 
-# External Project - xml
-# ----------------------
-ExternalProject_Add(libxml2
-    URL https://github.com/GNOME/libxml2/archive/refs/tags/v2.13.5.zip
-    CMAKE_ARGS
-        -D CMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/libxml2
-        -D CMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -D BUILD_SHARED_LIBS=OFF
-        -D LIBXML2_WITH_HTML=OFF
-        -D LIBXML2_WITH_HTTP=OFF
-        -D LIBXML2_WITH_ICONV=OFF
-        -D LIBXML2_WITH_LZMA=OFF
-        -D LIBXML2_WITH_PYTHON=OFF
-        -D LIBXML2_WITH_SCHEMATRON=OFF
-        -D LIBXML2_WITH_TESTS=OFF
-        -D LIBXML2_WITH_THREAD_ALLOC=OFF
-        -D LIBXML2_WITH_THREADS=OFF
-        -D LIBXML2_WITH_TREE=OFF
-        -D LIBXML2_WITH_VALID=OFF
-        -D LIBXML2_WITH_WRITER=OFF
-        -D LIBXML2_WITH_ZLIB=OFF
-    INSTALL_DIR "${CMAKE_BINARY_DIR}/libxml2"
-    UPDATE_COMMAND ""
+# NCodec Objects
+# ==============
+add_library(flatcc_runtime OBJECT
+    ${FLATCC_SOURCE_DIR}/src/builder.c
+    ${FLATCC_SOURCE_DIR}/src/emitter.c
+    ${FLATCC_SOURCE_DIR}/src/refmap.c
 )
-ExternalProject_Get_property(libxml2 SOURCE_DIR BINARY_DIR INSTALL_DIR)
-set(XML_SOURCE_DIR "${SOURCE_DIR}")
-set(XML_BINARY_DIR "${BINARY_DIR}")
-set(XML_INSTALL_DIR "${INSTALL_DIR}")
-
-add_library(xml STATIC IMPORTED GLOBAL)
-add_dependencies(xml libxml2)
-file(MAKE_DIRECTORY "${XML_SOURCE_DIR}/include")
-file(MAKE_DIRECTORY "${XML_INSTALL_DIR}/include/libxml2")
-set_target_properties(xml
-    PROPERTIES
-        IMPORTED_LOCATION "${XML_BINARY_DIR}/libxml2.a"
-        INTERFACE_INCLUDE_DIRECTORIES "${XML_INSTALL_DIR}/include/libxml2"
+target_include_directories(flatcc_runtime
+    PRIVATE
+        ${FLATCC_INCLUDE_DIR}
+)
+add_library(network_codec OBJECT
+    ${DSE_FMU_SOURCE_DIR}/ncodec.c
+    ${DSE_FMU_SOURCE_DIR}/stream.c
+    ${DSE_NCODEC_SOURCE_DIR}/codec.c
+    ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/codec.c
+    ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/frame_can_fbs.c
+    ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/pdu_fbs.c
+)
+target_include_directories(network_codec
+    PRIVATE
+        ${DSE_CLIB_INCLUDE_DIR}
+        ${DSE_NCODEC_INCLUDE_DIR}
+        ${DSE_NCODEC_INCLUDE_DIR}/dse/ncodec/libs
+        ${FMU_INCLUDE_DIR}
+        ${FLATCC_INCLUDE_DIR}
+        ${AUTOMOTIVE_BUS_SCHEMA_SOURCE_DIR}
+        ../../..
+)
+target_link_libraries(network_codec
+    PRIVATE
+        flatcc_runtime
 )
 
 
 # Targets
 # =======
 
-# Target - FMI ModelC
-# -------------------
+# Target - FMU
+# ------------
 add_executable(test_fmu
     __test__.c
     test_ascii85.c
     test_signals.c
+    test_variables.c
     ${DSE_FMU_SOURCE_FILES}
-    ${DSE_CLIB_SOURCE_FILES}
 )
 target_include_directories(test_fmu
     PRIVATE
-        ${DSE_FMU_INCLUDE_DIR}
-        ${DSE_MODELC_INCLUDE_DIR}
+        ${FMI2_INCLUDE_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
-        ./
+        ${DSE_NCODEC_INCLUDE_DIR}
+        ${DSE_MODELC_INCLUDE_DIR}
+        ${DSE_FMU_INCLUDE_DIR}
 )
 target_compile_definitions(test_fmu
     PUBLIC
@@ -97,6 +91,10 @@ target_link_directories(test_fmu
 target_link_libraries(test_fmu
     PUBLIC
     PRIVATE
+        clib_runtime
+        flatcc_runtime
+        network_codec
+        yaml
         xml
         cmocka
         dl

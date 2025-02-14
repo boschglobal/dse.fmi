@@ -38,9 +38,9 @@ add_compile_definitions(DLL_BUILD)
 # External Project - DSE C Lib
 # ----------------------------
 FetchContent_Declare(dse_clib
-    URL                 ${ExternalProject__CLIB__URL}
-    HTTP_USERNAME       ${ExternalProject__CLIB__USERNAME}
-    HTTP_PASSWORD       ${ExternalProject__CLIB__PASSWORD}
+    URL                 $ENV{DSE_CLIB_URL}
+    HTTP_USERNAME       $ENV{DSE_CLIB_URL_USER}
+    HTTP_PASSWORD       $ENV{DSE_CLIB_URL_TOKEN}
     SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse.clib"
 )
 FetchContent_MakeAvailable(dse_clib)
@@ -51,9 +51,9 @@ set(DSE_CLIB_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/..")
 # External Project - DSE ModelC
 # -----------------------------
 FetchContent_Declare(dse_modelc
-    URL                 ${ExternalProject__MODELC__URL}
-    HTTP_USERNAME       ${ExternalProject__MODELC__USERNAME}
-    HTTP_PASSWORD       ${ExternalProject__MODELC__PASSWORD}
+    URL                 $ENV{DSE_MODELC_URL}
+    HTTP_USERNAME       $ENV{DSE_MODELC_URL_USER}
+    HTTP_PASSWORD       $ENV{DSE_MODELC_URL_TOKEN}
     SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse.modelc"
 )
 FetchContent_MakeAvailable(dse_modelc)
@@ -64,13 +64,39 @@ set(DSE_MODELC_SOURCE_INCLUDE_DIR "${dse_modelc_SOURCE_DIR}")
 # External Project - DSE ModelC LIB
 # ---------------------------------
 FetchContent_Declare(dse_modelc_lib
-    URL                 ${ExternalProject__MODELC_LIB__URL}
-    HTTP_USERNAME       ${ExternalProject__MODELC_LIB__USERNAME}
-    HTTP_PASSWORD       ${ExternalProject__MODELC_LIB__PASSWORD}
+    URL                 $ENV{DSE_MODELC_LIB_URL}
+    HTTP_USERNAME       $ENV{DSE_MODELC_URL_USER}
+    HTTP_PASSWORD       $ENV{DSE_MODELC_URL_TOKEN}
     SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse.modelc.lib"
 )
 FetchContent_MakeAvailable(dse_modelc_lib)
 set(DSE_MODELC_INCLUDE_DIR "${dse_modelc_lib_SOURCE_DIR}/include")
+
+
+# External Project - DSE Network Codec
+# ------------------------------------
+FetchContent_Declare(dse_network_codec
+    URL                 $ENV{DSE_NCODEC_URL}
+    HTTP_USERNAME       $ENV{DSE_NCODEC_URL_USER}
+    HTTP_PASSWORD       $ENV{DSE_NCODEC_URL_TOKEN}
+)
+FetchContent_MakeAvailable(dse_network_codec)
+set(DSE_NCODEC_SOURCE_DIR ${dse_network_codec_SOURCE_DIR}/dse/ncodec)
+set(DSE_NCODEC_INCLUDE_DIR "${DSE_NCODEC_SOURCE_DIR}/../..")
+
+
+# Automotive Bus Schema
+# ---------------------
+FetchContent_Declare(automotive_bus_schema
+    URL                 $ENV{AUTOMOTIVE_BUS_SCHEMA_URL}
+    HTTP_USERNAME       $ENV{AUTOMOTIVE_BUS_SCHEMA_URL_USER}
+    HTTP_PASSWORD       $ENV{AUTOMOTIVE_BUS_SCHEMA_URL_TOKEN}
+    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/automotive.bus.schema"
+)
+FetchContent_MakeAvailable(automotive_bus_schema)
+set(AUTOMOTIVE_BUS_SCHEMA_SOURCE_DIR ${automotive_bus_schema_SOURCE_DIR}/flatbuffers/c)
+set(FLATCC_SOURCE_DIR ${AUTOMOTIVE_BUS_SCHEMA_SOURCE_DIR}/automotive_bus_schema/flatcc)
+set(FLATCC_INCLUDE_DIR ${FLATCC_SOURCE_DIR}/include)
 
 
 # External Project - yaml

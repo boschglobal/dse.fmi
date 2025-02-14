@@ -40,7 +40,7 @@ char* ascii85_encode(const char* source, size_t source_len)
 
     /* Remove (essentially) the padded characters. */
     for (int i = 1; i <= padding; i++) {
-        en_save[strlen(en_save)-1] = '\0';
+        en_save[strlen(en_save) - 1] = '\0';
     }
 
     return en_save;

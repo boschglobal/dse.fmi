@@ -15,9 +15,12 @@ project(test_fmigateway)
 set(DSE_FMIGATEWAY_SOURCE_DIR ../../../dse/fmigateway)
 set(DSE_FMI2FMU_SOURCE_DIR ../../../dse/fmu)
 set(DSE_FMIGATEWAY_SOURCE_FILES
-    ${DSE_FMI2FMU_SOURCE_DIR}/fmi2fmu.c
     ${DSE_FMI2FMU_SOURCE_DIR}/ascii85.c
+    ${DSE_FMI2FMU_SOURCE_DIR}/fmi2fmu.c
+    ${DSE_FMI2FMU_SOURCE_DIR}/fmi2variable.c
+#    ${DSE_FMI2FMU_SOURCE_DIR}/ncodec.c  # Link against ncodec from ModelC.
     ${DSE_FMI2FMU_SOURCE_DIR}/signal.c
+    ${DSE_FMI2FMU_SOURCE_DIR}/stream.c
     ${DSE_FMIGATEWAY_SOURCE_DIR}/fmigateway.c
     ${DSE_FMIGATEWAY_SOURCE_DIR}/index.c
     ${DSE_FMIGATEWAY_SOURCE_DIR}/session.c
@@ -119,4 +122,3 @@ install(
     DESTINATION
         data/fmigateway
 )
-
