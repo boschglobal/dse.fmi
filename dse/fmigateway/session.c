@@ -82,12 +82,12 @@ void fmigateway_session_end(FmuInstanceData* fmu)
     FmiGatewaySession* session = fmi_gw->settings.session;
     if (session == NULL) return;
 
-    if (session->shutdown_cmd) {
-        _run_cmd(fmu, &session->envar, session->shutdown_cmd);
-    }
-
     if (session->w_models && strcmp(PLATFORM_OS, "windows") == 0) {
         fmigateway_session_windows_end(fmu);
+    }
+
+    if (session->shutdown_cmd) {
+        _run_cmd(fmu, &session->envar, session->shutdown_cmd);
     }
 }
 
