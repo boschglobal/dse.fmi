@@ -1,10 +1,18 @@
 ---
 metadata:
+  package:
+    download: '{{.REPO}}/releases/download/v{{.TAG}}/Fmi-{{.TAG}}-{{.PLATFORM_ARCH}}.zip'
+  container:
+    repository: ghcr.io/boschglobal/dse-fmi
+    image_var: FMI_IMAGE
+    tag_var: FMI_TAG
   models:
     fmimcl:
       name: fmimcl
       displayName: dse.fmi.mcl
       path: dse/fmimcl
+      files:
+        - fmimcl/lib/libfmimcl.so
       workflows:
         - generate-fmimcl
         - patch-signalgroup
