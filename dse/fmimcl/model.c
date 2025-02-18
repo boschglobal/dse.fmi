@@ -75,6 +75,14 @@ ModelDesc* model_create(ModelDesc* model)
         mdf_start_blocks(&fmu->measurement.mdf);
     }
 
+    /* Marshal FMU values after initialization from the simbus so that
+       that they are available (to the simulation) in the first step. */
+    rc = mcl_marshal_in(m);
+    __trace_sv(model->sv);
+    if (rc != 0) {
+        log_error("Could not marshal initial fmu values (%d)", rc);
+    }
+
     /* Return the extended object (FmuModel). */
     return (ModelDesc*)m;
 }
