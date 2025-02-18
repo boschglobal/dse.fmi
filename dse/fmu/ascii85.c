@@ -40,7 +40,7 @@ char* ascii85_encode(const char* source, size_t source_len)
 
     /* Remove (essentially) the padded characters. */
     for (int i = 1; i <= padding; i++) {
-        en_save[required - i] = '\0';
+        en_save[strlen(en_save)-1] = '\0';
     }
 
     return en_save;
@@ -49,29 +49,42 @@ char* ascii85_encode(const char* source, size_t source_len)
 
 char* ascii85_decode(const char* source, size_t* len)
 {
-    int source_len = strlen(source);
-    int required = (source_len + 4) / 5 * 4;
+    /*
+    Decode is 5 -> 4 or 1 -> 4 for 'z' case. Calculate parameters with
+    necessary corrections.
+    */
+    int z_count = 0;
+    for (const char* p = source; *p; p++) {
+        if (*p == 'z') z_count++;
+    }
+    int required = (strlen(source) - z_count + 4) / 5 * 4 + z_count * 4;
+    int source_len = strlen(source) + z_count * 4;
     int padding = (source_len % 5) ? (5 - (source_len % 5)) : 0;
 
-    /* Pad the source string to a multiple of 5. */
-    int   padded_len = source_len + padding;
+    /* Pad the source string. */
+    int   padded_len = strlen(source) + padding;
     char* source_padded = calloc(padded_len + 1, sizeof(char));
     snprintf(source_padded, padded_len + 1, "%s", source);
     for (int i = 0; i < padding; i++) {
-        source_padded[source_len + i] = 'u';
+        source_padded[strlen(source) + i] = 'u';
     }
 
     /* Decode the source. */
     char* en = calloc(required + 1, sizeof(char));
     char* en_walker = en;
     char* src_walker = source_padded;
-    while (padded_len) {
+    while (padded_len > 0) {
         uint32_t x = 0;
-        for (int chunk = 0; chunk <= 4; chunk++) {
-            x = x * 85 + (src_walker[chunk] - 33);
+        if (src_walker[0] == 'z') {
             padded_len--;
+            src_walker += 1;
+        } else {
+            for (int chunk = 0; chunk <= 4; chunk++) {
+                x = x * 85 + (src_walker[chunk] - 33);
+                padded_len--;
+            }
+            src_walker += 5;
         }
-        src_walker += 5;
         for (int byte = 3; byte >= 0; byte--) {
             *en_walker = x >> (byte * 8);
             en_walker++;
