@@ -30,6 +30,24 @@ char* _get_measurement_file_name(ModelDesc* model)
 }
 
 
+static void __trace_sv(SignalVector* sv_save)
+{
+    for (SignalVector* sv = sv_save; sv && sv->name; sv++) {
+        log_trace("SV Trace: name=%s (binary=%d)", sv->name, sv->is_binary);
+        for (uint32_t i = 0; i < sv->count; i++) {
+            if (sv->is_binary) {
+                log_trace("  signal[%d] %s (len=%d,blen=%d,reset=%d)", i,
+                    sv->signal[i], sv->length[i], sv->buffer_size[i],
+                    sv->reset_called[i]);
+            } else {
+                log_trace(
+                    "  signal[%d] %s: %f", i, sv->signal[i], sv->scalar[i]);
+            }
+        }
+    }
+}
+
+
 ModelDesc* model_create(ModelDesc* model)
 {
     int32_t  rc;
@@ -85,24 +103,6 @@ ModelDesc* model_create(ModelDesc* model)
 
     /* Return the extended object (FmuModel). */
     return (ModelDesc*)m;
-}
-
-
-static void __trace_sv(SignalVector* sv_save)
-{
-    for (SignalVector* sv = sv_save; sv && sv->name; sv++) {
-        log_trace("SV Trace: name=%s (binary=%d)", sv->name, sv->is_binary);
-        for (uint32_t i = 0; i < sv->count; i++) {
-            if (sv->is_binary) {
-                log_trace("  signal[%d] %s (len=%d,blen=%d,reset=%d)", i,
-                    sv->signal[i], sv->length[i], sv->buffer_size[i],
-                    sv->reset_called[i]);
-            } else {
-                log_trace(
-                    "  signal[%d] %s: %f", i, sv->signal[i], sv->scalar[i]);
-            }
-        }
-    }
 }
 
 
