@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fmiModelDescription
+    fmiVersion="3.0"
+    modelName="counter"
+    description="Counter Example FMU."
+    generationTool="Reference FMUs (development build)"
+    instantiationToken="{4a413e3f-4897-4abd-bf09-418ed822fdd9}"
+    numberOfEventIndicators="0"
+    version="1.0">
+
+    <CoSimulation
+        modelIdentifier="fmu3counter"
+        canHandleVariableCommunicationStepSize="false"
+        canNotUseMemoryManagementFunctions="false"
+        canGetAndSetFMUstate="false"
+        canSerializeFMUstate="false">
+        <SourceFiles>
+            <File name="fmu.c" />
+        </SourceFiles>
+    </CoSimulation>
+
+    <ModelVariables>
+        <Float64 name="counter" valueReference="1" causality="output" start="42" />
+    </ModelVariables>
+    <ModelStructure>
+        <Output valueReference="1"/>
+    </ModelStructure>
+</fmiModelDescription>

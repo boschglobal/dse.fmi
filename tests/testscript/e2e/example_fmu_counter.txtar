@@ -2,7 +2,6 @@
 env NAME=counter
 env IMPORTER=dse/build/_out/importer/fmuImporter
 env FMU_DIR=dse/build/_out/examples/fmu/counter/fmi2
-env FMU_SO=binaries/linux64/fmu2counter.so
 
 # TEST: FMU 2 Counter
 exec sh -e $WORK/test.sh
@@ -18,7 +17,6 @@ docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
     -v $ENTRYHOSTDIR:/repo \
     -e IMPORTER=$IMPORTER \
     -e FMU_DIR=$FMU_DIR \
-    -e FMU_SO=$FMU_SO \
     $SIMER \
         bash -c "ls -R; \
             /repo/$IMPORTER $FMU_DIR"

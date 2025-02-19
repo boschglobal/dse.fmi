@@ -47,12 +47,13 @@ static void __log(NCodecInstance* nc, const char* format, ...)
 
     /* Log to console. */
     fprintf(stdout, message);
+    fprintf(stdout, "\n");
     fflush(stdout);
 
-    /* Log to FMU interface (fmiXOK=0). */
+    /* Log to FMU interface. */
     if (nc == NULL || nc->private == NULL) return;
     NCodecTraceData* td = nc->private;
-    fmu_log(td->fmu, 0, "Debug", message);
+    fmu_log(td->fmu, FmiLogOk, "Debug", message);
 }
 
 

@@ -1,14 +1,18 @@
 # Operate from REPODIR (i.e. $ENTRYHOSTDIR).
-env NAME=linear
+env NAME=network
 env IMPORTER=dse/build/_out/importer/fmuImporter
-env FMU_DIR=dse/build/_out/examples/fmu/linear/fmi2
+env FMU_DIR=dse/build/_out/examples/fmu/network/fmi2
 
 # TEST: FMU 2 Linear
 exec sh -e $WORK/test.sh
 
-stdout 'Importer: Loading FMU: binaries/linux64/fmu2linear.so'
+stdout 'Importer: Loading FMU: binaries/linux64/fmu2network.so'
+stdout 'Importer: Scalar Variables: Input 0, Output 1'
+stdout 'Importer: Binary Variables: Input 1, Output 1'
 stdout 'Importer: Calling fmi2DoStep\(\): model_time=0.004500, step_size=0.000500'
-stdout 'Importer:   \[4\] 0.000000'
+stdout '24 00 26 00 28 00 10 00 1c 00 04 00 08 00 14 00'
+stdout 'Importer:   \[1\] 10.000000'
+stdout 'Importer:   \[3\] kPtS_#QOi'
 
 
 -- test.sh --
@@ -17,6 +21,7 @@ docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
     -v $ENTRYHOSTDIR:/repo \
     -e IMPORTER=$IMPORTER \
     -e FMU_DIR=$FMU_DIR \
+    -e NCODEC_TRACE_PDU_23=* \
     $SIMER \
         bash -c "ls -R; \
             /repo/$IMPORTER $FMU_DIR"

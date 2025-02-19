@@ -147,6 +147,15 @@ typedef struct FmuVTable {
     FmuDestroyFunc destroy;
 } FmuVTable;
 
+typedef enum {
+    FmiLogOk,
+    FmiLogWarning,
+    FmiLogDiscard,
+    FmiLogError,
+    FmiLogFatal,
+    FmiLogPending
+} FmiLogStatus;
+
 
 /* FMU Signal Interface. */
 #define FMU_SIGNALS_RESET_FUNC_NAME  "fmu_signals_reset"
