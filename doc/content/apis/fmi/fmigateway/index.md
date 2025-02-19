@@ -2,6 +2,40 @@
 title: FMI Gateway FMU API Reference
 linkTitle: Gateway FMU
 ---
+## fmu_destroy
+
+
+Releases memory and system resources allocated by gateway.
+
+> Required by FMU.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+### Returns
+
+0 (int32_t)
+: The FMU data was released correctly.
+
+
+
+## fmu_signals_reset
+
+
+Resets the binary signals of the gateway to a length of 0, if the signals have
+not been reseted yet.
+
+> Required by FMU.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+
+
 ## fmu_signals_setup
 
 
@@ -118,40 +152,6 @@ step_size (double)
 0 (int32_t)
 : The FMU step was performed correctly.
 
-
-
-
-## fmu_destroy
-
-
-Releases memory and system resources allocated by gateway.
-
-> Required by FMU.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-### Returns
-
-0 (int32_t)
-: The FMU data was released correctly.
-
-
-
-## fmu_signals_reset
-
-
-Resets the binary signals of the gateway to a length of 0, if the signals have
-not been reseted yet.
-
-> Required by FMU.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
 
 
 

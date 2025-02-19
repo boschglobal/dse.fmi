@@ -20,11 +20,12 @@
 
 #define UNUSED(x) ((void)x)
 
+
 /**
 FMU API
 =======
 
-The FMU API provides a simplified FMU inteface with an abstracted varaible
+The FMU API provides a simplified FMU inteface with an abstracted variable
 interface (indexing and storage). The FMU Interface includes the methods:
 * Implemented by FMU developer:
     * `[fmu_create()]({{< ref "#fmu_create" >}})`
@@ -45,7 +46,7 @@ An additional FMU Signal Interface is available for more complex integrations:
 * `[fmu_signals_remove()]({{< ref "#fmu_signals_remove" >}})`
 
 
-FMUs imlemented using this simplified FMU API can be built for both FMI 2
+FMUs implemented using this simplified FMU API can be built for both FMI 2
 and FMI 3 standards by linking to the relevant implementations:
 * `fmi2fmu.c` for and FMI 2 FMU
 * `fmi3fmu.c` for and FMI 3 FMU
@@ -83,7 +84,6 @@ package "FMU Library" {
         interface "FmuSignalVTable" as signalVt
         component "Encoder\n(ascii85.c)" as encoder
         component "Network\n(ncodec.c)" as network
-        component "Stream\n(stream.c)" as stream
         interface "NCodecVTable" as ncodec
         note as N_fmu
   Contains FMU functional
@@ -189,6 +189,14 @@ typedef struct FmuSignalVectorIndex {
 } FmuSignalVectorIndex;
 
 
+/* FMU NCodec Interface. */
+#define FMU_NCODEC_OPEN_FUNC_NAME  "fmu_ncodec_open"
+#define FMU_NCODEC_CLOSE_FUNC_NAME "fmu_ncodec_close"
+typedef void* (*FmuNcodecOpenFunc)(
+    FmuInstanceData* fmu, const char* mime_type, FmuSignalVectorIndex* idx);
+typedef void (*FmuNcodecCloseFunc)(FmuInstanceData* fmu, void* ncodec);
+
+
 typedef struct FmuVarTableMarshalItem {
     double* variable;  // Pointer to FMU allocated storage.
     double* signal;    // Pointer to FmuSignalVector storage (i.e. scalar).
@@ -256,6 +264,8 @@ DLL_PRIVATE char* ascii85_decode(const char* source, size_t* len);
 DLL_PRIVATE void   fmu_load_signal_handlers(FmuInstanceData* fmu);
 DLL_PRIVATE double fmu_register_var(
     FmuInstanceData* fmu, uint32_t vref, bool input, size_t offset);
+DLL_PRIVATE void* fmu_lookup_ncodec(
+    FmuInstanceData* fmu, uint32_t vref, bool input);
 DLL_PRIVATE void  fmu_register_var_table(FmuInstanceData* fmu, void* table);
 DLL_PRIVATE void* fmu_var_table(FmuInstanceData* fmu);
 
@@ -272,6 +282,11 @@ DLL_PRIVATE void    fmu_log(FmuInstanceData* fmu, const int status,
 DLL_PUBLIC void fmu_signals_reset(FmuInstanceData* fmu);
 DLL_PUBLIC void fmu_signals_setup(FmuInstanceData* fmu);
 DLL_PUBLIC void fmu_signals_remove(FmuInstanceData* fmu);
+
+/* FMU NCodec Interface (optional) */
+DLL_PUBLIC void* fmu_ncodec_open(
+    FmuInstanceData* fmu, const char* mime_type, FmuSignalVectorIndex* idx);
+DLL_PUBLIC void fmu_ncodec_close(FmuInstanceData* fmu, void* ncodec);
 
 
 #endif  // DSE_FMU_FMU_H_

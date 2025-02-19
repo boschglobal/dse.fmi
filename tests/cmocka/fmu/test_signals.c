@@ -197,6 +197,32 @@ void test_fmu_var_table(void** state)
 }
 
 
+void test_fmu_lookup_ncodec(void** state)
+{
+    /* Setup the FMU. */
+    FmuInstanceData* fmu = *state;
+    fmu->variables.vtable.setup(fmu);
+    assert_non_null(fmu->data);
+    FmuSignalVectorIndex* idx_4 = hashmap_get(&fmu->variables.binary.rx, "4");
+    FmuSignalVectorIndex* idx_5 = hashmap_get(&fmu->variables.binary.tx, "5");
+    assert_non_null(idx_4);
+    assert_non_null(idx_5);
+    assert_non_null(idx_4->sv->ncodec[idx_4->vi]);
+    assert_non_null(idx_5->sv->ncodec[idx_5->vi]);
+
+    /* Check the loopup. */
+    assert_ptr_equal(
+        idx_4->sv->ncodec[idx_4->vi], fmu_lookup_ncodec(fmu, 4, true));
+    assert_ptr_equal(
+        idx_5->sv->ncodec[idx_5->vi], fmu_lookup_ncodec(fmu, 5, false));
+
+    /* Finished. */
+    fmu->variables.vtable.remove(fmu);
+    free(fmu->var_table.table);
+    free(fmu->var_table.marshal_list);
+}
+
+
 int run_fmu_default_signal_tests(void)
 {
     void* s = test_fmu_default_signal_setup;
@@ -206,6 +232,7 @@ int run_fmu_default_signal_tests(void)
         cmocka_unit_test_setup_teardown(test_fmu_default_signals, s, t),
         cmocka_unit_test_setup_teardown(test_fmu_default_signals_reset, s, t),
         cmocka_unit_test_setup_teardown(test_fmu_var_table, s, t),
+        cmocka_unit_test_setup_teardown(test_fmu_lookup_ncodec, s, t),
     };
 
     return cmocka_run_group_tests_name("DEFAULT SIGNALS", tests, NULL, NULL);

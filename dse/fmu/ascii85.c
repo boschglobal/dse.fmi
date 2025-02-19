@@ -50,7 +50,7 @@ char* ascii85_encode(const char* source, size_t source_len)
 char* ascii85_decode(const char* source, size_t* len)
 {
     /*
-    Decode is 5 -> 4 or 1 -> 4 for 'z' case. Calculate parameters with
+    Decode is 5 -> 4, or 1 -> 4 for 'z' case. Calculate parameters with
     necessary corrections.
     */
     int z_count = 0;

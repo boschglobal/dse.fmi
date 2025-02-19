@@ -2,6 +2,18 @@
 title: FMI ModelC FMU API Reference
 linkTitle: ModelC FMU
 ---
+## fmi2FreeInstance
+
+
+Free memory and resources related to the provided FMU instance.
+
+### Parameters
+
+c (fmi2Component*)
+: An Fmu2InstanceData object representing an instance of this FMU.
+
+
+
 ## fmi2ExitInitializationMode
 
 
@@ -20,44 +32,6 @@ c (fmi2Component*)
 
 fmi2OK (fmi2Status)
 : The simulation that this FMU represents is ready to be operated.
-
-
-
-## fmi2FreeInstance
-
-
-Free memory and resources related to the provided FMU instance.
-
-### Parameters
-
-c (fmi2Component*)
-: An Fmu2InstanceData object representing an instance of this FMU.
-
-
-
-## fmi2GetString
-
-
-Get values for the provided list of value references.
-
-### Parameters
-
-c (fmi2Component*)
-: An Fmu2InstanceData object representing an instance of this FMU.
-
-vr (fmi2ValueReference[])
-: List of value references to retrieve.
-
-nvr (int)
-: The number of value references to retrieve.
-
-value (fmi2String[])
-: Storage for the retrieved values.
-
-### Returns
-
-fmi2OK (fmi2Status)
-: The requested variables are retrieved (where available).
 
 
 
@@ -216,6 +190,32 @@ nvr (int)
 : The number of value references to retrieve.
 
 value (fmi2Real[])
+: Storage for the retrieved values.
+
+### Returns
+
+fmi2OK (fmi2Status)
+: The requested variables are retrieved (where available).
+
+
+
+## fmi2GetString
+
+
+Get values for the provided list of value references.
+
+### Parameters
+
+c (fmi2Component*)
+: An Fmu2InstanceData object representing an instance of this FMU.
+
+vr (fmi2ValueReference[])
+: List of value references to retrieve.
+
+nvr (int)
+: The number of value references to retrieve.
+
+value (fmi2String[])
 : Storage for the retrieved values.
 
 ### Returns

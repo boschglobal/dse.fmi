@@ -59,14 +59,12 @@ set(FMI_2_COMMON_FILES
     ${FMU_SOURCE_DIR}/fmi2fmu.c
     ${FMU_SOURCE_DIR}/fmi2variable.c
     ${FMU_SOURCE_DIR}/signal.c
-    ${FMU_SOURCE_DIR}/stream.c
 )
 set(FMI_3_COMMON_FILES
     ${FMU_SOURCE_DIR}/ascii85.c
     ${FMU_SOURCE_DIR}/fmi3fmu.c
     ${FMU_SOURCE_DIR}/fmi3variable.c
     ${FMU_SOURCE_DIR}/signal.c
-    ${FMU_SOURCE_DIR}/stream.c
 )
 set(FMIGATEWAY_FILES "../../fmigateway")
 set(FMIGATEWAY_FILES

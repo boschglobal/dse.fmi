@@ -4,14 +4,11 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <dlfcn.h>
 #include <libxml/xpath.h>
 #include <dse/clib/collections/hashlist.h>
 #include <dse/ncodec/codec.h>
 #include <dse/fmu/fmu.h>
-
-
-extern void* fmu_sv_stream_create(FmuSignalVector* sv, uint32_t idx);
-extern void  fmu_sv_stream_destroy(void* stream);
 
 
 #define FMI2_SCALAR_XPATH "/fmiModelDescription/ModelVariables/ScalarVariable"
@@ -19,25 +16,17 @@ extern void  fmu_sv_stream_destroy(void* stream);
 
 static bool __is_scalar_var(xmlNodePtr child)
 {
-    if (xmlStrcmp(child->name, (xmlChar*)"Real") == 0 ||
-        xmlStrcmp(child->name, (xmlChar*)"Integer") == 0 ||
-        xmlStrcmp(child->name, (xmlChar*)"Boolean") == 0 ||
-        xmlStrcmp(child->name, (xmlChar*)"Float64") == 0) {
-        return true;
-    } else {
-        return false;
-    }
+    return (xmlStrcmp(child->name, (xmlChar*)"Real") == 0 ||
+            xmlStrcmp(child->name, (xmlChar*)"Integer") == 0 ||
+            xmlStrcmp(child->name, (xmlChar*)"Boolean") == 0 ||
+            xmlStrcmp(child->name, (xmlChar*)"Float64") == 0);
 }
 
 
 static bool __is_binary_var(xmlNodePtr child)
 {
-    if (xmlStrcmp(child->name, (xmlChar*)"String") == 0 ||
-        xmlStrcmp(child->name, (xmlChar*)"Binary") == 0) {
-        return true;
-    } else {
-        return false;
-    }
+    return (xmlStrcmp(child->name, (xmlChar*)"String") == 0 ||
+            xmlStrcmp(child->name, (xmlChar*)"Binary") == 0);
 }
 
 
@@ -168,13 +157,13 @@ static void __index_binary_variable(FmuInstanceData* fmu, FmuSignalVector* sv,
     */
     sv->mime_type[sv_idx] = (char*)__parse_tool_anno(
         node, "dse.standards.fmi-ls-binary-codec", "mimetype");
-    void*   stream = fmu_sv_stream_create(sv, sv_idx);
-    NCODEC* nc = ncodec_open(sv->mime_type[sv_idx], stream);
-    if (nc) {
-        // ncodec_trace_configure(nc, data->mi);
-        sv->ncodec[sv_idx] = nc;
-    } else {
-        fmu_sv_stream_destroy(stream);
+
+    /* Get a handle to _this_ executable/libary (self reference). */
+    void* handle = dlopen(NULL, RTLD_LAZY);
+    assert(handle);
+    FmuNcodecOpenFunc func = dlsym(handle, FMU_NCODEC_OPEN_FUNC_NAME);
+    if (func) {
+        sv->ncodec[sv_idx] = func(fmu, sv->mime_type[sv_idx], idx);
     }
 }
 

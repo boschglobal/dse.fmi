@@ -35,7 +35,6 @@ target_include_directories(flatcc_runtime
 )
 add_library(network_codec OBJECT
     ${DSE_FMU_SOURCE_DIR}/ncodec.c
-    ${DSE_FMU_SOURCE_DIR}/stream.c
     ${DSE_NCODEC_SOURCE_DIR}/codec.c
     ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/codec.c
     ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/frame_can_fbs.c

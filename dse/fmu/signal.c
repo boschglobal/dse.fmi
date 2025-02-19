@@ -163,14 +163,17 @@ static void fmu_default_signals_remove(FmuInstanceData* fmu)
             free(sv->signal);
         }
         if (sv->ncodec) {
+            FmuNcodecCloseFunc ncodec_close_func = NULL;
+            void*              handle = dlopen(NULL, RTLD_LAZY);
+            if (handle) {
+                ncodec_close_func = dlsym(handle, FMU_NCODEC_CLOSE_FUNC_NAME);
+            }
             for (uint32_t i = 0; i < sv->count; i++) {
                 NCodecInstance* nc = sv->ncodec[i];
-                if (nc) {
-                    // ncodec_trace_destroy(nc);
-                    fmu_sv_stream_destroy(nc->stream);
-                    ncodec_close((NCODEC*)nc);
-                    sv->ncodec[i] = NULL;
+                if (nc && ncodec_close_func) {
+                    ncodec_close_func(fmu, nc);
                 }
+                sv->ncodec[i] = NULL;
             }
             free(sv->ncodec);
         }
@@ -269,6 +272,46 @@ double fmu_register_var(
     }
     hashlist_append(&fmu->var_table.var_list, mi);
     return 0;
+}
+
+
+/**
+fmu_lookup_ncodec
+=================
+
+Lookup and existing NCODEC object which represents a binary (or string)
+variable of the FMU.
+
+Parameters
+----------
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+vref (uint32_t)
+: Variable reference of the variable with an associated NCODEC object.
+input (bool)
+: Set `true` for input, and `false` for output variable causality.
+
+Returns
+-------
+void* (NCODEC pointer)
+: A valid NCODEC object for the underlying variable.
+*/
+void* fmu_lookup_ncodec(FmuInstanceData* fmu, uint32_t vref, bool input)
+{
+    FmuSignalVectorIndex* idx = NULL;
+    char                  key[HASHLIST_KEY_LEN];
+
+    /* Lookup the signal. */
+    snprintf(key, HASHLIST_KEY_LEN, "%i", vref);
+    if (input) {
+        idx = hashmap_get(&fmu->variables.binary.rx, key);
+    } else {
+        idx = hashmap_get(&fmu->variables.binary.tx, key);
+    }
+    if (idx == NULL) return NULL;
+
+    /* Return the NCODEC object pointer. */
+    return idx->sv->ncodec[idx->vi];
 }
 
 

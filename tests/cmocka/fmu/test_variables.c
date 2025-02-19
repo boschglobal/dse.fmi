@@ -18,9 +18,6 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
 
-extern void fmu_sv_stream_destroy(void* stream);
-
-
 int test_fmu_variable_setup(void** state)
 {
     FmuInstanceData* fmu = calloc(1, sizeof(FmuInstanceData));
@@ -89,9 +86,7 @@ void test_fmu_variable_encoding(void** state)
     for (size_t i = 0; i < 2; i++) {
         NCodecInstance* nc = sv->ncodec[i];
         if (nc) {
-            // ncodec_trace_destroy(nc);
-            fmu_sv_stream_destroy(nc->stream);
-            ncodec_close((NCODEC*)nc);
+            fmu_ncodec_close(fmu, nc);
             sv->ncodec[i] = NULL;
         }
     }
@@ -173,12 +168,12 @@ void test_fmu_variable_codec(void** state)
     // NCodec objects
     assert_non_null(sv->ncodec[0]);
     assert_non_null(sv->ncodec[1]);
-    assert_string_equal(
-        sv->mime_type[0], "application/x-automotive-bus; interface=stream; "
-                          "type=pdu; schema=fbs; swc_id=23; ecu_id=5");
-    assert_string_equal(
-        sv->mime_type[1], "application/x-automotive-bus; interface=stream; "
-                          "type=pdu; schema=fbs; swc_id=23; ecu_id=5");
+    assert_string_equal(sv->mime_type[0],
+        "application/x-automotive-bus; interface=stream; "
+        "type=pdu; schema=fbs; swc_id=23; ecu_id=5");
+    assert_string_equal(sv->mime_type[1],
+        "application/x-automotive-bus; interface=stream; "
+        "type=pdu; schema=fbs; swc_id=23; ecu_id=5");
     assert_true(_check_ncodec_param(sv->ncodec[0], "type", "pdu"));
     assert_true(_check_ncodec_param(sv->ncodec[0], "schema", "fbs"));
     assert_true(_check_ncodec_param(sv->ncodec[0], "swc_id", "23"));

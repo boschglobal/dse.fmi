@@ -5,7 +5,7 @@ linkTitle: FMU
 ## FMU API
 
 
-The FMU API provides a simplified FMU inteface with an abstracted varaible
+The FMU API provides a simplified FMU inteface with an abstracted variable
 interface (indexing and storage). The FMU Interface includes the methods:
 * Implemented by FMU developer:
     * `[fmu_create()]({{< ref "#fmu_create" >}})`
@@ -26,7 +26,7 @@ An additional FMU Signal Interface is available for more complex integrations:
 * `[fmu_signals_remove()]({{< ref "#fmu_signals_remove" >}})`
 
 
-FMUs imlemented using this simplified FMU API can be built for both FMI 2
+FMUs implemented using this simplified FMU API can be built for both FMI 2
 and FMI 3 standards by linking to the relevant implementations:
 * `fmi2fmu.c` for and FMI 2 FMU
 * `fmi3fmu.c` for and FMI 3 FMU
@@ -64,7 +64,6 @@ package "FMU Library" {
         interface "FmuSignalVTable" as signalVt
         component "Encoder\n(ascii85.c)" as encoder
         component "Network\n(ncodec.c)" as network
-        component "Stream\n(stream.c)" as stream
         interface "NCodecVTable" as ncodec
         note as N_fmu
   Contains FMU functional
@@ -175,6 +174,8 @@ typedef struct FmuSignalVector {
     void** binary;
     uint32_t* length;
     uint32_t* buffer_size;
+    char** mime_type;
+    void** ncodec;
 }
 ```
 
@@ -286,6 +287,27 @@ message (const char*)
 
 
 
+### fmu_lookup_ncodec
+
+Lookup and existing NCODEC object which represents a binary (or string)
+variable of the FMU.
+
+#### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+vref (uint32_t)
+: Variable reference of the variable with an associated NCODEC object.
+input (bool)
+: Set `true` for input, and `false` for output variable causality.
+
+#### Returns
+
+void* (NCODEC pointer)
+: A valid NCODEC object for the underlying variable.
+
+
+
 ### fmu_register_var
 
 Register a variable with the FMU Variable Table mechanism.
@@ -299,7 +321,7 @@ vref (uint32_t)
 input (bool)
 : Set `true` for input, and `false` for output variable causality.
 offset (size_t)
-: Offse of the variable (type double) in the FMU provided variable table.
+: Offset of the variable (type double) in the FMU provided variable table.
 
 #### Returns
 
@@ -310,7 +332,7 @@ start_value (double)
 
 ### fmu_register_var_table
 
-Register the Variable Table. The previouly registered variables, via calls to
+Register the Variable Table. The previously registered variables, via calls to
 `fmu_register_var`, are configured and the FMU Variable Table mechanism
 is enabled.
 
@@ -325,7 +347,7 @@ table (void*)
 
 ### fmu_signals_remove
 
-This method will reomve any buffers used to provide storage for FMU variables.
+This method will remove any buffers used to provide storage for FMU variables.
 If those buffers were allocated (e.g by an implementation
 of `fmu_signals_setup()`) then those buffers should be freed in this method.
 
@@ -342,7 +364,7 @@ fmu (FmuInstanceData*)
 
 This method will reset any binary variables which where used by an FMU in the
 previous step. Typically this will mean that indexes into the buffers of
-binary variables are set to 0, hovever the buffers themselves are
+binary variables are set to 0, however the buffers themselves are
 not released (i.e. free() is not called).
 
 > Integrators may provide their own implementation of this method.
