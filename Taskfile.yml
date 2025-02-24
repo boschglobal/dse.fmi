@@ -7,7 +7,7 @@ vars:
   ENTRYDIR: '{{if .SIM}}{{.ENTRYWORKDIR}}/{{.SIM}}{{else}}{{.PWD}}{{end}}'
   # Container image specification.
   FMI_IMAGE: '{{.FMI_IMAGE | default "ghcr.io/boschglobal/dse-fmi"}}'
-  FMI_TAG: '{{.FMI_TAG | default "latest"}}'
+  FMI_TAG: '{{if .FMI_TAG}}{{.FMI_TAG}}{{else}}{{if .IMAGE_TAG}}{{.IMAGE_TAG}}{{else}}latest{{end}}{{end}}'
 
 
 tasks:
