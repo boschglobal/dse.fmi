@@ -208,7 +208,7 @@ static inline void _start_model(FmuInstanceData* fmu, WindowsModel* m)
     HANDLE          _log;
     if (m->log_level >= 0) {
         /* Create logfile for modelC models. */
-        char log[128];
+        char log[PATH_MAX];
         snprintf(log, sizeof(log), "%s/%s_log.txt",
             fmi_gw->settings.log_location, m->name);
         _log = _create_file(log);
