@@ -19,8 +19,8 @@ metadata:
         - windows-x64
         - windows-x86
       channels:
-        - alias: scalar_vector
-        - alias: network_vector
+        - alias: scalar_channel
+        - alias: network_channel
     fmimodelc:
       name: fmimodelc
       displayName: dse.fmi.modelc
@@ -34,8 +34,8 @@ metadata:
         - windows-x64
         - windows-x86
       channels:
-        - alias: scalar_vector
-        - alias: network_vector
+        - alias: scalar_channel
+        - alias: network_channel
     fmigateway:
       name: fmigateway
       displayName: dse.fmi.gateway
@@ -49,8 +49,8 @@ metadata:
         - windows-x64
         - windows-x86
       channels:
-        - alias: scalar_vector
-        - alias: network_vector
+        - alias: scalar_channel
+        - alias: network_channel
   tasks:
     generate-fmimcl:
       vars:
