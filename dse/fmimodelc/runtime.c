@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <dse/fmimodelc/fmimodelc.h>
+#include <dse/fmu/fmu.h>
 #include <dse/modelc/runtime.h>
 #include <dse/modelc/schema.h>
 #include <dse/clib/util/yaml.h>
@@ -229,13 +230,4 @@ void fmimodelc_index_text_encoding(
     }
     _log("  Encoding: enc=%u, dec=%u", encode_func->used_nodes,
         decode_func->used_nodes);
-}
-
-
-void fmimodelc_reset_binary_signals(RuntimeModelDesc* m)
-{
-    if (m->runtime.binary_signals_reset == false) {
-        simbus_vector_binary_reset(m->model.sim);
-        m->runtime.binary_signals_reset = true;
-    }
 }

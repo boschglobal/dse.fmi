@@ -17,6 +17,21 @@ project(${MODULE}
 )
 
 set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
+set(FMI3_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi3/headers")
+set(FMU_SOURCE_DIR "../fmu")
+set(FMU_INCLUDE_DIR "../..")
+set(FMI_2_COMMON_FILES
+    ${FMU_SOURCE_DIR}/ascii85.c
+    ${FMU_SOURCE_DIR}/fmi2fmu.c
+    ${FMU_SOURCE_DIR}/fmi2variable.c
+    ${FMU_SOURCE_DIR}/signal.c
+)
+set(FMI_3_COMMON_FILES
+    ${FMU_SOURCE_DIR}/ascii85.c
+    ${FMU_SOURCE_DIR}/fmi3fmu.c
+    ${FMU_SOURCE_DIR}/fmi3variable.c
+    ${FMU_SOURCE_DIR}/signal.c
+)
 
 
 
@@ -26,10 +41,9 @@ set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
 # FMI2 ModelC FMU
 # ---------------
 add_library(fmi2modelcfmu SHARED
-    ascii85.c
-    fmi2fmu.c
+${FMI_2_COMMON_FILES}
     runtime.c
-    $<$<BOOL:${WIN32}>:clock_gettime.c>
+    fmimodelc.c
 )
 target_include_directories(fmi2modelcfmu
     PRIVATE
@@ -37,7 +51,7 @@ target_include_directories(fmi2modelcfmu
         ${DSE_MODELC_INCLUDE_DIR}
         ${DSE_MODELC_SOURCE_INCLUDE_DIR}
         ${FMI2_INCLUDE_DIR}
-        ../..
+        ${FMU_INCLUDE_DIR}
 )
 target_link_directories(fmi2modelcfmu
     PRIVATE
@@ -49,21 +63,58 @@ target_link_libraries(fmi2modelcfmu
         model_runtime
         -Wl,--no-whole-archive
         yaml
+        xml
+        m
         $<$<BOOL:${WIN32}>:dl>
+        $<$<BOOL:${WIN32}>:-Wl,-Bstatic>
+        $<$<BOOL:${WIN32}>:pthread>
+        $<$<BOOL:${WIN32}>:-Wl,-Bdynamic>
+)
+install(
+TARGETS
+    fmi2modelcfmu
+LIBRARY DESTINATION
+    ${MODULE_LC}/lib
+)
+
+# FMI3 ModelC FMU
+# ---------------
+add_library(fmi3modelcfmu SHARED
+    ${FMI_3_COMMON_FILES}
+    runtime.c
+    fmimodelc.c
+)
+target_include_directories(fmi3modelcfmu
+    PRIVATE
+        ${DSE_CLIB_INCLUDE_DIR}
+        ${DSE_MODELC_INCLUDE_DIR}
+        ${DSE_MODELC_SOURCE_INCLUDE_DIR}
+        ${FMI3_INCLUDE_DIR}
+        ${FMU_INCLUDE_DIR}
+)
+target_link_directories(fmi3modelcfmu
+    PRIVATE
+        ${dse_modelc_lib_SOURCE_DIR}/lib
+)
+target_link_libraries(fmi3modelcfmu
+    PRIVATE
+        -Wl,--whole-archive
+        model_runtime
+        -Wl,--no-whole-archive
+        yaml
+        xml
+        m
+        $<$<BOOL:${WIN32}>:dl>
+        $<$<BOOL:${WIN32}>:-Wl,-Bstatic>
+        $<$<BOOL:${WIN32}>:pthread>
+        $<$<BOOL:${WIN32}>:-Wl,-Bdynamic>
 )
 install(
     TARGETS
-        fmi2modelcfmu
+        fmi3modelcfmu
     LIBRARY DESTINATION
         ${MODULE_LC}/lib
 )
-
-
-
-# Sub Projects
-# ============
-
-add_subdirectory(examples)
 
 
 

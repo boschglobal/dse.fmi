@@ -50,11 +50,6 @@ center footer Dynamic Simulation Environment
 */
 
 
-/* Encode/Decode Interface. */
-typedef char* (*EncodeFunc)(const char* source, size_t len);
-typedef char* (*DecodeFunc)(const char* source, size_t* len);
-
-
 /* runtime.c */
 DLL_PRIVATE void fmimodelc_index_scalar_signals(
     RuntimeModelDesc* m, HashMap* input, HashMap* output);
@@ -62,12 +57,5 @@ DLL_PRIVATE void fmimodelc_index_binary_signals(
     RuntimeModelDesc* m, HashMap* rx, HashMap* tx);
 DLL_PRIVATE void fmimodelc_index_text_encoding(
     RuntimeModelDesc* m, HashMap* encode_func, HashMap* decode_func);
-DLL_PRIVATE void fmimodelc_reset_binary_signals(RuntimeModelDesc* m);
-
-
-/* ascii85.c */
-DLL_PRIVATE char* ascii85_encode(const char* source, size_t len);
-DLL_PRIVATE char* ascii85_decode(const char* source, size_t* len);
-
 
 #endif  // DSE_FMIMODELC_FMIMODELC_H_

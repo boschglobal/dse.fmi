@@ -28,7 +28,7 @@ add_library(fmimcl SHARED
     model.c
     parser.c
     adapter/fmi2mcl.c
-    ../fmimodelc/ascii85.c
+    ../fmu/ascii85.c
     ${DSE_CLIB_SOURCE_DIR}/clib/mdf/mdf.c
 )
 target_include_directories(fmimcl

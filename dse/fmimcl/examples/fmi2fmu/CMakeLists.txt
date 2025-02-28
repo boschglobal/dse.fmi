@@ -15,7 +15,7 @@ set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
 
 add_library(mclfmi2fmu SHARED
     fmi2fmu.c
-    ../../../fmimodelc/ascii85.c
+    ../../../fmu/ascii85.c
     ${DSE_CLIB_SOURCE_DIR}/clib/collections/hashmap.c
     ${DSE_CLIB_SOURCE_DIR}/clib/collections/set.c
 )

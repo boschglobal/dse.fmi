@@ -72,7 +72,7 @@ static void _log_binary_signal(FmuInstanceData* fmu, FmuSignalVectorIndex* idx)
     uint8_t* buffer = idx->sv->binary[index];
     for (uint32_t j = 0; j + 16 < idx->sv->length[index]; j += 16) {
         fmu_log(fmu, fmi2OK, "Debug",
-            "\n          %02x %02x %02x %02x %02x %02x %02x %02x "
+            "%02x %02x %02x %02x %02x %02x %02x %02x "
             "%02x %02x %02x %02x %02x %02x %02x %02x",
             buffer[j + 0], buffer[j + 1], buffer[j + 2], buffer[j + 3],
             buffer[j + 4], buffer[j + 5], buffer[j + 6], buffer[j + 7],

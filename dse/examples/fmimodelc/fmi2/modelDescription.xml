@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<fmiModelDescription modelName="" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" fmiVersion="" guid="">
-	<CoSimulation modelIdentifier=""></CoSimulation>
+<fmiModelDescription
+    modelName="network_fmu"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    fmiVersion="2.0"
+    guid="{71da084a-0998-4418-a29d-01af36a32568}">
+
+    <CoSimulation
+        modelIdentifier="libfmi2modelcfmu">
+    </CoSimulation>
+
 	<DefaultExperiment stepSize="0.0005"></DefaultExperiment>
     <ModelVariables>
         <ScalarVariable name="counter" valueReference="1" causality="output" initial="" variability="">

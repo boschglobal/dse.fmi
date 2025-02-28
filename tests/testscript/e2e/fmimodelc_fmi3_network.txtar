@@ -1,16 +1,16 @@
 env NAME=fmimodelc_network_fmu
-env SIM=dse/build/_out/fmimodelc/examples/network_fmu
+env IMPORTER=dse/build/_out/importer/fmuImporter
+env FMU_DIR=dse/build/_out/examples/fmimodelc/fmi3
 
 
-# TEST: FMI ModelC with Network FMU using FMIv2
+# TEST: FMI ModelC with Network FMU using FMIv3
 exec sh -e $WORK/test.sh
 
-stdout 'Importer: Cwd: /sim/fmu'
-stdout 'Importer: Loading FMU: lib/linux-amd64/libfmi2modelcfmu.so'
+stdout 'Importer: Loading FMU: binaries/x86_64-linux/libfmi3modelcfmu.so'
 stdout 'Runtime: Simulation Path: resources/sim'
 stdout 'Runtime: Simulation YAML: resources/sim/data/simulation.yaml'
-stdout 'Runtime: Model: network_fmu'
-stdout 'Loading dynamic model: resources/sim/lib/libtarget.so'
+stdout 'Runtime: Model: fmu'
+stdout 'Loading dynamic model: resources/sim/lib/libfmimodelctarget.so'
 stdout 'Configure Channel: scalar_vector'
 stdout 'Configure Channel: network_vector'
 stdout 'ModelCFmu:   Scalar: input=0, output=1'
@@ -22,8 +22,8 @@ stdout 'length     : 480'
 stdout 'buffer len : 480'
 ! stdout 'buffer len : 600'
 
-stdout 'Importer: Calling fmi2DoStep\(\): model_time=0.004500, step_size=0.000500'
-stdout 'ModelCFmu: Call model_runtime_step\(\) ...'
+stdout 'Importer: Calling fmi3DoStep\(\): model_time=0.004500, step_size=0.000500'
+stdout 'Call model_runtime_step\(\) ...'
 stdout 'Model: RX\[03f1\] Hello World! from node_id=2'
 
 stdout 'Importer:   \[1\] 10'
@@ -35,8 +35,11 @@ stdout 'Importer:   \[9\] F8u:'
 
 -- test.sh --
 SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
-docker run --name simer -i --rm -v $ENTRYHOSTDIR/$SIM:/sim \
-    --env SIMBUS_LOGLEVEL=4 \
-    --entrypoint="" $SIMER \
-    bash -c "cd fmu; valgrind -q --leak-check=yes --error-exitcode=808 \
-        ../bin/fmi2importer lib/linux-amd64/libfmi2modelcfmu.so"
+docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
+    -v $ENTRYHOSTDIR:/repo \
+    -e IMPORTER=$IMPORTER \
+    -e FMU_DIR=$FMU_DIR \
+    -e SIMBUS_LOGLEVEL=4 \
+    $SIMER \
+        bash -c "ls -R; \
+            /repo/$IMPORTER $FMU_DIR"

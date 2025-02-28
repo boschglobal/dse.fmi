@@ -12,9 +12,9 @@
 #define UNUSED(x)          ((void)x)
 #define ARRAY_SIZE(x)      (sizeof(x) / sizeof(x[0]))
 
-#define EXAMPLE_PATH       "../../../../dse/build/_out/fmimodelc/examples/network_fmu"
+#define EXAMPLE_PATH       "../../../../dse/build/_out/examples/fmimodelc/fmi2"
 
-#define EXAMPLE_MODEL_PATH EXAMPLE_PATH "/fmu/resources/sim"
+#define EXAMPLE_MODEL_PATH EXAMPLE_PATH "/resources/sim"
 
 
 int test_index_setup(void** state)

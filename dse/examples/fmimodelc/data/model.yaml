@@ -11,16 +11,16 @@ spec:
     dynlib:
       - os: linux
         arch: amd64
-        path: lib/libtarget.so
+        path: lib/libfmimodelctarget.so
       - os: linux
         arch: x86
-        path: lib/libtarget.so
+        path: lib/libfmimodelctarget.so
       - os: windows
         arch: x64
-        path: lib/libtarget.dll
+        path: lib/libfmimodelctarget.dll
       - os: windows
         arch: x86
-        path: lib/libtarget.dll
+        path: lib/libfmimodelctarget.dll
   channels:
     - alias: scalar_vector
       selectors:
