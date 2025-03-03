@@ -35,16 +35,16 @@ static inline void _set_envar(FmuInstanceData* fmu)
     for (FmiGatewayEnvvar* e = fmi_gw->settings.session->envar; e && e->name;
          e++) {
         const char* env_value = getenv(e->name);
-        char* fmu_value = _get_fmu_env_value(fmu, e);
 
-        /* Set the ENV in order of priority: FMU, ENV, default. */
-        if (fmu_value) {
-            fmigateway_setenv(e->name, fmu_value);
-            free(fmu_value);
-        } else if (env_value != NULL) {
-            // NOP
-        } else if (e->default_value != NULL) {
-            fmigateway_setenv(e->name, e->default_value);
+        /* Set the ENV in order of priority: ENV, FMU, default. */
+        if (env_value == NULL) {
+            char* fmu_value = _get_fmu_env_value(fmu, e);
+            if (fmu_value) {
+                fmigateway_setenv(e->name, fmu_value);
+                free(fmu_value);
+            } else if (e->default_value != NULL) {
+                fmigateway_setenv(e->name, e->default_value);
+            }
         }
     }
 }
