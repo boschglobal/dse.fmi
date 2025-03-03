@@ -108,26 +108,61 @@ static inline WindowsModel* _gwfmu_model_generator(
 
 
 static inline void _parse_script_envar(
-    FmuInstanceData* fmu, YamlNode* node, HashMap* envar)
+    FmuInstanceData* fmu, YamlNode* node, FmiGatewaySession* session)
 {
     UNUSED(fmu);
 
     YamlNode* n_env = dse_yaml_find_node(node, "annotations/cmd_envvars");
     if (n_env) {
-        /* Node type 2 is sequence. */
+        /* Node type 2 is a yaml sequence. */
         if (n_env == NULL || n_env->node_type != 2) return;
         uint32_t len = hashlist_length(&n_env->sequence);
         if (len == 0) return;
 
-        hashmap_init(envar);
+        HashList e_list;
+        hashlist_init(&e_list, 128);
         /* Enumerate over the envars. */
         for (uint32_t i = 0; i < len; i++) {
             YamlNode* _env = hashlist_at(&n_env->sequence, i);
             if (_env == NULL) continue;
-            static char vr_idx[128];
+            FmiGatewayEnvvar* envar = calloc(1, sizeof(FmiGatewayEnvvar));
+
+            /* Convert value reference to string for use as hashmap key. */
+            static char vr_idx[NUMERIC_ENVAR_LEN];
             snprintf(vr_idx, sizeof(vr_idx), "%i", i);
-            hashmap_set_string(envar, _env->name, vr_idx);
+            envar->vref = strdup(vr_idx);
+
+            /* Read cmd envar annotations. */
+            if (dse_yaml_get_string(_env, "name", &envar->name)) {
+                fmu_log(fmu, 4, "Error", "no envvar name for index %d", i);
+                continue;
+            };
+            if (dse_yaml_get_string(_env, "type", &envar->type)) {
+                envar->type = "string";
+            };
+
+            /* Read and set default values. */
+            if (strcmp(envar->type, "string") == 0) {
+                const char* _str;
+                if (dse_yaml_get_string(_env, "default", &_str)) {
+                    _str = "";
+                };
+                hashmap_set_string(
+                    &fmu->variables.string.input, envar->vref, (char*)_str);
+                envar->default_value = strdup((char*)_str);
+            } else if (strcmp(envar->type, "real") == 0) {
+                double value = 0.0;
+                dse_yaml_get_double(_env, "default", &value);
+                hashmap_set_double(
+                    &fmu->variables.scalar.input, envar->vref, value);
+                envar->default_value = calloc(NUMERIC_ENVAR_LEN, sizeof(char));
+                snprintf((char*)envar->default_value,
+                    NUMERIC_ENVAR_LEN, "%d", (int)value);
+            }
+
+            hashlist_append(&e_list, envar);
         }
+        session->envar = hashlist_ntl(&e_list, sizeof(FmiGatewayEnvvar), true);
     }
 }
 
@@ -215,7 +250,7 @@ static inline int _parse_gateway(FmuInstanceData* fmu, YamlNode* doc)
             &session->shutdown_cmd);
     }
 
-    _parse_script_envar(fmu, gateway_node, &session->envar);
+    _parse_script_envar(fmu, gateway_node, session);
 
     return 0;
 }

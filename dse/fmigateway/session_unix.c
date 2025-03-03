@@ -8,5 +8,7 @@
 
 int fmigateway_setenv(const char* name, const char* value)
 {
+    if (value == NULL) return unsetenv(name);
+
     return setenv(name, value, true);
 }

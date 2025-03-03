@@ -222,11 +222,14 @@ func (c *GenFmiGatewayCommand) setGeneralXmlFields(fmuXml *fmi2.FmiModelDescript
 	fmuXml.CoSimulation.CanInterpolateInputs = "true"
 }
 
-func (c *GenFmiGatewayCommand) buildXmlSignals(fmuXml *fmi2.FmiModelDescription, index *index.YamlFileIndex, envars *schema_kind.SignalGroupSpec) ([]string, error) {
+func (c *GenFmiGatewayCommand) buildXmlSignals(fmuXml *fmi2.FmiModelDescription, index *index.YamlFileIndex, envars *[]schema_kind.SignalGroupSpec) ([]string, error) {
 	var channels []string
 
 	if envars != nil {
-		if err := fmi2.StringSignal(*envars, fmuXml); err != nil {
+		if err := fmi2.StringSignal((*envars)[0], fmuXml); err != nil {
+			slog.Warn(fmt.Sprintf("could not set envars in xml (Error: %s)", err.Error()))
+		}
+		if err := fmi2.ScalarSignal((*envars)[1], fmuXml); err != nil {
 			slog.Warn(fmt.Sprintf("could not set envars in xml (Error: %s)", err.Error()))
 		}
 	}
@@ -253,7 +256,7 @@ func (c *GenFmiGatewayCommand) buildXmlSignals(fmuXml *fmi2.FmiModelDescription,
 	return channels, nil
 }
 
-func (c *GenFmiGatewayCommand) createFmuXml(envars *schema_kind.SignalGroupSpec) (*fmi2.FmiModelDescription, []string, error) {
+func (c *GenFmiGatewayCommand) createFmuXml(envars *[]schema_kind.SignalGroupSpec) (*fmi2.FmiModelDescription, []string, error) {
 	fmuXml := fmi2.FmiModelDescription{}
 	c.setGeneralXmlFields(&fmuXml)
 
@@ -276,9 +279,9 @@ func (c *GenFmiGatewayCommand) createFmuXml(envars *schema_kind.SignalGroupSpec)
 	return &fmuXml, channels, nil
 }
 
-func (c *GenFmiGatewayCommand) parseStack() (*schema_kind.SignalGroupSpec, error) {
+func (c *GenFmiGatewayCommand) parseStack() (*[]schema_kind.SignalGroupSpec, error) {
 	envvar_count := 0
-	signal_spec := schema_kind.SignalGroupSpec{}
+	var signal_spec = make([]schema_kind.SignalGroupSpec, 2)
 	// Load the Stack.
 	stack_file, err := os.ReadFile(c.stack)
 	if err != nil {
@@ -301,15 +304,33 @@ func (c *GenFmiGatewayCommand) parseStack() (*schema_kind.SignalGroupSpec, error
 			}
 
 			if envar_list := (*model.Annotations)["cmd_envvars"]; envar_list != nil {
-				for _, envar := range envar_list.([]interface{}) {
+				for _, envar := range envar_list.(([]interface{})) {
+					_name := envar.(schema_kind.Annotations)["name"].(string)
+					_type := envar.(schema_kind.Annotations)["type"]
+					_start := envar.(schema_kind.Annotations)["default"]
+					var start string
+					if _start != nil {
+						start = _start.(string)
+					} else {
+						start = ""
+					}
 					signal := schema_kind.Signal{
-						Signal: envar.(string),
+						Signal: _name,
 						Annotations: &schema_kind.Annotations{
-							"fmi_variable_causality": "input",
+							"fmi_variable_causality": "parameter",
 							"fmi_variable_vref":      envvar_count,
+							"fmi_variable_start":     start,
 						},
 					}
-					signal_spec.Signals = append(signal_spec.Signals, signal)
+					if _type != nil {
+						if _type.(string) == "string" {
+							signal_spec[0].Signals = append(signal_spec[0].Signals, signal)
+						} else if _type.(string) == "real" {
+							signal_spec[1].Signals = append(signal_spec[1].Signals, signal)
+						}
+					} else {
+						signal_spec[0].Signals = append(signal_spec[0].Signals, signal)
+					}
 					envvar_count++
 				}
 			}

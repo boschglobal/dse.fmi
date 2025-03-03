@@ -46,9 +46,12 @@ spec:
         log_level: 6
         log_location: "./here"
         cmd_envvars:
-          - envar0
-          - envar1
-          - envar2
+          - name: envar0
+            type: string
+            default: testvalue
+          - name: envar1
+            type: real
+          - name: envar2
       runtime:
         env:
           # Gateway scripts.

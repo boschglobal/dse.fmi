@@ -38,6 +38,17 @@ Example
 -------
 */
 
+
+#define NUMERIC_ENVAR_LEN 24
+
+
+typedef struct FmiGatewayEnvvar {
+    const char* name;
+    const char* vref;
+    const char* type;
+    const char* default_value;
+} FmiGatewayEnvvar;
+
 typedef struct WindowsModel {
     /* process Information */
     const char* exe;
@@ -65,11 +76,11 @@ typedef struct FmiGatewaySession {
         bool transport;
     } visibility;
     /* cmds. */
-    const char* init_cmd;
-    const char* shutdown_cmd;
-    HashMap     envar;
+    const char*       init_cmd;
+    const char*       shutdown_cmd;
+    FmiGatewayEnvvar* envar;
     /* Additional information. */
-    double      last_step;
+    double            last_step;
 } FmiGatewaySession;
 
 typedef struct FmiGateway {

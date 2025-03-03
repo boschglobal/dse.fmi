@@ -243,8 +243,14 @@ fmi2Status fmi2GetReal(fmi2Component c, const fmi2ValueReference vr[],
     for (size_t i = 0; i < nvr; i++) {
         static char vr_idx[VREF_KEY_LEN];
         snprintf(vr_idx, VREF_KEY_LEN, "%i", vr[i]);
-        double* signal = hashmap_get(&fmu->variables.scalar.output, vr_idx);
-        if (signal == NULL) continue;
+        double* signal = NULL;
+        signal = hashmap_get(&fmu->variables.scalar.output, vr_idx);
+        /* Get operations can also be used on input variables. */
+        if (signal == NULL) {
+            signal = hashmap_get(&fmu->variables.scalar.input, vr_idx);
+            /* Signal was not found on either output or input signals. */
+            if (signal == NULL) continue;
+        }
 
         /* Set the scalar signal value. */
         value[i] = *signal;

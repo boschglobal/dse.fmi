@@ -15,6 +15,8 @@ import (
 	schema_kind "github.com/boschglobal/dse.schemas/code/go/dse/kind"
 )
 
+func stringPtr(v string) *string { return &v }
+
 // FMI XML struct/tags
 // ===================
 
@@ -162,9 +164,14 @@ func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelD
 
 		causality := (*signal.Annotations)["fmi_variable_causality"].(string)
 		start := ""
-		if causality == "input" {
+		var variability *string = nil
+		if causality == "input" || causality == "parameter" {
 			start = "0.0"
 		}
+		if causality == "parameter" {
+			variability = stringPtr("tunable")
+		}
+
 		if (*signal.Annotations)["fmi_variable_start_value"] != nil {
 			start = strconv.Itoa((*signal.Annotations)["fmi_variable_start_value"].(int))
 		}
@@ -176,6 +183,7 @@ func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelD
 			Name:           signal.Signal,
 			ValueReference: strconv.Itoa((*signal.Annotations)["fmi_variable_vref"].(int)),
 			Causality:      causality,
+			Variability:    variability,
 			Real: &FmiReal{
 				Start: start,
 			},
@@ -268,9 +276,19 @@ func StringSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelD
 	for _, signal := range signalGroupSpec.Signals {
 
 		causality := (*signal.Annotations)["fmi_variable_causality"].(string)
+		_start := (*signal.Annotations)["fmi_variable_start"]
 		start := ""
-		if causality == "input" {
-			start = ""
+		var variability *string = nil
+
+		if causality == "input" || causality == "parameter" {
+			if _start != nil {
+				start = _start.(string)
+			} else {
+				start = ""
+			}
+		}
+		if causality == "parameter" {
+			variability = stringPtr("tunable")
 		}
 		if (*signal.Annotations)["fmi_variable_vref"] == nil {
 			return fmt.Errorf("could not get value reference for signal %s", signal.Signal)
@@ -280,6 +298,7 @@ func StringSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelD
 			Name:           signal.Signal,
 			ValueReference: strconv.Itoa((*signal.Annotations)["fmi_variable_vref"].(int)),
 			Causality:      causality,
+			Variability:    variability,
 			String: &FmiString{
 				Start: start,
 			},

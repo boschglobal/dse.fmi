@@ -50,6 +50,9 @@ int32_t fmu_create(FmuInstanceData* fmu)
 
     fmu->data = (void*)fmi_gw;
 
+    /* Parse the yaml files. */
+    fmigateway_parse(fmu);
+
     return 0;
 }
 
@@ -82,9 +85,6 @@ int32_t fmu_init(FmuInstanceData* fmu)
     assert(fmi_gw);
     ModelGatewayDesc* gw = fmi_gw->model;
     assert(gw);
-
-    /* Parse the yaml files. */
-    fmigateway_parse(fmu);
 
     fmigateway_session_configure(fmu);
 
@@ -204,8 +204,13 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
             free(model->yaml);
         }
         free(session->w_models);
-        /* Cleanup script envvars. */
-        hashmap_destroy(&session->envar);
+
+        for (FmiGatewayEnvvar* e = session->envar; e && e->name; e++) {
+            free((char*)e->vref);
+            free((char*)e->default_value);
+        }
+        free(session->envar);
+
         free(session);
     }
     free(fmi_gw->settings.yaml_files);

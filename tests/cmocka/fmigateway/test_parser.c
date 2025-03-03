@@ -59,7 +59,12 @@ int test_fmigateway__parser_teardown(void** state)
                 free(model->yaml);
             }
             free(session->w_models);
-            hashmap_destroy(&session->envar);
+            
+            for (FmiGatewayEnvvar* e = session->envar; e && e->name; e++) {
+                free((char*)e->vref);
+                free(e->default_value);
+            }
+            free(session->envar);
             free(session);
             free(fmi_gw->model);
             free(fmi_gw);
@@ -159,12 +164,9 @@ void test_fmigateway__parser_gw_stack(void** state)
     assert_double_equal(fmi_gw->settings.step_size, 0.005, 0.0);
     assert_int_equal(fmi_gw->settings.log_level, 4);
     assert_string_equal(fmi_gw->settings.log_location, "./here");
-    assert_string_equal(
-        hashmap_get(&fmi_gw->settings.session->envar, "envar0"), "0");
-    assert_string_equal(
-        hashmap_get(&fmi_gw->settings.session->envar, "envar1"), "1");
-    assert_string_equal(
-        hashmap_get(&fmi_gw->settings.session->envar, "envar2"), "2");
+    assert_string_equal(fmi_gw->settings.session->envar[0].name, "envar0");
+    assert_string_equal(fmi_gw->settings.session->envar[1].name, "envar1");
+    assert_string_equal(fmi_gw->settings.session->envar[2].name, "envar2");
 
     /* Test script parsing. */
     assert_string_equal(fmi_gw->settings.session->init_cmd, "init_cmd");

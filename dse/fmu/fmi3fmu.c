@@ -334,7 +334,12 @@ fmi3Status fmi3GetFloat64(fmi3Instance instance,
         static char vr_idx[VREF_KEY_LEN];
         snprintf(vr_idx, VREF_KEY_LEN, "%i", valueReferences[i]);
         double* signal = hashmap_get(&fmu->variables.scalar.output, vr_idx);
-        if (signal == NULL) continue;
+        /* Get operations can also be used on input variables. */
+        if (signal == NULL) {
+            signal = hashmap_get(&fmu->variables.scalar.input, vr_idx);
+            /* Signal was not found on either output or input signals. */
+            if (signal == NULL) continue;
+        }
 
         /* Set the scalar signal value. */
         values[i] = *signal;
@@ -686,10 +691,19 @@ fmi3Status fmi3SetString(fmi3Instance instance,
     const fmi3String values[], size_t nValues)
 {
     assert(instance);
-    UNUSED(valueReferences);
-    UNUSED(nValueReferences);
-    UNUSED(values);
     UNUSED(nValues);
+    FmuInstanceData* fmu = (FmuInstanceData*)instance;
+
+    for (size_t i = 0; i < nValueReferences; i++) {
+        /* String to process? */
+        if (values[i] == NULL) continue;
+
+        /* Lookup the binary signal, by VRef. */
+        static char vr_idx[VREF_KEY_LEN];
+        snprintf(vr_idx, VREF_KEY_LEN, "%i", valueReferences[i]);
+        hashmap_set_string(
+            &fmu->variables.string.input, vr_idx, (char*)values[i]);
+    }
 
     return fmi3OK;
 }
