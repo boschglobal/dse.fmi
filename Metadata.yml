@@ -5,10 +5,11 @@ metadata:
   container:
     repository: ghcr.io/boschglobal/dse-fmi
   models:
-    fmimcl:
+    dse.fmi.mcl:
       name: fmimcl
       displayName: dse.fmi.mcl
       path: dse/fmimcl
+      mcl: true
       workflows:
         - generate-fmimcl
         - patch-signalgroup
@@ -21,7 +22,7 @@ metadata:
       channels:
         - alias: signal_channel
         - alias: network_channel
-    fmimodelc:
+    dse.fmi.modelc:
       name: fmimodelc
       displayName: dse.fmi.modelc
       path: dse/fmimodelc
@@ -36,7 +37,7 @@ metadata:
       channels:
         - alias: signal_channel
         - alias: network_channel
-    fmigateway:
+    dse.fmi.gateway:
       name: fmigateway
       displayName: dse.fmi.gateway
       path: dse/gateway
