@@ -19,7 +19,7 @@ metadata:
         - windows-x64
         - windows-x86
       channels:
-        - alias: scalar_channel
+        - alias: signal_channel
         - alias: network_channel
     fmimodelc:
       name: fmimodelc
@@ -34,7 +34,7 @@ metadata:
         - windows-x64
         - windows-x86
       channels:
-        - alias: scalar_channel
+        - alias: signal_channel
         - alias: network_channel
     fmigateway:
       name: fmigateway
@@ -49,7 +49,7 @@ metadata:
         - windows-x64
         - windows-x86
       channels:
-        - alias: scalar_channel
+        - alias: signal_channel
         - alias: network_channel
   tasks:
     generate-fmimcl:
