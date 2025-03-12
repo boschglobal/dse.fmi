@@ -8,7 +8,7 @@ metadata:
     dse.fmi.mcl:
       name: fmimcl
       displayName: dse.fmi.mcl
-      path: dse/fmimcl
+      path: fmimcl
       mcl: true
       workflows:
         - generate-fmimcl
@@ -25,7 +25,7 @@ metadata:
     dse.fmi.modelc:
       name: fmimodelc
       displayName: dse.fmi.modelc
-      path: dse/fmimodelc
+      path: fmimodelc
       workflows:
         - generate-fmimodelc
       platforms:
@@ -40,7 +40,7 @@ metadata:
     dse.fmi.gateway:
       name: fmigateway
       displayName: dse.fmi.gateway
-      path: dse/gateway
+      path: fmigateway
       workflows:
         - generate-fmigateway
       platforms:
