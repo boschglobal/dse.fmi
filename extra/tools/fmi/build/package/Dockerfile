@@ -32,12 +32,6 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*;
 
 
-# Install FMI ModelC
-# ==================
-COPY build/stage/lib/* /usr/local/lib/
-COPY build/stage/lib32/* /usr/local/lib32/
-
-
 # Install Fmi Tool
 # ================
 COPY --from=fmi /src/bin/fmi /usr/local/bin/fmi
@@ -45,7 +39,7 @@ COPY --from=fmi /src/bin/fmi /usr/local/bin/fmi
 
 # Add License Information (from 3rd party repos)
 # =======================
-COPY build/stage/licenses /usr/local/licenses
+COPY build/stage/licenses /licenses
 
 
 # Setup the entry conditions

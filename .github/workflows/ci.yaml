@@ -212,31 +212,11 @@ jobs:
         with:
           name: ${{ env.package_name }}-linux-amd64-sandbox
           path: sandbox/${{ env.package_name }}-linux-amd64-sandbox
-      - uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.package_name }}-linux-x86-sandbox
-          path: sandbox/${{ env.package_name }}-linux-x86-sandbox
-      - uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.package_name }}-linux-i386-sandbox
-          path: sandbox/${{ env.package_name }}-linux-i386-sandbox
 
       - name: Sandbox
         run: |
           (cd sandbox/${{ env.package_name }}-linux-amd64-sandbox; tar xzf sandbox_out.tar.gz)
-          (cd sandbox/${{ env.package_name }}-linux-x86-sandbox; tar xzf sandbox_out.tar.gz)
-          (cd sandbox/${{ env.package_name }}-linux-i386-sandbox; tar xzf sandbox_out.tar.gz)
           mkdir -p extra/tools/fmi/build/stage
-          mkdir -p extra/tools/fmi/build/stage/lib
-          mkdir -p extra/tools/fmi/build/stage/lib32
-          mkdir -p extra/tools/fmi/build/stage/examples/fmimodelc/sim
-
-          cp sandbox/${{ env.package_name }}-linux-amd64-sandbox/${{ env.build_dir }}/_out/fmimodelc/lib/libfmi2modelcfmu.so extra/tools/fmi/build/stage/lib/fmi2modelcfmu.so
-          cp sandbox/${{ env.package_name }}-linux-x86-sandbox/${{ env.build_dir }}/_out/fmimodelc/lib/libfmi2modelcfmu.so extra/tools/fmi/build/stage/lib32/fmi2modelcfmu_x86.so
-          cp sandbox/${{ env.package_name }}-linux-i386-sandbox/${{ env.build_dir }}/_out/fmimodelc/lib/libfmi2modelcfmu.so extra/tools/fmi/build/stage/lib32/fmi2modelcfmu_i386.so
-
-          cp -r sandbox/${{ env.package_name }}-linux-amd64-sandbox/${{ env.build_dir }}/_out/fmimodelc/examples/network_fmu/fmu/resources/sim -t extra/tools/fmi/build/stage/examples/fmimodelc ;\
-
           cp -r licenses -t extra/tools/fmi/build/stage
           ls -R extra/tools/fmi/build/stage
 

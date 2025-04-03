@@ -106,26 +106,13 @@ test_tools:
 
 .PHONY: fmi
 fmi:
-	mkdir -p extra/tools/fmi/build/stage/lib
-	mkdir -p extra/tools/fmi/build/stage/lib32
-	mkdir -p extra/tools/fmi/build/stage/examples/fmimodelc/sim
-	touch extra/tools/fmi/build/stage/lib32/.nop
-	@if [ ${PACKAGE_ARCH} = "linux-amd64" ]; then \
-		cp dse/build/_out/fmimodelc/lib/libfmi2modelcfmu.so extra/tools/fmi/build/stage/lib/fmi2modelcfmu.so ;\
-		cp -r licenses -t extra/tools/fmi/build/stage ;\
-		cp -r dse/build/_out/fmimodelc/examples/network_fmu/fmu/resources/sim -t extra/tools/fmi/build/stage/examples/fmimodelc ;\
-	fi
-	@if [ ${PACKAGE_ARCH} = "linux-x86" ]; then \
-		cp dse/build/_out/fmimodelc/lib/libfmi2modelcfmu.so extra/tools/fmi/build/stage/lib32/fmi2modelcfmu_x86.so ;\
-	fi
-	@if [ ${PACKAGE_ARCH} = "linux-i386" ]; then \
-		cp dse/build/_out/fmimodelc/lib/libfmi2modelcfmu.so extra/tools/fmi/build/stage/lib32/fmi2modelcfmu_i386.so ;\
-	fi
 
 .PHONY: tools
 tools:
 	for d in $(TOOL_DIRS) ;\
 	do \
+		mkdir -p extra/tools/$$d/build/stage ;\
+		cp -r licenses -t extra/tools/$$d/build/stage ;\
 		docker build -f extra/tools/$$d/build/package/Dockerfile \
 				--tag $$d:test extra/tools/$$d ;\
 	done;
