@@ -6,7 +6,7 @@
 #include <string.h>
 #include <dse/logger.h>
 #include <dse/fmimcl/fmimcl.h>
-#include <fmimcl/mock/mock.h>
+#include <mock/mock.h>
 
 
 void mock_create(FmuModel* m)
@@ -50,7 +50,7 @@ int32_t mock_mcl_step(MclDesc* mcl, double* model_time, double end_time)
             for (size_t j = 0; j < msm->count; j++) {
                 // Reverse the source (string).
                 log_trace("  source: %s", msm->source.binary[j]);
-                char* _str = strdup(msm->source.binary[j]);
+                char*  _str = strdup(msm->source.binary[j]);
                 size_t _len = strlen(_str);
                 for (size_t i = 0; i < _len; i++) {
                     ((char**)msm->source.binary)[j][i] = _str[_len - i - 1];

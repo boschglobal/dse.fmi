@@ -7,7 +7,7 @@
 #include <dse/clib/util/yaml.h>
 #include <dse/modelc/runtime.h>
 #include <dse/fmimcl/fmimcl.h>
-#include <fmimcl/mock/mock.h>
+#include <mock/mock.h>
 
 
 #define UNUSED(x)     ((void)x)

@@ -9,26 +9,26 @@ cmake_minimum_required(VERSION 3.21)
 project(test_fmigateway)
 
 
-
 # FMI ModelC Code
 # ===============
-set(DSE_FMIGATEWAY_SOURCE_DIR ../../../dse/fmigateway)
 set(DSE_FMI2FMU_SOURCE_DIR ../../../dse/fmu)
-set(DSE_FMIGATEWAY_SOURCE_FILES
+set(DSE_FMI2FMU_SOURCE_FILES
     ${DSE_FMI2FMU_SOURCE_DIR}/ascii85.c
     ${DSE_FMI2FMU_SOURCE_DIR}/fmi2fmu.c
-    ${DSE_FMI2FMU_SOURCE_DIR}/fmi2variable.c
-#    ${DSE_FMI2FMU_SOURCE_DIR}/ncodec.c  # Link against ncodec from ModelC.
-    ${DSE_FMI2FMU_SOURCE_DIR}/signal.c
+)
+set(DSE_FMIGATEWAY_SOURCE_DIR ../../../dse/fmigateway)
+set(DSE_FMIGATEWAY_SOURCE_FILES
     ${DSE_FMIGATEWAY_SOURCE_DIR}/fmigateway.c
     ${DSE_FMIGATEWAY_SOURCE_DIR}/index.c
     ${DSE_FMIGATEWAY_SOURCE_DIR}/session.c
     ${DSE_FMIGATEWAY_SOURCE_DIR}/session_unix.c
     ${DSE_FMIGATEWAY_SOURCE_DIR}/parser.c
+    ${DSE_FMIGATEWAY_SOURCE_DIR}/signal.c
 )
 set(DSE_FMIGATEWAY_INCLUDE_DIR "${DSE_FMIGATEWAY_SOURCE_DIR}/../..")
 
 set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/fmi/fmi2/headers")
+
 
 # External Project - DSE Network Codec
 # ------------------------------------
@@ -51,6 +51,8 @@ set_target_properties(dse_ncodec
 set(DSE_NCODEC_SOURCE_FILES
     ${DSE_NCODEC_SOURCE_DIR}/dse/ncodec/codec.c
 )
+
+
 set(DSE_NCODEC_INCLUDE_DIR "${DSE_NCODEC_SOURCE_DIR}")
 set(DSE_MODELC_SOURCE_FILES
     ${DSE_MODELC_SOURCE_DIR}/model/gateway.c
@@ -82,8 +84,9 @@ add_executable(test_fmigateway
     __test__.c
     test_parser.c
     test_fmi2.c
-    ${DSE_NCODEC_SOURCE_FILES}
     ${DSE_FMIGATEWAY_SOURCE_FILES}
+    ${DSE_FMI2FMU_SOURCE_FILES}
+    ${DSE_NCODEC_SOURCE_FILES}
     ${DSE_MODELC_SOURCE_FILES}
     ${DSE_CLIB_SOURCE_FILES}
 )
@@ -92,9 +95,11 @@ target_include_directories(test_fmigateway
         ${DSE_NCODEC_INCLUDE_DIR}
         ${DSE_FMIGATEWAY_INCLUDE_DIR}
         ${DSE_MODELC_INCLUDE_DIR}
+        ${DSE_MODELC_SOURCE_INCLUDE_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
         ${FMI2_INCLUDE_DIR}
         ${YAML_SOURCE_DIR}/include
+        ${MSGPACKC_SOURCE_DIR}/include
         ./
 )
 target_compile_definitions(test_fmigateway
@@ -106,16 +111,18 @@ target_compile_definitions(test_fmigateway
         MODELC_VERSION="${DSE_MODELC_VERSION}"
 )
 target_link_libraries(test_fmigateway
-    PUBLIC
     PRIVATE
-        xml
         dse_ncodec
+        xml
         yaml
         cmocka
         dl
         m
 )
-install(TARGETS test_fmigateway)
+install(
+    TARGETS
+        test_fmigateway
+)
 install(
     FILES
     DESTINATION

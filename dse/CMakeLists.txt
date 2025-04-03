@@ -166,13 +166,22 @@ endif()
 
 # Sub Modules
 # ===========
-add_subdirectory(fmimcl)
-add_subdirectory(fmimodelc)
-add_subdirectory(fmigateway)
 add_subdirectory(fmu)
+add_subdirectory(fmimcl)
+add_subdirectory(fmigateway)
+add_subdirectory(fmimodelc)
 add_subdirectory(importer)
 add_subdirectory(examples)
 
+
+# ModelC DLL
+# ==========
+install(
+    FILES
+        $<$<BOOL:${WIN32}>:${dse_modelc_lib_SOURCE_DIR}/bin/libmodelc.dll>
+    DESTINATION
+        bin
+)
 
 
 # Common Targets

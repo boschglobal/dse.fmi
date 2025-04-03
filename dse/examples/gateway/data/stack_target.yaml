@@ -1,7 +1,7 @@
 ---
 kind: Stack
 metadata:
-  name: stack
+  name: stack_target
 spec:
   connection:
     transport:
@@ -9,14 +9,21 @@ spec:
         uri: redis://localhost:6379
         timeout: 60
   models:
-    - name: gateway
-      uid: 42
+    - name: simbus
       model:
-        name: Gateway
-      annotations:
-        step_size: 0.0005
-        end_time: 0.002
-        log_level: 6
+        name: simbus
+      channels:
+        - name: scalar
+          expectedModelCount: 2
+        - name: binary
+          expectedModelCount: 2
+    - name: target_inst
+      uid: 43
+      model:
+        name: Target
+      runtime:
+        files:
+          - fmu/resources/fmu.yaml
       channels:
         - name: scalar
           alias: scalar_vector

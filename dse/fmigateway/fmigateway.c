@@ -218,8 +218,8 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
         free(session->w_models);
 
         for (FmiGatewayEnvvar* e = session->envar; e && e->name; e++) {
-            free((char*)e->vref);
-            free((char*)e->default_value);
+            free(e->vref);
+            free(e->default_value);
         }
         free(session->envar);
 
@@ -230,82 +230,4 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
     free(fmi_gw);
 
     return 0;
-}
-
-
-/**
-fmu_signals_reset
-=================
-
-Resets the binary signals of the gateway to a length of 0, if the signals have
-not been reseted yet.
-
-> Required by FMU.
-
-Parameters
-----------
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-*/
-void fmu_signals_reset(FmuInstanceData* fmu)
-{
-    assert(fmu);
-    FmiGateway* fmi_gw = fmu->data;
-    assert(fmi_gw);
-
-    if (fmi_gw->binary_signals_reset) return;
-
-    for (SignalVector* sv = fmi_gw->model->sv; sv && sv->name; sv++) {
-        if (sv->is_binary == false) continue;
-        sv->length[0] = 0;
-    }
-    fmi_gw->binary_signals_reset = true;
-}
-
-
-/**
-fmu_signals_setup
-=================
-
-Placeholder to signal the FMU to not use the default signal allocation.
-
-Parameters
-----------
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-*/
-void fmu_signals_setup(FmuInstanceData* fmu)
-{
-    UNUSED(fmu);
-}
-
-
-static inline int _free_fmu_idx(void* map_item, void* additional_data)
-{
-    UNUSED(additional_data);
-    FmuSignalVectorIndex* fmu_idx = map_item;
-    if (fmu_idx) {
-        free(fmu_idx->sv);
-    }
-    return 0;
-}
-
-
-/**
-fmu_signals_remove
-==================
-
-This method frees the allocated binary signal indexes.
-
-Parameters
-----------
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-*/
-void fmu_signals_remove(FmuInstanceData* fmu)
-{
-    assert(fmu);
-    fmu_log(fmu, 0, "Debug", "Removing additional signal data...");
-    hashmap_iterator(&fmu->variables.binary.rx, _free_fmu_idx, false, NULL);
-    hashmap_iterator(&fmu->variables.binary.tx, _free_fmu_idx, false, NULL);
 }

@@ -40,16 +40,21 @@ set(FMU_INCLUDE_DIR "../..")
 set(FMI_2_COMMON_FILES
     ${FMU_SOURCE_DIR}/ascii85.c
     ${FMU_SOURCE_DIR}/fmi2fmu.c
-    ${FMU_SOURCE_DIR}/fmi2variable.c
-    ${FMU_SOURCE_DIR}/signal.c
 )
 set(FMI_3_COMMON_FILES
     ${FMU_SOURCE_DIR}/ascii85.c
     ${FMU_SOURCE_DIR}/fmi3fmu.c
-    ${FMU_SOURCE_DIR}/fmi3variable.c
-    ${FMU_SOURCE_DIR}/signal.c
 )
 
+set(FMIGATEWAY_FILES
+    fmigateway.c
+    index.c
+    session.c
+    parser.c
+    signal.c
+    $<$<BOOL:${WIN32}>:session_win32.c>
+    $<$<BOOL:${UNIX}>:session_unix.c>
+)
 
 # Targets
 # =======
@@ -58,12 +63,7 @@ set(FMI_3_COMMON_FILES
 # ---------------
 add_library(fmi2gateway SHARED
     ${FMI_2_COMMON_FILES}
-    fmigateway.c
-    index.c
-    session.c
-    parser.c
-    $<$<BOOL:${WIN32}>:session_win32.c>
-    $<$<BOOL:${UNIX}>:session_unix.c>
+    ${FMIGATEWAY_FILES}
 )
 target_include_directories(fmi2gateway
     PRIVATE
@@ -107,12 +107,7 @@ install(
 # ---------------
 add_library(fmi3gateway SHARED
     ${FMI_3_COMMON_FILES}
-    fmigateway.c
-    index.c
-    session.c
-    parser.c
-    $<$<BOOL:${WIN32}>:session_win32.c>
-    $<$<BOOL:${UNIX}>:session_unix.c>
+    ${FMIGATEWAY_FILES}
 )
 target_include_directories(fmi3gateway
     PRIVATE
@@ -150,15 +145,6 @@ install(
         fmi3gateway
     LIBRARY DESTINATION
         ${MODULE_LC}/lib
-)
-
-# ModelC DLL (windows only)
-# -------------------------
-install(
-    FILES
-        $<$<BOOL:${WIN32}>:${dse_modelc_lib_SOURCE_DIR}/bin/libmodelc.dll>
-    DESTINATION
-        ${MODULE_LC}/bin
 )
 
 

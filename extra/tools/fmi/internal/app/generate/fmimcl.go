@@ -54,7 +54,7 @@ func (c *FmiMclCommand) Run() error {
 	fmuModelDescriptionFilename := filepath.Join(c.fmupath, "modelDescription.xml")
 	fmt.Fprintf(flag.CommandLine.Output(), "Reading FMU Desciption (%s)\n", fmuModelDescriptionFilename)
 	h := fmi2.XmlFmuHandler{}
-	var fmiMD *fmi2.FmiModelDescription
+	var fmiMD *fmi2.ModelDescription
 	if fmiMD = h.Detect(fmuModelDescriptionFilename); fmiMD == nil {
 		return fmt.Errorf("could not read FMU Model Description file")
 	}
@@ -64,7 +64,7 @@ func (c *FmiMclCommand) Run() error {
 	return nil
 }
 
-func _generateChannels(fmiMD fmi2.FmiModelDescription) ([]kind.Channel, error) {
+func _generateChannels(fmiMD fmi2.ModelDescription) ([]kind.Channel, error) {
 	channels := []kind.Channel{
 		{
 			Alias: stringPtr("signal_channel"),
@@ -123,7 +123,7 @@ func (c *FmiMclCommand) getFmuBinaryPath(modelIdentifier string) string {
 	return filepath.Join(c.fmupath, "binaries", dir, fmt.Sprintf("%s.%s", modelIdentifier, extension))
 }
 
-func (c *FmiMclCommand) generateModel(fmiMD fmi2.FmiModelDescription) error {
+func (c *FmiMclCommand) generateModel(fmiMD fmi2.ModelDescription) error {
 	// Construct various parameters.
 	platformOs, platformArch, found := strings.Cut(c.platform, "-")
 	if !found {

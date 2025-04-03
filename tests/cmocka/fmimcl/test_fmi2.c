@@ -8,8 +8,7 @@
 #include <dse/modelc/runtime.h>
 #include <dse/fmimcl/fmimcl.h>
 #include <dse/fmimcl/adapter/fmi2mcl.h>
-
-#include <fmimcl/mock/mock.h>
+#include <mock/mock.h>
 
 
 #define UNUSED(x)     ((void)x)

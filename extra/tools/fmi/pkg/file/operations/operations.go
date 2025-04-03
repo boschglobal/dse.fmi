@@ -81,7 +81,7 @@ func Zip(source, destination string) error {
 			return err
 		}
 
-		if baseDir == path {
+		if filepath.Base(path) == baseDir {
 			return nil
 		}
 

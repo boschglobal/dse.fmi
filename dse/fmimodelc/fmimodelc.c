@@ -25,14 +25,10 @@ fmu (FmuInstanceData*)
 
 Returns
 -------
-NULL
+0 (int32_t)
 : The FMU was created correctly.
-(fmu (FmuInstanceData*)
-:Pointer to a new, or mutilated, version of FmuInstanceData object.
-errno <> 0 (indirect)
-: Indicates an error condition.
 */
-FmuInstanceData* fmu_create(FmuInstanceData* fmu)
+int32_t fmu_create(FmuInstanceData* fmu)
 {
     assert(fmu);
     RuntimeModelDesc* m = calloc(1, sizeof(RuntimeModelDesc));
@@ -57,7 +53,7 @@ FmuInstanceData* fmu_create(FmuInstanceData* fmu)
 
     fmu->data = (void*)m;
 
-    return fmu;
+    return 0;
 }
 
 
@@ -167,63 +163,4 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
     free(m);
 
     return 0;
-}
-
-
-/**
-fmu_signals_reset
-=================
-
-> Required by FMU.
-
-Parameters
-----------
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-*/
-void fmu_signals_reset(FmuInstanceData* fmu)
-{
-    assert(fmu);
-    RuntimeModelDesc* m = fmu->data;
-    assert(m);
-
-    if (fmu->variables.signals_reset) return;
-
-    simbus_vector_binary_reset(m->model.sim);
-
-    fmu->variables.signals_reset = true;
-}
-
-
-/**
-fmu_signals_setup
-=================
-
-Placeholder to signal the FMU to not use the default signal allocation.
-
-Parameters
-----------
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-*/
-void fmu_signals_setup(FmuInstanceData* fmu)
-{
-    UNUSED(fmu);
-}
-
-
-/**
-fmu_signals_remove
-==================
-
-This method frees the allocated binary signal indexes.
-
-Parameters
-----------
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-*/
-void fmu_signals_remove(FmuInstanceData* fmu)
-{
-    UNUSED(fmu);
 }

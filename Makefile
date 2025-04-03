@@ -8,11 +8,11 @@
 export PACKAGE_ARCH ?= linux-amd64
 
 DSE_CLIB_REPO ?= https://github.com/boschglobal/dse.clib
-DSE_CLIB_VERSION ?= 1.0.26
+DSE_CLIB_VERSION ?= 1.0.30
 export DSE_CLIB_URL ?= $(DSE_CLIB_REPO)/archive/refs/tags/v$(DSE_CLIB_VERSION).zip
 
 DSE_MODELC_REPO ?= https://github.com/boschglobal/dse.modelc
-DSE_MODELC_VERSION ?= 2.1.16
+DSE_MODELC_VERSION ?= 2.1.27
 export DSE_MODELC_URL ?= $(DSE_MODELC_REPO)/archive/refs/tags/v$(DSE_MODELC_VERSION).zip
 export DSE_MODELC_LIB_URL ?= $(DSE_MODELC_REPO)/releases/download/v$(DSE_MODELC_VERSION)/ModelC-$(DSE_MODELC_VERSION)-$(PACKAGE_ARCH).zip
 
@@ -42,7 +42,6 @@ TOOL_DIRS = fmi
 export NAMESPACE = dse
 export MODULE = fmi
 export EXTERNAL_BUILD_DIR ?= /tmp/$(NAMESPACE).$(MODULE)
-export PACKAGE_ARCH ?= linux-amd64
 export PACKAGE_ARCH_LIST ?= $(PACKAGE_ARCH)
 export CMAKE_TOOLCHAIN_FILE ?= $(shell pwd -P)/extra/cmake/$(PACKAGE_ARCH).cmake
 export MODELC_SANDBOX_DIR ?= $(shell pwd -P)/dse/modelc/build/_out

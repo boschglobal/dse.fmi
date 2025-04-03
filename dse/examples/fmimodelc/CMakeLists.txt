@@ -1,4 +1,4 @@
-# Copyright 2024 Robert Bosch GmbH
+# Copyright 2025 Robert Bosch GmbH
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -56,19 +56,16 @@ set(FMU_INCLUDE_DIR "../../..")
 set(FMI_2_COMMON_FILES
     ${FMU_SOURCE_DIR}/ascii85.c
     ${FMU_SOURCE_DIR}/fmi2fmu.c
-    ${FMU_SOURCE_DIR}/fmi2variable.c
-    ${FMU_SOURCE_DIR}/signal.c
 )
 set(FMI_3_COMMON_FILES
     ${FMU_SOURCE_DIR}/ascii85.c
     ${FMU_SOURCE_DIR}/fmi3fmu.c
-    ${FMU_SOURCE_DIR}/fmi3variable.c
-    ${FMU_SOURCE_DIR}/signal.c
 )
 set(FMIMODELC_SOURCE_DIR "../../fmimodelc")
 set(FMIMODELC_FILES
     ${FMIMODELC_SOURCE_DIR}/fmimodelc.c
     ${FMIMODELC_SOURCE_DIR}/runtime.c
+    ${FMIMODELC_SOURCE_DIR}/signal.c
 )
 
 # Targets
@@ -84,47 +81,27 @@ target_include_directories(fmimodelctarget
         ${DSE_MODELC_INCLUDE_DIR}
         ${FMU_INCLUDE_DIR}
 )
+target_link_directories(fmimodelctarget
+    PRIVATE
+        ${dse_modelc_lib_SOURCE_DIR}/lib
+)
 target_link_libraries(fmimodelctarget
-    PUBLIC
-        $<$<BOOL:${WIN32}>:modelc>
+    PRIVATE
+        modelc
+        yaml
 )
 
 
 # FMI2 ModelC FMU
 # ---------------
-add_library(fmi2modelcfmu_ex SHARED
-    ${FMI_2_COMMON_FILES}
-    ${FMIMODELC_FILES}
-)
-target_include_directories(fmi2modelcfmu_ex
-    PRIVATE
-        ${DSE_CLIB_INCLUDE_DIR}
-        ${DSE_MODELC_INCLUDE_DIR}
-        ${DSE_MODELC_SOURCE_INCLUDE_DIR}
-        ${FMI2_INCLUDE_DIR}
-        ${FMU_INCLUDE_DIR}
-)
-target_link_directories(fmi2modelcfmu_ex
-    PRIVATE
-        ${dse_modelc_lib_SOURCE_DIR}/lib
-)
-target_link_libraries(fmi2modelcfmu_ex
-    PRIVATE
-        -Wl,--whole-archive
-        model_runtime
-        -Wl,--no-whole-archive
-        yaml
-        xml
-        m
-        $<$<BOOL:${WIN32}>:dl>
-        $<$<BOOL:${WIN32}>:-Wl,-Bstatic>
-        $<$<BOOL:${WIN32}>:pthread>
-        $<$<BOOL:${WIN32}>:-Wl,-Bdynamic>
-)
-set_target_properties(fmi2modelcfmu_ex
-    PROPERTIES
-        OUTPUT_NAME
-            fmi2modelcfmu
+
+install(
+    TARGETS
+        fmi2modelcfmu
+    LIBRARY DESTINATION
+        examples/fmimodelc/fmi2/binaries/linux64
+    RUNTIME DESTINATION
+        examples/fmimodelc/fmi2/binaries/linux64
 )
 install(
     FILES
@@ -133,10 +110,10 @@ install(
         examples/fmimodelc/fmi2
 )
 install(
-TARGETS
-    fmi2modelcfmu_ex
-LIBRARY DESTINATION
-    examples/fmimodelc/fmi2/binaries/linux64
+    FILES
+        ${dse_modelc_lib_SOURCE_DIR}/lib/libmodelc.so
+    DESTINATION
+        examples/fmimodelc/fmi2/binaries/linux64
 )
 install(
     FILES
@@ -145,7 +122,9 @@ install(
     DESTINATION
         examples/fmimodelc/fmi2/resources/sim/data
 )
-install(TARGETS fmimodelctarget
+install(
+    TARGETS
+        fmimodelctarget
     LIBRARY DESTINATION
         examples/fmimodelc/fmi2/resources/sim/lib
     RUNTIME DESTINATION
@@ -154,39 +133,14 @@ install(TARGETS fmimodelctarget
 
 # FMI3 ModelC FMU
 # ---------------
-add_library(fmi3modelcfmu_ex SHARED
-    ${FMI_3_COMMON_FILES}
-    ${FMIMODELC_FILES}
-)
-target_include_directories(fmi3modelcfmu_ex
-    PRIVATE
-        ${DSE_CLIB_INCLUDE_DIR}
-        ${DSE_MODELC_INCLUDE_DIR}
-        ${DSE_MODELC_SOURCE_INCLUDE_DIR}
-        ${FMI3_INCLUDE_DIR}
-        ${FMU_INCLUDE_DIR}
-)
-target_link_directories(fmi3modelcfmu_ex
-    PRIVATE
-        ${dse_modelc_lib_SOURCE_DIR}/lib
-)
-target_link_libraries(fmi3modelcfmu_ex
-    PRIVATE
-        -Wl,--whole-archive
-        model_runtime
-        -Wl,--no-whole-archive
-        yaml
-        xml
-        m
-        $<$<BOOL:${WIN32}>:dl>
-        $<$<BOOL:${WIN32}>:-Wl,-Bstatic>
-        $<$<BOOL:${WIN32}>:pthread>
-        $<$<BOOL:${WIN32}>:-Wl,-Bdynamic>
-)
-set_target_properties(fmi3modelcfmu_ex
-    PROPERTIES
-        OUTPUT_NAME
-            fmi3modelcfmu
+
+install(
+    TARGETS
+        fmi3modelcfmu
+    LIBRARY DESTINATION
+        examples/fmimodelc/fmi3/binaries/x86_64-linux
+    RUNTIME DESTINATION
+        examples/fmimodelc/fmi3/binaries/x86_64-linux
 )
 install(
     FILES
@@ -195,10 +149,10 @@ install(
         examples/fmimodelc/fmi3
 )
 install(
-TARGETS
-    fmi3modelcfmu_ex
-LIBRARY DESTINATION
-    examples/fmimodelc/fmi3/binaries/x86_64-linux
+    FILES
+        ${dse_modelc_lib_SOURCE_DIR}/lib/libmodelc.so
+    DESTINATION
+        examples/fmimodelc/fmi3/binaries/x86_64-linux
 )
 install(
     FILES
@@ -207,7 +161,9 @@ install(
     DESTINATION
         examples/fmimodelc/fmi3/resources/sim/data
 )
-install(TARGETS fmimodelctarget
+install(
+    TARGETS
+        fmimodelctarget
     LIBRARY DESTINATION
         examples/fmimodelc/fmi3/resources/sim/lib
     RUNTIME DESTINATION

@@ -200,7 +200,7 @@ func (c *GenFmiGatewayCommand) mergeSignalGroups(signalGroups string, outDir str
 	return nil
 }
 
-func (c *GenFmiGatewayCommand) setGeneralXmlFields(fmuXml *fmi2.FmiModelDescription) {
+func (c *GenFmiGatewayCommand) setGeneralXmlFields(fmuXml *fmi2.ModelDescription) {
 	// Basic FMU Information.
 	fmuXml.ModelName = "Gateway"
 	fmuXml.FmiVersion = fmt.Sprintf("%s.0", c.fmiVersion)
@@ -222,7 +222,7 @@ func (c *GenFmiGatewayCommand) setGeneralXmlFields(fmuXml *fmi2.FmiModelDescript
 	fmuXml.CoSimulation.CanInterpolateInputs = "true"
 }
 
-func (c *GenFmiGatewayCommand) buildXmlSignals(fmuXml *fmi2.FmiModelDescription, index *index.YamlFileIndex, envars *[]schema_kind.SignalGroupSpec) ([]string, error) {
+func (c *GenFmiGatewayCommand) buildXmlSignals(fmuXml *fmi2.ModelDescription, index *index.YamlFileIndex, envars *[]schema_kind.SignalGroupSpec) ([]string, error) {
 	var channels []string
 
 	if envars != nil {
@@ -256,8 +256,8 @@ func (c *GenFmiGatewayCommand) buildXmlSignals(fmuXml *fmi2.FmiModelDescription,
 	return channels, nil
 }
 
-func (c *GenFmiGatewayCommand) createFmuXml(envars *[]schema_kind.SignalGroupSpec) (*fmi2.FmiModelDescription, []string, error) {
-	fmuXml := fmi2.FmiModelDescription{}
+func (c *GenFmiGatewayCommand) createFmuXml(envars *[]schema_kind.SignalGroupSpec) (*fmi2.ModelDescription, []string, error) {
+	fmuXml := fmi2.ModelDescription{}
 	c.setGeneralXmlFields(&fmuXml)
 
 	index := index.NewYamlFileIndex()
@@ -354,7 +354,7 @@ func (c *GenFmiGatewayCommand) generateChannels(channel_map []string) ([]schema_
 	return channels, nil
 }
 
-func (c *GenFmiGatewayCommand) generateModel(fmiMD fmi2.FmiModelDescription, channel_map []string) error {
+func (c *GenFmiGatewayCommand) generateModel(fmiMD fmi2.ModelDescription, channel_map []string) error {
 
 	// Build the model.xml
 	model := schema_kind.Model{

@@ -61,7 +61,7 @@ int test_fmigateway__parser_teardown(void** state)
             free(session->w_models);
 
             for (FmiGatewayEnvvar* e = session->envar; e && e->name; e++) {
-                free((char*)e->vref);
+                free(e->vref);
                 free(e->default_value);
             }
             free(session->envar);

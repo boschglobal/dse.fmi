@@ -156,8 +156,8 @@ static inline void _parse_script_envar(
                 hashmap_set_double(
                     &fmu->variables.scalar.input, envar->vref, value);
                 envar->default_value = calloc(NUMERIC_ENVAR_LEN, sizeof(char));
-                snprintf((char*)envar->default_value,
-                    NUMERIC_ENVAR_LEN, "%d", (int)value);
+                snprintf(
+                    envar->default_value, NUMERIC_ENVAR_LEN, "%d", (int)value);
             }
 
             hashlist_append(&e_list, envar);

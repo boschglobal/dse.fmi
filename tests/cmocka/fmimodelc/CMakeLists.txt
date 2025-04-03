@@ -40,8 +40,12 @@ target_include_directories(test_fmimodelc
     PRIVATE
         ${DSE_FMIMODELC_INCLUDE_DIR}
         ${DSE_MODELC_INCLUDE_DIR}
+        ${DSE_MODELC_SOURCE_INCLUDE_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
         ./
+)
+set_target_properties(test_fmimodelc PROPERTIES
+    INSTALL_RPATH "$ORIGIN"
 )
 target_compile_definitions(test_fmimodelc
     PUBLIC
@@ -52,14 +56,11 @@ target_compile_definitions(test_fmimodelc
 )
 target_link_directories(test_fmimodelc
     PRIVATE
-        ${MODELC_BINARY_DIR}/lib
+        ${dse_modelc_lib_SOURCE_DIR}/lib
 )
 target_link_libraries(test_fmimodelc
-    PUBLIC
     PRIVATE
-        -Wl,--whole-archive
-        model_runtime
-        -Wl,--no-whole-archive
+        modelc
         yaml
         cmocka
         dl
@@ -68,7 +69,8 @@ target_link_libraries(test_fmimodelc
 install(TARGETS test_fmimodelc)
 install(
     FILES
+        ${dse_modelc_lib_SOURCE_DIR}/lib/libmodelc.so
     DESTINATION
-        data
+        bin
 )
 

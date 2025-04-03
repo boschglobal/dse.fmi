@@ -10,18 +10,16 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/file/index"
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/file/operations"
+	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/fmi"
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/fmi/fmi2"
+	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/fmi/fmi3"
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/log"
-
-	schema_kind "github.com/boschglobal/dse.schemas/code/go/dse/kind"
 )
 
 type GenFmiModelcCommand struct {
@@ -33,9 +31,15 @@ type GenFmiModelcCommand struct {
 	signalGroups string
 	name         string
 	version      string
+	fmiVersion   string
 	uuid         string
 	outdir       string
 	logLevel     int
+
+	// Model parameter
+	startTime float64
+	endTime   float64
+	stepSize  float64
 
 	libRootPath string
 }
@@ -49,10 +53,16 @@ func NewFmiModelcCommand(name string) *GenFmiModelcCommand {
 	c.fs.StringVar(&c.version, "version", "0.0.1", "Version to assign to the FMU")
 	c.fs.StringVar(&c.uuid, "uuid", "11111111-2222-3333-4444-555555555555", "UUID to assign to the FMU, set to '' to generate a new UUID")
 	c.fs.StringVar(&c.outdir, "outdir", "out", "Output directory for the FMU file")
+	c.fs.StringVar(&c.fmiVersion, "fmiVersion", "2", "Modelica FMI Version")
 	c.fs.IntVar(&c.logLevel, "log", 4, "Loglevel")
 
 	// Supports unit testing.
 	c.fs.StringVar(&c.libRootPath, "libroot", "/usr/local", "System lib root path (where lib & lib32 directory are found)")
+
+	// Default values
+	c.startTime = 0.0
+	c.endTime = 9999.0
+	c.stepSize = 0.0005
 
 	return c
 }
@@ -82,12 +92,12 @@ func (c *GenFmiModelcCommand) Run() error {
 	var index = index.NewYamlFileIndex()
 	index.Scan(c.simpath)
 	if len(index.DocMap["Stack"]) != 1 {
-		return fmt.Errorf("Simulation folder contains %d Stacks, expected 1", len(index.DocMap["Stack"]))
+		return fmt.Errorf("simulation folder contains %d Stacks, expected 1", len(index.DocMap["Stack"]))
 	}
 	stackDoc := index.DocMap["Stack"][0]
 	if stackDoc.File != filepath.Join(c.simpath, "data/simulation.yaml") {
 		// This constraint is hard coded in fmi2fmu.c.
-		return fmt.Errorf("Simulation layout incorrect, Stack should be in file data/simulation.yaml (is in: %s)", stackDoc.File)
+		return fmt.Errorf("simulation layout incorrect, Stack should be in file data/simulation.yaml (is in: %s)", stackDoc.File)
 	}
 
 	// Build the FMU file layout.
@@ -100,71 +110,96 @@ func (c *GenFmiModelcCommand) Run() error {
 		return err
 	}
 
-	fmuBinDir := getFmuBinaryDirName(c.platform)
+	fmuBinDir := c.getFmuBinaryDirName(c.platform)
 	if fmuBinDir == "" {
-		return fmt.Errorf("Platform not supported (%s)", c.platform)
+		return fmt.Errorf("platform not supported (%s)", c.platform)
 	}
 	fmuBinPath := filepath.Join(fmuOutDir, "binaries", fmuBinDir)
 	if err := os.MkdirAll(fmuBinPath, os.ModePerm); err != nil {
-		return fmt.Errorf("Could not create FMU binaries directory (%v)", err)
+		return fmt.Errorf("could not create FMU binaries directory (%v)", err)
 	}
-	modelIdentifier := "fmi2modelcfmu"
-	if err := operations.Copy(getFmuLibPath(c.libRootPath, modelIdentifier, c.platform), getFmuBinPath(fmuBinPath, modelIdentifier, c.platform)); err != nil {
-		return fmt.Errorf("Could not copy FMU binary (%v)", err)
+
+	modelIdentifier := fmt.Sprintf("libfmi%smodelcfmu", c.fmiVersion)
+	if err := operations.Copy(c.getFmuLibPath(c.libRootPath, modelIdentifier, c.platform), c.getFmuBinPath(fmuBinPath, modelIdentifier, c.platform)); err != nil {
+		return fmt.Errorf("could not copy FMU binary (%v)", err)
+	}
+	if err := operations.Copy(c.getFmuLibPath(c.libRootPath, "libmodelc", c.platform), c.getFmuBinPath(fmuBinPath, "libmodelc", c.platform)); err != nil {
+		return fmt.Errorf("could not copy modelc binary (%v)", err)
 	}
 
 	if err := operations.CopyDirectory(c.simpath, filepath.Join(fmuOutDir, "resources", "sim")); err != nil {
-		return fmt.Errorf("Could not copy FMU resources (%v)", err)
+		return fmt.Errorf("could not copy FMU resources (%v)", err)
 	}
 
-	if err := operations.CopyDirectory(getFmuLicensesPath(c.libRootPath), filepath.Join(fmuOutDir, "resources/licenses")); err != nil {
-		return fmt.Errorf("Could not copy licenses (%v)", err)
+	if err := operations.CopyDirectory(c.getFmuLicensesPath(c.libRootPath), filepath.Join(fmuOutDir, "resources/licenses")); err != nil {
+		return fmt.Errorf("could not copy licenses (%v)", err)
 	}
 
 	// Construct the FMU Model Description.
 	fmuModelDescriptionFilename := filepath.Join(fmuOutDir, "modelDescription.xml")
 	fmt.Fprintf(flag.CommandLine.Output(), "Create FMU Model Description (%s) ...\n", fmuModelDescriptionFilename)
-	fmuXml := createFmuXml(c.name, c.uuid, c.version, c.signalGroups, index)
+	fmuXml := c.createFmuXml(c.name, c.uuid, c.version, c.signalGroups, index)
 	if err := writeXml(fmuXml, fmuModelDescriptionFilename); err != nil {
-		return fmt.Errorf("Could not generate the FMU Model Description (%v)", err)
+		return fmt.Errorf("could not generate the FMU Model Description (%v)", err)
 	}
 
 	// Produce the FMU.
 	fmuFilename := fmuOutDir + ".fmu"
 	fmt.Fprintf(flag.CommandLine.Output(), "Create FMU Package (%s) ...\n", fmuFilename)
 	if err := operations.Zip(fmuOutDir, fmuFilename); err != nil {
-		return fmt.Errorf("Could not create FMU (%v)", err)
+		return fmt.Errorf("could not create FMU (%v)", err)
 	}
 
 	return nil
 }
 
-func getFmuBinaryDirName(platform string) (dir string) {
+func (c *GenFmiModelcCommand) getFmuBinaryDirName(platform string) (dir string) {
 	os, arch, found := strings.Cut(platform, "-")
 	if !found {
 		return
 	}
+
 	switch os {
 	case "linux":
 		switch arch {
 		case "amd64":
-			dir = "linux64"
+			switch c.fmiVersion {
+			case "2":
+				dir = "linux64"
+			case "3":
+				dir = "x86_64-linux"
+			}
 		case "x86", "i386":
-			dir = "linux32"
+			switch c.fmiVersion {
+			case "2":
+				dir = "linux32"
+			case "3":
+				dir = "x86-linux"
+			}
 		}
 	case "windows":
 		switch arch {
 		case "x64":
-			dir = "win64"
+			switch c.fmiVersion {
+			case "2":
+				dir = "win64"
+			case "3":
+				dir = "x86_64-windows"
+			}
 		case "x86":
-			dir = "win32"
+			switch c.fmiVersion {
+			case "2":
+				dir = "win32"
+			case "3":
+				dir = "x86-windows"
+			}
 		}
 	}
 	return
 }
 
-func getFmuLibPath(libRootPath string, modelIdentifier string, platform string) string {
-	libpath := "lib"
+func (c *GenFmiModelcCommand) getFmuLibPath(libRootPath string, modelIdentifier string, platform string) string {
+	var libpath string
 	filePrefix := ""
 	filePostfix := ""
 	extension := "so"
@@ -173,30 +208,32 @@ func getFmuLibPath(libRootPath string, modelIdentifier string, platform string) 
 	if found {
 		switch os {
 		case "linux":
+			libpath = "lib"
 			switch arch {
 			case "x86":
 				libpath = "lib32"
-				filePostfix = "_i386"
+				filePostfix = "_x86"
 			case "i386":
 				libpath = "lib32"
-				filePostfix = "_x86"
+				filePostfix = "_i386"
 			}
 		case "windows":
+			libpath = "bin"
 			extension = "dll"
 			switch arch {
 			case "x86":
-				libpath = "lib32"
+				libpath = "bin32"
 			}
 		}
 	}
 	return fmt.Sprintf("%s/%s/%s%s%s.%s", libRootPath, libpath, filePrefix, modelIdentifier, filePostfix, extension)
 }
 
-func getFmuLicensesPath(libRootPath string) string {
+func (c *GenFmiModelcCommand) getFmuLicensesPath(libRootPath string) string {
 	return filepath.Join(libRootPath, "licenses")
 }
 
-func getFmuBinPath(fmuBinPath string, modelIdentifier string, platform string) string {
+func (c *GenFmiModelcCommand) getFmuBinPath(fmuBinPath string, modelIdentifier string, platform string) string {
 	extension := "so"
 	os, _, found := strings.Cut(platform, "-")
 	if found {
@@ -208,52 +245,41 @@ func getFmuBinPath(fmuBinPath string, modelIdentifier string, platform string) s
 	return filepath.Join(fmuBinPath, fmt.Sprintf("%s.%s", modelIdentifier, extension))
 }
 
-func createFmuXml(name string, uuid string, version string, signalGroups string, index *index.YamlFileIndex) fmi2.FmiModelDescription {
-	fmuXml := fmi2.FmiModelDescription{}
-	setGeneralFmuXmlFields(name, uuid, version, &fmuXml)
-	if signalGroupDocs, ok := index.DocMap["SignalGroup"]; ok {
-		filter := []string{}
-		if len(signalGroups) > 0 {
-			filter = strings.Split(signalGroups, ",")
-		}
-		for _, doc := range signalGroupDocs {
-			if len(filter) > 0 && !slices.Contains(filter, doc.Metadata.Name) {
-				continue
-			}
-			fmt.Fprintf(flag.CommandLine.Output(), "Adding SignalGroup: %s (%s)\n", doc.Metadata.Name, doc.File)
-			signalGroupSpec := doc.Spec.(*schema_kind.SignalGroupSpec)
-			if doc.Metadata.Annotations["vector_type"] == "binary" {
-				if err := fmi2.BinarySignal(*signalGroupSpec, &fmuXml); err != nil {
-					slog.Warn(fmt.Sprintf("Skipped BinarySignal (Error: %s)", err.Error()))
-				}
-			} else {
-				if err := fmi2.ScalarSignal(*signalGroupSpec, &fmuXml); err != nil {
-					slog.Warn(fmt.Sprintf("Skipped Scalarsignal (Error: %s)", err.Error()))
-				}
-			}
-		}
+func (c *GenFmiModelcCommand) createFmuXml(name string, uuid string, version string, signalGroups string, index *index.YamlFileIndex) interface{} {
+
+	fmiConfig := fmi.FmiConfig{
+		Name:           name,
+		UUID:           uuid,
+		Version:        version,
+		Description:    fmt.Sprintf("Model: %s, via FMI ModelC FMU (using DSE ModelC Runtime).", name),
+		StartTime:      c.startTime,
+		StopTime:       c.endTime,
+		StepSize:       c.stepSize,
+		GenerationTool: "DSE FMI - ModelC FMU",
 	}
-	return fmuXml
-}
-
-func setGeneralFmuXmlFields(name string, uuid string, version string, fmuXml *fmi2.FmiModelDescription) {
-	// Basic FMU Information.
-	fmuXml.ModelName = name
-	fmuXml.FmiVersion = "2.0"
-	fmuXml.Guid = fmt.Sprintf("{%s}", uuid)
-	fmuXml.GenerationTool = stringPtr("DSE FMI - ModelC FMU")
-	fmuXml.GenerationDateAndTime = stringPtr(time.Now().Format("YYYY-MM-DDThh:mm:ssZ"))
-	fmuXml.Author = "Robert Bosch GmbH"
-	fmuXml.Version = version
-	fmuXml.Description = fmt.Sprintf("Model '%s' via FMI ModelC FMU (using DSE ModelC Runtime).", name)
-
-	// Runtime Information.
-	fmuXml.DefaultExperiment.StartTime = "0.0"
-	fmuXml.DefaultExperiment.StopTime = "1.0"
-	fmuXml.DefaultExperiment.StepSize = "0.0005"
-
-	// Model Information.
-	fmuXml.CoSimulation.ModelIdentifier = "fmi2modelcfmu" // This is the packaged SO/DLL file.
-	fmuXml.CoSimulation.CanHandleVariableCommunicationStepSize = "true"
-	fmuXml.CoSimulation.CanInterpolateInputs = "true"
+	switch c.fmiVersion {
+	case "2":
+		fmuXml := fmi2.ModelDescription{}
+		fmiConfig.FmiVersion = "2"
+		fmiConfig.ModelIdentifier = "fmi2modelcfmu"
+		if err := fmi2.SetGeneralFmuXmlFields(fmiConfig, &fmuXml); err != nil {
+			return err
+		}
+		if err := fmi2.VariablesFromSignalgroups(&fmuXml, signalGroups, index); err != nil {
+			return err
+		}
+		return fmuXml
+	case "3":
+		fmuXml := fmi3.ModelDescription{}
+		fmiConfig.FmiVersion = "3"
+		fmiConfig.ModelIdentifier = "fmi3modelcfmu"
+		if err := fmi3.SetGeneralFmuXmlFields(fmiConfig, &fmuXml); err != nil {
+			return err
+		}
+		if err := fmi3.VariablesFromSignalgroups(&fmuXml, signalGroups, index); err != nil {
+			return err
+		}
+		return fmuXml
+	}
+	return nil
 }

@@ -44,9 +44,9 @@ Example
 
 typedef struct FmiGatewayEnvvar {
     const char* name;
-    const char* vref;
     const char* type;
-    const char* default_value;
+    char*       vref;
+    char*       default_value;
 } FmiGatewayEnvvar;
 
 typedef struct WindowsModel {

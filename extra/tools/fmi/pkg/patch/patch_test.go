@@ -120,8 +120,8 @@ func TestPatchedSignalGrpSignals(t *testing.T) {
 			"softecu_access_function": "E2M+M2E",
 		},
 		{
-			"Signal":                  "output_1_patched",
-			"softecu_direction":       "E2M",
+			"Signal":            "output_1_patched",
+			"softecu_direction": "E2M",
 
 			"softecu_access_function": "E2M+M2E",
 		},

@@ -6,7 +6,7 @@
 #include <dse/ncodec/codec.h>
 
 typedef struct {
-    double counter;
+    double  counter;
     NCODEC* pdu_rx;
     NCODEC* pdu_tx;
 } VarTable;

@@ -270,7 +270,7 @@ DLL_PRIVATE char* ascii85_encode(const char* source, size_t len);
 DLL_PRIVATE char* ascii85_decode(const char* source, size_t* len);
 
 /* signal.c (default implementations for generic FMU) */
-DLL_PRIVATE void   fmu_load_signal_handlers(FmuInstanceData* fmu);
+DLL_PUBLIC void    fmu_load_signal_handlers(FmuInstanceData* fmu);
 DLL_PRIVATE double fmu_register_var(
     FmuInstanceData* fmu, uint32_t vref, bool input, size_t offset);
 DLL_PRIVATE void* fmu_lookup_ncodec(

@@ -56,7 +56,7 @@ func (c *GenSignalGroupCommand) Run() error {
 	return nil
 }
 
-func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.FmiModelDescription) error {
+func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.ModelDescription) error {
 	// Build the SignalGroup.
 
 	scalarSignals := []kind.Signal{}

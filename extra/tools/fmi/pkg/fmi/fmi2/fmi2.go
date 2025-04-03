@@ -7,11 +7,18 @@ package fmi2
 import (
 	"encoding/xml"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
+	"slices"
 	"strconv"
+	"strings"
+	"time"
 
+	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/file/index"
+	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/fmi"
 	schema_kind "github.com/boschglobal/dse.schemas/code/go/dse/kind"
 )
 
@@ -90,8 +97,8 @@ type InitialUnknowns struct {
 	} `xml:"Unknown"`
 }
 
-// FmiModelDescription was generated 2023-05-23 07:27:35 by https://xml-to-go.github.io/ in Ukraine.
-type FmiModelDescription struct {
+// ModelDescription was generated 2023-05-23 07:27:35 by https://xml-to-go.github.io/ in Ukraine.
+type ModelDescription struct {
 	XMLName                  xml.Name `xml:"fmiModelDescription"`
 	Text                     string   `xml:",chardata"`
 	FmiVersion               string   `xml:"fmiVersion,attr"`
@@ -133,14 +140,14 @@ type FmiModelDescription struct {
 
 type XmlFmuHandler struct{}
 
-func (h *XmlFmuHandler) Detect(file string) *FmiModelDescription {
+func (h *XmlFmuHandler) Detect(file string) *ModelDescription {
 	data, err := getXmlData(file)
 	if err != nil {
 		fmt.Println(err)
 		return nil
 	}
 
-	fmiMD := FmiModelDescription{}
+	fmiMD := ModelDescription{}
 	if err := xml.Unmarshal(data, &fmiMD); err != nil {
 		fmt.Println("Could not read FMU XML from file")
 		return nil
@@ -159,7 +166,7 @@ func getXmlData(file string) ([]byte, error) {
 	return data, nil
 }
 
-func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelDescription) error {
+func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDescription) error {
 	for _, signal := range signalGroupSpec.Signals {
 
 		causality := (*signal.Annotations)["fmi_variable_causality"].(string)
@@ -244,7 +251,7 @@ func buildBinarySignal(signal schema_kind.Signal, vref any, causality string, id
 	return ScalarVariable
 }
 
-func BinarySignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelDescription) error {
+func BinarySignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDescription) error {
 	for _, signal := range signalGroupSpec.Signals {
 		var rx_vref []interface{}
 		var tx_vref []interface{}
@@ -272,7 +279,7 @@ func BinarySignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelD
 	return nil
 }
 
-func StringSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelDescription) error {
+func StringSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDescription) error {
 	for _, signal := range signalGroupSpec.Signals {
 
 		causality := (*signal.Annotations)["fmi_variable_causality"].(string)
@@ -305,5 +312,55 @@ func StringSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *FmiModelD
 		}
 		FmiXml.ModelVariables.ScalarVariable = append(FmiXml.ModelVariables.ScalarVariable, ScalarVariable)
 	}
+	return nil
+}
+
+func SetGeneralFmuXmlFields(fmiConfig fmi.FmiConfig, fmuXml *ModelDescription) error {
+	// Basic FMU Information.
+	fmuXml.ModelName = fmiConfig.Name
+	fmuXml.FmiVersion = fmt.Sprintf("%s.0", fmiConfig.FmiVersion)
+	fmuXml.Guid = fmt.Sprintf("{%s}", fmiConfig.UUID)
+	fmuXml.GenerationTool = stringPtr(fmiConfig.GenerationTool)
+	fmuXml.GenerationDateAndTime = stringPtr(time.Now().Format("2006-01-02T15:04:05Z"))
+	fmuXml.Author = "Robert Bosch GmbH"
+	fmuXml.Version = fmiConfig.Version
+	fmuXml.Description = fmiConfig.Description
+
+	// Runtime Information.
+	fmuXml.DefaultExperiment.StartTime = fmt.Sprintf("%f", fmiConfig.StartTime)
+	fmuXml.DefaultExperiment.StopTime = fmt.Sprintf("%f", fmiConfig.StopTime)
+	fmuXml.DefaultExperiment.StepSize = fmt.Sprintf("%f", fmiConfig.StepSize)
+
+	// Model Information.
+	fmuXml.CoSimulation.ModelIdentifier = fmiConfig.ModelIdentifier // This is the packaged SO/DLL file.
+	fmuXml.CoSimulation.CanHandleVariableCommunicationStepSize = "true"
+	fmuXml.CoSimulation.CanInterpolateInputs = "true"
+	return nil
+}
+
+func VariablesFromSignalgroups(FmiXml *ModelDescription, signalGroups string, index *index.YamlFileIndex) error {
+	if signalGroupDocs, ok := index.DocMap["SignalGroup"]; ok {
+		filter := []string{}
+		if len(signalGroups) > 0 {
+			filter = strings.Split(signalGroups, ",")
+		}
+		for _, doc := range signalGroupDocs {
+			if len(filter) > 0 && !slices.Contains(filter, doc.Metadata.Name) {
+				continue
+			}
+			fmt.Fprintf(flag.CommandLine.Output(), "Adding SignalGroup: %s (%s)\n", doc.Metadata.Name, doc.File)
+			signalGroupSpec := doc.Spec.(*schema_kind.SignalGroupSpec)
+			if doc.Metadata.Annotations["vector_type"] == "binary" {
+				if err := BinarySignal(*signalGroupSpec, FmiXml); err != nil {
+					slog.Warn(fmt.Sprintf("Skipped BinarySignal (Error: %s)", err.Error()))
+				}
+			} else {
+				if err := ScalarSignal(*signalGroupSpec, FmiXml); err != nil {
+					slog.Warn(fmt.Sprintf("Skipped Scalarsignal (Error: %s)", err.Error()))
+				}
+			}
+		}
+	}
+	fmt.Printf("FmiXml: %v\n", FmiXml)
 	return nil
 }

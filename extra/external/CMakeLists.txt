@@ -169,6 +169,22 @@ ExternalProject_Add(dlfcnwin32
     INSTALL_COMMAND     ""
 )
 
+# MsgpackC
+# --------
+ExternalProject_Add(msgpackc
+    URL                 ${ExternalProject__MSGPACK__URL}
+    HTTP_USERNAME       ${ExternalProject__MSGPACK__USERNAME}
+    HTTP_PASSWORD       ${ExternalProject__MSGPACK__PASSWORD}
+    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/msgpackc"
+    BINARY_DIR          "$ENV{EXTERNAL_BUILD_DIR}/msgpackc-build"
+    CMAKE_ARGS
+        -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+        -DBUILD_SHARED_LIBS=OFF
+        -DMSGPACK_BUILD_EXAMPLES=OFF
+        -DMSGPACK_BUILD_TESTS=OFF
+        -DMSGPACK_GEN_COVERAGE=OFF
+    INSTALL_COMMAND     ""
+)
 
 # OSS Target
 # ==========
@@ -183,6 +199,7 @@ endfunction()
 add_dependencies(oss
     dlfcnwin32-download
     libxml2-download
+    msgpackc-download
 )
 oss_copy(${dse_clib_SOURCE_DIR}                 boschglobal/dse.clib)
 oss_copy(${dse_modelc_SOURCE_DIR}               boschglobal/dse.modelc)
@@ -190,3 +207,4 @@ oss_copy(${dse_network_codec_SOURCE_DIR}        boschglobal/dse.ncodec)
 oss_copy(${automotive_bus_schema_SOURCE_DIR}    boschglobal/automotive.bus.schema)
 oss_copy($ENV{EXTERNAL_BUILD_DIR}/dlfcnwin32    dlfcn-win32/dlfcn-win32)
 oss_copy($ENV{EXTERNAL_BUILD_DIR}/libxml2       GNOME/libxml2)
+oss_copy($ENV{EXTERNAL_BUILD_DIR}/msgpackc      msgpack/msgpackc)

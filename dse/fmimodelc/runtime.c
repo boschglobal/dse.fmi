@@ -12,9 +12,6 @@
 #include <dse/clib/util/yaml.h>
 
 
-extern uint8_t __log_level__;
-
-
 static SchemaSignalObject* __signal_match;
 static const char*         __signal_match_name;
 
@@ -53,6 +50,44 @@ static int _signal_group_match_handler(
 }
 
 
+static ChannelSpec* _model_build_channel_spec(
+    ModelInstanceSpec* model_instance, const char* channel_name)
+{
+    _log("Search for channel on MI (%s) by name/alias=%s", model_instance->name,
+        channel_name);
+    const char* selectors[] = { "name" };
+    const char* values[] = { channel_name };
+    YamlNode*   c_node = dse_yaml_find_node_in_seq(
+          model_instance->spec, "channels", selectors, values, 1);
+    if (c_node) {
+        _log(" channel found by name");
+    } else {
+        const char* selectors[] = { "alias" };
+        const char* values[] = { channel_name };
+        c_node = dse_yaml_find_node_in_seq(
+            model_instance->spec, "channels", selectors, values, 1);
+        if (c_node) {
+            _log("  channel found by alias");
+        }
+    }
+    if (c_node == NULL) {
+        _log("Channel node (%s) not found on MI (%s)!", channel_name,
+            model_instance->name);
+        return NULL;
+    }
+
+    ChannelSpec* channel_spec = calloc(1, sizeof(ChannelSpec));
+    channel_spec->name = channel_name;
+    channel_spec->private = c_node;
+    YamlNode* n_node = dse_yaml_find_node(c_node, "name");
+    if (n_node && n_node->scalar) channel_spec->name = n_node->scalar;
+    YamlNode* a_node = dse_yaml_find_node(c_node, "alias");
+    if (a_node && a_node->scalar) channel_spec->alias = a_node->scalar;
+
+    return channel_spec; /* Caller to free. */
+}
+
+
 static const char** _signal_annotation_list(ModelInstanceSpec* mi,
     SignalVector* sv, const char* signal, const char* name)
 {
@@ -61,7 +96,7 @@ static const char** _signal_annotation_list(ModelInstanceSpec* mi,
     __signal_match_name = signal;
 
     /* Select and handle the schema objects. */
-    ChannelSpec*          cs = model_build_channel_spec(mi, sv->name);
+    ChannelSpec*          cs = _model_build_channel_spec(mi, sv->name);
     SchemaObjectSelector* selector;
     selector = schema_build_channel_selector(mi, cs, "SignalGroup");
     if (selector) {

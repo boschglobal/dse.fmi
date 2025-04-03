@@ -158,13 +158,7 @@ static void __index_binary_variable(FmuInstanceData* fmu, FmuSignalVector* sv,
     sv->mime_type[sv_idx] = (char*)__parse_tool_anno(
         node, "dse.standards.fmi-ls-binary-codec", "mimetype");
 
-    /* Get a handle to _this_ executable/libary (self reference). */
-    void* handle = dlopen(NULL, RTLD_LAZY);
-    assert(handle);
-    FmuNcodecOpenFunc func = dlsym(handle, FMU_NCODEC_OPEN_FUNC_NAME);
-    if (func) {
-        sv->ncodec[sv_idx] = func(fmu, sv->mime_type[sv_idx], idx);
-    }
+    sv->ncodec[sv_idx] = fmu_ncodec_open(fmu, sv->mime_type[sv_idx], idx);
 }
 
 

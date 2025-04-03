@@ -398,7 +398,7 @@ int main(int argc, char** argv)
      * ============ */
     _log("Loading FMU: %s", desc->fmu_lib_path);
     dlerror();
-    void* handle = dlopen(desc->fmu_lib_path, RTLD_NOW | RTLD_GLOBAL);
+    void* handle = dlopen(desc->fmu_lib_path, RTLD_NOW | RTLD_LOCAL);
     if (handle == NULL) {
         _log("ERROR: dlopen call failed: %s", dlerror());
         _log("Model library not loaded!");

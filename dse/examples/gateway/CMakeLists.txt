@@ -57,23 +57,20 @@ set(FMU_INCLUDE_DIR "../../..")
 set(FMI_2_COMMON_FILES
     ${FMU_SOURCE_DIR}/ascii85.c
     ${FMU_SOURCE_DIR}/fmi2fmu.c
-    ${FMU_SOURCE_DIR}/fmi2variable.c
-    ${FMU_SOURCE_DIR}/signal.c
 )
 set(FMI_3_COMMON_FILES
     ${FMU_SOURCE_DIR}/ascii85.c
     ${FMU_SOURCE_DIR}/fmi3fmu.c
-    ${FMU_SOURCE_DIR}/fmi3variable.c
-    ${FMU_SOURCE_DIR}/signal.c
 )
-set(FMIGATEWAY_FILES "../../fmigateway")
+set(FMIGATEWAY_SOURCE_DIR "../../fmigateway")
 set(FMIGATEWAY_FILES
-    ${FMIGATEWAY_FILES}/fmigateway.c
-    ${FMIGATEWAY_FILES}/index.c
-    ${FMIGATEWAY_FILES}/session.c
-    ${FMIGATEWAY_FILES}/parser.c
-    $<$<BOOL:${WIN32}>:${FMIGATEWAY_FILES}/session_win32.c>
-    $<$<BOOL:${UNIX}>:${FMIGATEWAY_FILES}/session_unix.c>
+    ${FMIGATEWAY_SOURCE_DIR}/fmigateway.c
+    ${FMIGATEWAY_SOURCE_DIR}/index.c
+    ${FMIGATEWAY_SOURCE_DIR}/session.c
+    ${FMIGATEWAY_SOURCE_DIR}/parser.c
+    ${FMIGATEWAY_SOURCE_DIR}/signal.c
+    $<$<BOOL:${WIN32}>:${FMIGATEWAY_SOURCE_DIR}/session_win32.c>
+    $<$<BOOL:${UNIX}>:${FMIGATEWAY_SOURCE_DIR}/session_unix.c>
 )
 
 # Targets
@@ -161,6 +158,7 @@ install(
         data/fmu.yaml
         data/model.yaml
         data/stack.yaml
+        data/stack_target.yaml
     DESTINATION
         examples/gateway/fmi2/resources
 )
@@ -224,6 +222,7 @@ install(
         data/fmu.yaml
         data/model.yaml
         data/stack.yaml
+        data/stack_target.yaml
     DESTINATION
         examples/gateway/fmi3/resources
 )

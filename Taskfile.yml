@@ -104,6 +104,7 @@ tasks:
       SIGNAL_GROUPS: "{{if .SIGNAL_GROUPS}}--signalgroups '{{.SIGNAL_GROUPS}}'{{else}}{{end}}"
       VERSION: "{{if .VERSION}}--version '{{.VERSION}}'{{else}}{{end}}"
       UUID: "{{if .UUID}}--uuid '{{.UUID}}'{{else}}{{end}}"
+      FMIVERSION: "{{if .FMIVERSION}}--fmiVersion '{{.FMIVERSION}}'{{else}}{{end}}"
       OUT_DIR: '{{.OUT_DIR | default "out"}}'
     cmds:
       - docker run --rm
@@ -117,6 +118,7 @@ tasks:
             {{.SIGNAL_GROUPS}}
             {{.VERSION}}
             {{.UUID}}
+            {{.FMIVERSION}}
     requires:
       vars: [SIM, FMU_NAME]
 

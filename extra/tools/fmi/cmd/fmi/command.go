@@ -44,6 +44,7 @@ Examples:
 	-name Test \
 	-dir ./ \
 	-version 1.1.0 \
+	-fmiVersion 2 \
 	-log 4
 
   fmi patch-signalgroup \

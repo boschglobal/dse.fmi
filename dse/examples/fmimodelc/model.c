@@ -71,7 +71,7 @@ int model_step(ModelDesc* model, double* model_time, double stop_time)
 
     /* Scalar signals. */
     ModelSignalIndex counter =
-        m->model.index((ModelDesc*)m, "scalar_vector", "counter");
+        signal_index((ModelDesc*)m, "scalar_vector", "counter");
     if (counter.scalar == NULL) return -EINVAL;
     *(counter.scalar) += 1;
 
