@@ -12,11 +12,18 @@ project(test_fmu)
 # FMU Code
 # ========
 set(DSE_FMU_SOURCE_DIR ../../../dse/fmu)
-set(DSE_FMU_SOURCE_FILES
+set(DSE_FMU2_SOURCE_FILES
     ${DSE_FMU_SOURCE_DIR}/ascii85.c
     ${DSE_FMU_SOURCE_DIR}/fmu.c
     ${DSE_FMU_SOURCE_DIR}/fmi2fmu.c
     ${DSE_FMU_SOURCE_DIR}/fmi2variable.c
+    ${DSE_FMU_SOURCE_DIR}/signal.c
+)
+set(DSE_FMU3_SOURCE_FILES
+    ${DSE_FMU_SOURCE_DIR}/ascii85.c
+    ${DSE_FMU_SOURCE_DIR}/fmu.c
+    ${DSE_FMU_SOURCE_DIR}/fmi3fmu.c
+    ${DSE_FMU_SOURCE_DIR}/fmi3variable.c
     ${DSE_FMU_SOURCE_DIR}/signal.c
 )
 set(DSE_FMU_INCLUDE_DIR "${DSE_FMU_SOURCE_DIR}/../..")
@@ -59,6 +66,58 @@ target_link_libraries(network_codec
 # Targets
 # =======
 
+# Target - test_fmi2fmu / test_fmi3fmu
+# ------------------------------------
+function(fmiXfmu_executable FMI_VERSION)
+    set(EXE_NAME test_fmi${FMI_VERSION}fmu)
+    set(FMU_SOURCE_FILES ${DSE_FMU${FMI_VERSION}_SOURCE_FILES})
+    list(REMOVE_ITEM FMU_SOURCE_FILES ${DSE_FMU_SOURCE_DIR}/fmu.c)
+    add_executable(${EXE_NAME}
+        ${EXE_NAME}.c
+        mock_interface.c
+        ${FMU_SOURCE_FILES}
+    )
+    target_include_directories(${EXE_NAME}
+        PRIVATE
+            ${FMI${FMI_VERSION}_INCLUDE_DIR}
+            ${DSE_CLIB_INCLUDE_DIR}
+            ${DSE_NCODEC_INCLUDE_DIR}
+            ${DSE_MODELC_INCLUDE_DIR}
+            ${DSE_FMU_INCLUDE_DIR}
+            ./
+    )
+    target_link_libraries(${EXE_NAME}
+        PUBLIC
+        PRIVATE
+            clib_runtime
+            flatcc_runtime
+            network_codec
+            yaml
+            xml
+            cmocka
+            dl
+            m
+    )
+    target_compile_definitions(${EXE_NAME}
+        PUBLIC
+            CMOCKA_TESTING
+        PRIVATE
+            PLATFORM_OS="${CDEF_PLATFORM_OS}"
+            PLATFORM_ARCH="${CDEF_PLATFORM_ARCH}"
+    )
+    target_link_options(${EXE_NAME}
+        PRIVATE
+            -Wl,-wrap=fmu_load_signal_handlers
+    )
+    target_link_directories(${EXE_NAME}
+        PRIVATE
+            ${MODELC_BINARY_DIR}/lib
+    )
+    install(TARGETS ${EXE_NAME})
+endfunction()
+fmiXfmu_executable(2)
+fmiXfmu_executable(3)
+
 # Target - FMU
 # ------------
 add_executable(test_fmu
@@ -66,7 +125,7 @@ add_executable(test_fmu
     test_ascii85.c
     test_signals.c
     test_variables.c
-    ${DSE_FMU_SOURCE_FILES}
+    ${DSE_FMU2_SOURCE_FILES}
 )
 target_include_directories(test_fmu
     PRIVATE

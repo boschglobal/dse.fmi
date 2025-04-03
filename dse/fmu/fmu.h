@@ -279,7 +279,7 @@ DLL_PRIVATE void  fmu_register_var_table(FmuInstanceData* fmu, void* table);
 DLL_PRIVATE void* fmu_var_table(FmuInstanceData* fmu);
 
 /* FMU Interface (example implementation in fmu.c)  */
-DLL_PRIVATE int32_t fmu_create(FmuInstanceData* fmu);
+DLL_PRIVATE FmuInstanceData* fmu_create(FmuInstanceData* fmu);
 DLL_PRIVATE int32_t fmu_init(FmuInstanceData* fmu);
 DLL_PRIVATE int32_t fmu_step(
     FmuInstanceData* fmu, double communication_point, double step_size);

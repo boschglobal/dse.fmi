@@ -11,7 +11,7 @@ typedef struct {
     double output;
 } VarTable;
 
-int fmu_create(FmuInstanceData* fmu)
+FmuInstanceData* fmu_create(FmuInstanceData* fmu)
 {
     VarTable* v = malloc(sizeof(VarTable));
     *v = (VarTable){
@@ -21,7 +21,7 @@ int fmu_create(FmuInstanceData* fmu)
         .output = fmu_register_var(fmu, 4, false, offsetof(VarTable, output)),
     };
     fmu_register_var_table(fmu, v);
-    return 0;
+    return fmu;
 }
 
 int fmu_init(FmuInstanceData* fmu)

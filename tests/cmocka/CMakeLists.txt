@@ -126,6 +126,7 @@ set(DSE_CLIB_SOURCE_FILES
     ${DSE_CLIB_SOURCE_DIR}/data/marshal.c
 )
 set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/fmi/fmi2/headers")
+set(FMI3_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/fmi/fmi3/headers")
 
 
 # External Project - DSE ModelC

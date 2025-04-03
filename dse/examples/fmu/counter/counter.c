@@ -8,14 +8,14 @@ typedef struct {
     double counter;
 } VarTable;
 
-int fmu_create(FmuInstanceData* fmu)
+FmuInstanceData* fmu_create(FmuInstanceData* fmu)
 {
     VarTable* v = malloc(sizeof(VarTable));
     *v = (VarTable){
         .counter = fmu_register_var(fmu, 1, false, offsetof(VarTable, counter)),
     };
     fmu_register_var_table(fmu, v);
-    return 0;
+    return fmu;
 }
 
 int fmu_init(FmuInstanceData* fmu)

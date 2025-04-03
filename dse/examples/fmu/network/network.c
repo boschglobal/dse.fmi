@@ -11,7 +11,7 @@ typedef struct {
     NCODEC* pdu_tx;
 } VarTable;
 
-int fmu_create(FmuInstanceData* fmu)
+FmuInstanceData* fmu_create(FmuInstanceData* fmu)
 {
     VarTable* v = malloc(sizeof(VarTable));
     *v = (VarTable){
@@ -27,7 +27,7 @@ int fmu_create(FmuInstanceData* fmu)
     if (v->pdu_tx == NULL) {
         fmu_log(fmu, FmiLogError, "Error", "PDU TX not configured (VR 3)");
     }
-    return 0;
+    return NULL;
 }
 
 int fmu_init(FmuInstanceData* fmu)

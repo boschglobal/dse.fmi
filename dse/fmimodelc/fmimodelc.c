@@ -25,10 +25,14 @@ fmu (FmuInstanceData*)
 
 Returns
 -------
-0 (int32_t)
+NULL
 : The FMU was created correctly.
+(fmu (FmuInstanceData*)
+:Pointer to a new, or mutilated, version of FmuInstanceData object.
+errno <> 0 (indirect)
+: Indicates an error condition.
 */
-int32_t fmu_create(FmuInstanceData* fmu)
+FmuInstanceData* fmu_create(FmuInstanceData* fmu)
 {
     assert(fmu);
     RuntimeModelDesc* m = calloc(1, sizeof(RuntimeModelDesc));
@@ -53,7 +57,7 @@ int32_t fmu_create(FmuInstanceData* fmu)
 
     fmu->data = (void*)m;
 
-    return 0;
+    return fmu;
 }
 
 

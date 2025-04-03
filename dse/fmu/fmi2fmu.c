@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <errno.h>
 #include <assert.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -166,8 +167,17 @@ fmi2Component fmi2Instantiate(fmi2String instance_name, fmi2Type fmu_type,
     hashlist_init(&fmu->variables.binary.free_list, 1024);
 
     /* Create the FMU. */
-    if (fmu_create(fmu) != fmi2OK) {
-        fmu_log(fmu, fmi2Error, "Error", "The FMU was not created correctly!");
+    errno = 0;
+    FmuInstanceData* extended_fmu_inst = fmu_create(fmu);
+    if (errno) {
+        fmu_log(fmu, fmi2Error, "Error",
+            "The FMU was not created correctly! (errro = %d)", errno);
+    }
+
+    if (extended_fmu_inst && extended_fmu_inst != fmu) {
+        /* The fmu returned an extended (new) FmuInstanceData object. */
+        free(fmu);
+        fmu = extended_fmu_inst;
     }
     if (fmu->var_table.table == NULL) {
         fmu_log(fmu, fmi2OK, "Debug", "FMU Var Table is not configured");

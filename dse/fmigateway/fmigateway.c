@@ -18,6 +18,9 @@ fmu_create
 This method allocates the necessary gateway models. The location of the required
 yaml files is set and allocated.
 
+Fault conditions can be communicated to the caller by setting variable
+`errno` to a non-zero value.
+
 > Required by FMU.
 
 Parameters
@@ -27,10 +30,19 @@ fmu (FmuInstanceData*)
 
 Returns
 -------
-0 (int32_t)
-: The FMU was created correctly.
+NULL
+: The FMU was configured.
+
+(FmuInstanceData*)
+: Pointer to a new, or mutilated, version of the Fmu Descriptor object. The
+  original Fmu Descriptor object will be released by the higher layer (i.e.
+  don't call `free()`).
+
+errno <> 0 (indirect)
+: Indicates an error condition.
+
 */
-int32_t fmu_create(FmuInstanceData* fmu)
+FmuInstanceData* fmu_create(FmuInstanceData* fmu)
 {
     assert(fmu);
     /* Allocate the ModelGatewayDesc object. */
@@ -53,7 +65,7 @@ int32_t fmu_create(FmuInstanceData* fmu)
     /* Parse the yaml files. */
     fmigateway_parse(fmu);
 
-    return 0;
+    return fmu;
 }
 
 

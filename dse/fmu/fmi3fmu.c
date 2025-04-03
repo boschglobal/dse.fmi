@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <errno.h>
 #include <assert.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -184,8 +185,17 @@ fmi3Instance fmi3InstantiateCoSimulation(fmi3String instanceName,
     hashlist_init(&fmu->variables.binary.free_list, 1024);
 
     /* Create the FMU. */
-    if (fmu_create(fmu) != fmi3OK) {
-        fmu_log(fmu, fmi3Error, "Error", "The FMU was not created correctly!");
+
+    errno = 0;
+    FmuInstanceData* extended_fmu_inst = fmu_create(fmu);
+    if (errno) {
+        fmu_log(fmu, fmi3Error, "Error",
+            "The FMU was not created correctly! (errro = %d)", errno);
+    }
+
+    if(extended_fmu_inst && extended_fmu_inst != fmu) {
+        free(fmu);
+        fmu = extended_fmu_inst;
     }
     if (fmu->var_table.table == NULL) {
         fmu_log(fmu, fmi3OK, "Debug", "FMU Var Table is not configured");
@@ -228,14 +238,14 @@ void fmi3FreeInstance(fmi3Instance instance)
 
     if (fmu->variables.vtable.remove) fmu->variables.vtable.remove(fmu);
 
-    fmu_log(fmu, fmi3OK, "OK", "Release var table");
+    fmu_log(fmu, fmi3OK, "Debug", "Release var table");
     free(fmu->var_table.table);
     free(fmu->var_table.marshal_list);
     if (fmu->var_table.var_list.hash_map.hash_function) {
         hashlist_destroy(&fmu->var_table.var_list);
     }
 
-    fmu_log(fmu, fmi3OK, "Ok", "Destroy the index");
+    fmu_log(fmu, fmi3OK, "Debug", "Destroy the index");
     hashmap_destroy(&fmu->variables.scalar.input);
     hashmap_destroy(&fmu->variables.scalar.output);
     hashmap_destroy(&fmu->variables.binary.rx);
@@ -244,7 +254,7 @@ void fmi3FreeInstance(fmi3Instance instance)
     hashmap_destroy(&fmu->variables.binary.decode_func);
     hashlist_destroy(&fmu->variables.binary.free_list);
 
-    fmu_log(fmu, fmi3OK, "Ok", "Release FMI instance resources");
+    fmu_log(fmu, fmi3OK, "Debug", "Release FMI instance resources");
     free(fmu->instance.name);
     free(fmu->instance.guid);
     free(fmu->instance.save_resource_location);
