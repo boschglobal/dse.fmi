@@ -38,14 +38,10 @@ set(FMU_INCLUDE_DIR "../..")
 set(FMI_2_COMMON_FILES
     ${FMU_SOURCE_DIR}/ascii85.c
     ${FMU_SOURCE_DIR}/fmi2fmu.c
-    ${FMU_SOURCE_DIR}/fmi2variable.c
-    ${FMU_SOURCE_DIR}/signal.c
 )
 set(FMI_3_COMMON_FILES
     ${FMU_SOURCE_DIR}/ascii85.c
     ${FMU_SOURCE_DIR}/fmi3fmu.c
-    ${FMU_SOURCE_DIR}/fmi3variable.c
-    ${FMU_SOURCE_DIR}/signal.c
 )
 
 set(FMIMODELC_FILES

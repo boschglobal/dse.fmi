@@ -2,112 +2,6 @@
 title: FMI Gateway FMU API Reference
 linkTitle: Gateway FMU
 ---
-## fmu_destroy
-
-
-Releases memory and system resources allocated by gateway.
-
-> Required by FMU.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-### Returns
-
-0 (int32_t)
-: The FMU data was released correctly.
-
-
-
-## fmu_signals_reset
-
-
-Resets the binary signals of the gateway to a length of 0, if the signals have
-not been reseted yet.
-
-> Required by FMU.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-
-
-## fmu_signals_setup
-
-
-Placeholder to signal the FMU to not use the default signal allocation.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-
-
-## fmu_signals_remove
-
-
-This method frees the allocated binary signal indexes.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-
-
-## FMI ModelC Gateway
-
-
-
-### Component Diagram
-
-<div hidden>
-
-```
-@startuml fmigateway-component
-
-title FMI Gateway FMU
-
-center footer Dynamic Simulation Environment
-
-@enduml
-```
-
-</div>
-
-![](fmigateway-component.png)
-
-
-### Example
-
-
-
-
-## fmu_create
-
-
-This method allocates the necessary gateway models. The location of the required
-yaml files is set and allocated.
-
-> Required by FMU.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-### Returns
-
-0 (int32_t)
-: The FMU was created correctly.
-
-
-
 ## fmu_init
 
 
@@ -155,6 +49,85 @@ step_size (double)
 
 
 
+## fmu_destroy
+
+
+Releases memory and system resources allocated by gateway.
+
+> Required by FMU.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+### Returns
+
+0 (int32_t)
+: The FMU data was released correctly.
+
+
+
+## FMI ModelC Gateway
+
+
+
+### Component Diagram
+
+<div hidden>
+
+```
+@startuml fmigateway-component
+
+title FMI Gateway FMU
+
+center footer Dynamic Simulation Environment
+
+@enduml
+```
+
+</div>
+
+![](fmigateway-component.png)
+
+
+### Example
+
+
+
+
+## fmu_create
+
+
+This method allocates the necessary gateway models. The location of the required
+yaml files is set and allocated.
+
+Fault conditions can be communicated to the caller by setting variable
+`errno` to a non-zero value.
+
+> Required by FMU.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+### Returns
+
+NULL
+: The FMU was configured.
+
+(FmuInstanceData*)
+: Pointer to a new, or mutilated, version of the Fmu Descriptor object. The
+  original Fmu Descriptor object will be released by the higher layer (i.e.
+  don't call `free()`).
+
+errno <> 0 (indirect)
+: Indicates an error condition.
+
+
+
+
 ## Typedefs
 
 ### FmiGateway
@@ -175,6 +148,17 @@ typedef struct FmiGateway {
 }
 ```
 
+### FmiGatewayEnvvar
+
+```c
+typedef struct FmiGatewayEnvvar {
+    const char* name;
+    const char* type;
+    char* vref;
+    char* default_value;
+}
+```
+
 ### FmiGatewaySession
 
 ```c
@@ -191,7 +175,7 @@ typedef struct FmiGatewaySession {
     } visibility;
     const char* init_cmd;
     const char* shutdown_cmd;
-    int envar;
+    FmiGatewayEnvvar* envar;
     double last_step;
 }
 ```

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 export EXTERNAL_BUILD_DIR ?= /dev/null
-
+export MAKE_NPROC ?= $(shell nproc)
 
 default: build
 
@@ -19,12 +19,12 @@ build:
 # Build from scratch if no build dir.
 	if [ ! -d "build" ]; then make setup; fi
 # Build.
-	cd build; make
+	cd build; cmake --build . -j $(MAKE_NPROC)
 
 oss:
 	if [ ! -d "build" ]; then make setup; fi
 	cd build; cmake -DCMAKE_TOOLCHAIN_FILE=$(CMAKE_TOOLCHAIN_FILE) ..
-	cd build; make oss
+	cd build; cmake --build . -j $(MAKE_NPROC) -t oss
 
 clean:
 

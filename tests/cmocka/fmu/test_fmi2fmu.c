@@ -8,12 +8,12 @@
 #include <dlfcn.h>
 #include <dse/testing.h>
 #include <dse/fmu/fmu.h>
-
 #include <fmi2Functions.h>
 #include <fmi2FunctionTypes.h>
 #include <fmi2TypesPlatform.h>
 #include <dse/clib/util/strings.h>
-#include "mock_interface.h"
+#include <mock_interface.h>
+
 
 #define UNUSED(x) ((void)x)
 
@@ -31,7 +31,6 @@ typedef struct {
     fmi2CallbackFunctions* functions;
 } fmi2fmu_test_setup;
 
-// wrapped/mocked functions
 void _fmi2_unit_test_logger(fmi2ComponentEnvironment componentEnvironment,
     fmi2String instanceName, fmi2Status status, fmi2String category,
     fmi2String message, ...)
@@ -44,7 +43,6 @@ void _fmi2_unit_test_logger(fmi2ComponentEnvironment componentEnvironment,
     check_expected(message);
 }
 
-// test interface
 static void _expected_log(const fmi2Status expected_status,
     const char* expected_category, const char* expected_msg)
 {
@@ -80,7 +78,7 @@ static void _expect_free_instance_logs()
 int test_fmi2fmu_setup(void** state)
 {
     fmi2fmu_test_setup* setup = calloc(1, sizeof(fmi2fmu_test_setup));
-    /* commit with log level in model.yaml set to 6. */
+    /* Commit with log level in model.yaml set to 6. */
     setup->logging_on = true;
     setup->fmu_guid = "{1-22-333-4444-55555-666666-7777777}";
     setup->fmu_type = fmi2CoSimulation;

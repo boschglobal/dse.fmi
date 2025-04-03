@@ -1,6 +1,6 @@
-// Copyright 3034 Robert Bosch GmbH
+// Copyright 2025 Robert Bosch GmbH
 //
-// SPDX-License-Identifier: Apache-3.0
+// SPDX-License-Identifier: Apache-2.0
 
 #include <errno.h>
 #include <stdint.h>
@@ -8,7 +8,8 @@
 #include <dse/testing.h>
 #include <dse/fmu/fmu.h>
 #include <dse/clib/util/strings.h>
-#include "mock_interface.h"
+#include <mock_interface.h>
+
 
 FmuInstanceData* captured_fmu_instance;
 

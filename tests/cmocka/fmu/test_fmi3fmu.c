@@ -10,11 +10,11 @@
 #include <dse/fmu/fmu.h>
 #include <dse/clib/collections/hashlist.h>
 #include <dse/clib/util/strings.h>
-
 #include <fmi3Functions.h>
 #include <fmi3FunctionTypes.h>
 #include <fmi3PlatformTypes.h>
-#include "mock_interface.h"
+#include <mock_interface.h>
+
 
 #define UNUSED(x) ((void)x)
 
@@ -35,10 +35,8 @@ typedef struct {
     fmi3InstanceEnvironment        instance_environment;
     fmi3LogMessageCallback         log;
     fmi3IntermediateUpdateCallback intermediate_update;
-
 } fmi3fmu_test_setup;
 
-// wrapped/mocked functions
 
 void _fmi3_unit_test_logger(fmi3InstanceEnvironment instanceEnvironment,
     fmi3Status status, fmi3String category, fmi3String message)
@@ -51,7 +49,6 @@ void _fmi3_unit_test_logger(fmi3InstanceEnvironment instanceEnvironment,
 }
 
 
-// test interface
 static void _expected_log(const fmi3Status expected_status,
     const char* expected_category, const char* expected_msg)
 {
@@ -87,7 +84,7 @@ static void _expect_free_instance_logs()
 int test_fmi3fmu_setup(void** state)
 {
     fmi3fmu_test_setup* setup = calloc(1, sizeof(fmi3fmu_test_setup));
-    /* commit with log level in model.yaml set to 6. */
+    /* Commit with log level in model.yaml set to 6. */
     setup->instance_name = "test_inst";
     setup->token = "{1-22-333-4444-55555-666666-7777777}";
     setup->resource_path = "data/test_fmu/resources";

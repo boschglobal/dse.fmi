@@ -75,6 +75,7 @@ ifneq ($(CI), true)
 		--env GDB_CMD="$(GDB_CMD)" \
 		--env PACKAGE_ARCH=$(PACKAGE_ARCH) \
 		--env PACKAGE_VERSION=$(PACKAGE_VERSION) \
+		--env MAKE_NPROC=$(MAKE_NPROC) \
 		--volume $$(pwd):/tmp/repo \
 		--volume $(EXTERNAL_BUILD_DIR):$(EXTERNAL_BUILD_DIR) \
 		--volume ~/.ccache:/root/.ccache \
