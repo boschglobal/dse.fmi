@@ -94,7 +94,7 @@ target_link_libraries(fmimodelctarget
 
 # FMI2 ModelC FMU
 # ---------------
-
+if(UNIX)
 install(
     TARGETS
         fmi2modelcfmu
@@ -105,15 +105,32 @@ install(
 )
 install(
     FILES
-        fmi2/modelDescription.xml
-    DESTINATION
-        examples/fmimodelc/fmi2
-)
-install(
-    FILES
         ${dse_modelc_lib_SOURCE_DIR}/lib/libmodelc.so
     DESTINATION
         examples/fmimodelc/fmi2/binaries/linux64
+)
+elseif(WIN32)
+install(
+    TARGETS
+        fmi2modelcfmu
+    LIBRARY DESTINATION
+        examples/fmimodelc/fmi2/binaries/win64
+    RUNTIME DESTINATION
+        examples/fmimodelc/fmi2/binaries/win64
+)
+install(
+    FILES
+        ${dse_modelc_lib_SOURCE_DIR}/bin/libmodelc.dll
+    DESTINATION
+        examples/fmimodelc/fmi2/binaries/win64
+)
+endif()
+
+install(
+    FILES
+        fmi2/modelDescription.xml
+    DESTINATION
+        examples/fmimodelc/fmi2
 )
 install(
     FILES
@@ -133,7 +150,7 @@ install(
 
 # FMI3 ModelC FMU
 # ---------------
-
+if(UNIX)
 install(
     TARGETS
         fmi3modelcfmu
@@ -144,15 +161,32 @@ install(
 )
 install(
     FILES
-        fmi3/modelDescription.xml
-    DESTINATION
-        examples/fmimodelc/fmi3
-)
-install(
-    FILES
         ${dse_modelc_lib_SOURCE_DIR}/lib/libmodelc.so
     DESTINATION
         examples/fmimodelc/fmi3/binaries/x86_64-linux
+)
+elseif(WIN32)
+install(
+    TARGETS
+        fmi2modelcfmu
+    LIBRARY DESTINATION
+        examples/fmimodelc/fmi3/binaries/x86_64-windows
+    RUNTIME DESTINATION
+        examples/fmimodelc/fmi3/binaries/x86_64-windows
+)
+install(
+    FILES
+        ${dse_modelc_lib_SOURCE_DIR}/bin/libmodelc.dll
+    DESTINATION
+        examples/fmimodelc/fmi3/binaries/x86_64-windows
+)
+endif()
+
+install(
+    FILES
+        fmi3/modelDescription.xml
+    DESTINATION
+        examples/fmimodelc/fmi3
 )
 install(
     FILES
