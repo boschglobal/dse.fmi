@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <dse/clib/util/strings.h>
+#include <dse/modelc/model.h>
 #include <dse/fmu/fmu.h>
 #include <dse/fmigateway/fmigateway.h>
 
@@ -31,13 +32,17 @@ void fmu_signals_reset(FmuInstanceData* fmu)
     FmiGateway* fmi_gw = fmu->data;
     assert(fmi_gw);
 
-    if (fmi_gw->binary_signals_reset) return;
+    if (fmu->variables.signals_reset) return;
+
 
     for (SignalVector* sv = fmi_gw->model->sv; sv && sv->name; sv++) {
         if (sv->is_binary == false) continue;
-        sv->length[0] = 0;
+        for (size_t i = 0; i < sv->count; i++) {
+            signal_reset(sv, i);
+        }
     }
-    fmi_gw->binary_signals_reset = true;
+
+    fmu->variables.signals_reset = true;
 }
 
 
