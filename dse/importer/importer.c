@@ -121,9 +121,9 @@ static int _run_fmu2_cosim(
     /* Step the FMU
      * ============ */
     double model_time = 0.0;
-    _log("Scalar Variables: Input %d, Output %d", desc->real.rx_count,
+    _log("Scalar Variables: Input %lu, Output %lu", desc->real.rx_count,
         desc->real.tx_count);
-    _log("Binary Variables: Input %d, Output %d", desc->binary.rx_count,
+    _log("Binary Variables: Input %lu, Output %lu", desc->binary.rx_count,
         desc->binary.tx_count);
 
 
@@ -230,9 +230,9 @@ static int _run_fmu3_cosim(
     /* Step the FMU
      * ============ */
     double model_time = 0.0;
-    _log("Scalar Variables: Input %d, Output %d", desc->real.rx_count,
+    _log("Scalar Variables: Input %lu, Output %lu", desc->real.rx_count,
         desc->real.tx_count);
-    _log("Binary Variables: Input %d, Output %d", desc->binary.rx_count,
+    _log("Binary Variables: Input %lu, Output %lu", desc->binary.rx_count,
         desc->binary.tx_count);
 
 
@@ -416,7 +416,7 @@ int main(int argc, char** argv)
         rc = _run_fmu3_cosim(desc, handle, step_size, steps);
         break;
     default:
-        _log("Unsupported FMI version (%d)!", desc->version);
+        _log("Unsupported FMI version (%s)!", desc->version);
         return EINVAL;
     }
     _log("Simulation return value: %d", rc);
