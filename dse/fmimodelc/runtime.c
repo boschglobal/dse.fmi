@@ -155,7 +155,7 @@ void fmimodelc_index_scalar_signals(
         }
     }
     _log(
-        "  Scalar: input=%u, output=%u", input->used_nodes, output->used_nodes);
+        "  Scalar: input=%lu, output=%lu", input->used_nodes, output->used_nodes);
 }
 
 
@@ -220,7 +220,7 @@ void fmimodelc_index_binary_signals(
             }
         }
     }
-    _log("  Binary: rx=%u, tx=%u", rx->used_nodes, tx->used_nodes);
+    _log("  Binary: rx=%lu, tx=%lu", rx->used_nodes, tx->used_nodes);
 }
 
 
@@ -263,6 +263,6 @@ void fmimodelc_index_text_encoding(
             }
         }
     }
-    _log("  Encoding: enc=%u, dec=%u", encode_func->used_nodes,
+    _log("  Encoding: enc=%lu, dec=%lu", encode_func->used_nodes,
         decode_func->used_nodes);
 }
