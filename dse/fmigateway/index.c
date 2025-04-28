@@ -127,7 +127,7 @@ void fmigateway_index_scalar_signals(
         }
     }
 
-    fmu_log(fmu, 0, "Debug", "  Scalar: input=%u, output=%u", input->used_nodes,
+    fmu_log(fmu, 0, "Debug", "  Scalar: input=%lu, output=%lu", input->used_nodes,
         output->used_nodes);
 }
 
@@ -198,7 +198,7 @@ void fmigateway_index_binary_signals(
         }
     }
 
-    fmu_log(fmu, 0, "Debug", "  Binary: rx=%u, tx=%u", rx->used_nodes,
+    fmu_log(fmu, 0, "Debug", "  Binary: rx=%lu, tx=%lu", rx->used_nodes,
         tx->used_nodes);
 }
 
@@ -239,6 +239,6 @@ void fmigateway_index_text_encoding(FmuInstanceData* fmu, ModelGatewayDesc* m,
             }
         }
     }
-    fmu_log(fmu, 0, "Debug", "  Encoding: enc=%u, dec=%u",
+    fmu_log(fmu, 0, "Debug", "  Encoding: enc=%lu, dec=%lu",
         encode_func->used_nodes, decode_func->used_nodes);
 }
