@@ -122,7 +122,7 @@ static void trace_can_log(
                 b + strlen(b), sizeof(b) - strlen(b), " %02x", msg->buffer[i]);
         }
     }
-    __log(nc, "(%s) [%s] %s %02x %d %d :%s", td->model_inst_name, identifier,
+    __log(nc, "(%s) [%s] %s %02x %d %lu :%s", td->model_inst_name, identifier,
         direction, msg->frame_id, msg->frame_type, msg->len, b);
 }
 
@@ -188,7 +188,7 @@ static void trace_pdu_log(
                 b + strlen(b), sizeof(b) - strlen(b), " %02x", pdu->payload[i]);
         }
     }
-    __log(nc, "(%s) [%s] %s %02x %d :%s", td->model_inst_name, identifier,
+    __log(nc, "(%s) [%s] %s %02x %lu :%s", td->model_inst_name, identifier,
         direction, pdu->id, pdu->payload_len, b);
 
     // Transport
@@ -205,7 +205,7 @@ static void trace_pdu_log(
     } break;
     case NCodecPduTransportTypeIp: {
         // ETH
-        __log(nc, "    ETH:    src_mac=%016x  dst_mac=%016x",
+        __log(nc, "    ETH:    src_mac=%016lx  dst_mac=%016lx",
             pdu->transport.ip_message.eth_src_mac,
             pdu->transport.ip_message.eth_dst_mac);
         __log(nc,
@@ -337,7 +337,7 @@ static void trace_configure(NCodecInstance* nc, FmuInstanceData* fmu)
                 char key[NCT_KEY_LEN];
                 snprintf(key, NCT_KEY_LEN, "%u", (uint32_t)_id);
                 hashmap_set_long(&td->filter, key, true);
-                __log(nc, "    %02x", _id);
+                __log(nc, "    %02x", (unsigned int)_id);
             }
             _idptr = strtok_r(NULL, ",", &_saveptr);
         }
