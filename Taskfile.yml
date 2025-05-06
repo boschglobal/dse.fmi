@@ -44,13 +44,13 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:generate-fmimcl
     vars:
-      #FMU_DIR: '{{.FMU_DIR}}'
+      # FMU_DIR: '{{.FMU_DIR}}'
       OUT_DIR: '{{.OUT_DIR | default "out/model"}}'
-      #MCL_PATH: '{{.MCL_PATH}}'
+      # MCL_PATH: '{{.MCL_PATH}}'
       FMU_MODELDESC: '{{.FMU_DIR}}/modelDescription.xml'
       SIGNAL_GROUP: "{{if .SIGNAL_GROUP}}'{{.SIGNAL_GROUP}}'{{else}}'{{.OUT_DIR}}/signalgroup.yaml'{{end}}"
     env:
-     FMU_DIR: '{{.FMU_DIR}}'
+      FMU_DIR: '{{.FMU_DIR}}'
     cmds:
       - env | sort
       - task: gen-mcl
@@ -137,9 +137,9 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-mcl
     vars:
-      #FMU_DIR: '{{.FMU_DIR}}'
+      # FMU_DIR: '{{.FMU_DIR}}'
       OUT_DIR: '{{.OUT_DIR | default "out/model"}}'
-      #MCL_PATH: '{{.MCL_PATH}}'
+      # MCL_PATH: '{{.MCL_PATH}}'
       PLATFORM: "{{if .PLATFORM}}--platform '{{.PLATFORM}}'{{else}}{{end}}"
     cmds:
       - docker run --rm
@@ -158,9 +158,9 @@ tasks:
     run: always
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-signalgroup
-    vars: {}
-      #INPUT: '{{.INPUT}}'
-      #OUTPUT: '{{.OUTPUT}}'
+    # vars:
+    #   INPUT: '{{.INPUT}}'
+    #   OUTPUT: '{{.OUTPUT}}'
     cmds:
       - docker run --rm
           -v {{.ENTRYDIR}}:/sim
@@ -177,8 +177,8 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-fmu
     vars:
-      #SIM: '{{.SIM}}'
-      #FMU_NAME: '{{.FMU_NAME}}'
+      # SIM: '{{.SIM}}'
+      # FMU_NAME: '{{.FMU_NAME}}'
       PLATFORM: "{{if .PLATFORM}}--platform '{{.PLATFORM}}'{{else}}{{end}}"
       SIGNAL_GROUPS: "{{if .SIGNAL_GROUPS}}--signalgroups '{{.SIGNAL_GROUPS}}'{{else}}{{end}}"
       VERSION: "{{if .VERSION}}--version '{{.VERSION}}'{{else}}{{end}}"
@@ -207,7 +207,7 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-gateway
     vars:
-      #SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
+      # SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
       OUT_DIR: '{{.OUT_DIR | default "out"}}'
       SESSION: "{{if .SESSION}}--session '{{.SESSION}}'{{else}}{{end}}"
       VERSION: "{{if .VERSION}}--version '{{.VERSION}}'{{else}}{{end}}"
@@ -233,8 +233,8 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:patch-signalgroup
     vars:
-      #INPUT: '{{.INPUT}}'
-      #PATCH: '{{.PATCH}}'
+      # INPUT: '{{.INPUT}}'
+      # PATCH: '{{.PATCH}}'
       REMOVE_UNKNOWN: '{{if .REMOVE_UNKNOWN}}--remove-unknown{{else}}{{end}}'
     cmds:
       - docker run --rm
