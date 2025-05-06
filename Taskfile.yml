@@ -1,6 +1,32 @@
 ---
 version: '3'
 
+metadata:
+  package:
+    download: '{{.REPO}}/releases/download/v{{.TAG}}/Fmi-{{.TAG}}-{{.PLATFORM_ARCH}}.zip'
+  container:
+    repository: ghcr.io/boschglobal/dse-fmi
+  models:
+    dse.fmi.mcl:
+      name: fmimcl
+      displayName: dse.fmi.mcl
+      path: fmimcl
+      mcl: true
+      workflows:
+        - generate-fmimcl
+        - generate-fmimodelc
+        - generate-fmigateway
+        - patch-signalgroup
+      platforms:
+        - linux-amd64
+        - linux-x86
+        - linux-i386
+        - windows-x64
+        - windows-x86
+      channels:
+        - alias: signal_channel
+        - alias: network_channel
+
 vars:
   # When running from E2E tests (i.e. Docker in Docker), the ENTRYDIR (for
   # Docker commands) must be set to the host relative path.
@@ -18,12 +44,15 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:generate-fmimcl
     vars:
-      FMU_DIR: '{{.FMU_DIR | default "FMU_DIR_NOT_SPECIFIED"}}'
+      #FMU_DIR: '{{.FMU_DIR}}'
       OUT_DIR: '{{.OUT_DIR | default "out/model"}}'
-      MCL_PATH: '{{.MCL_PATH | default "MCL_PATH_NOT_SPECIFIED"}}'
+      #MCL_PATH: '{{.MCL_PATH}}'
       FMU_MODELDESC: '{{.FMU_DIR}}/modelDescription.xml'
       SIGNAL_GROUP: "{{if .SIGNAL_GROUP}}'{{.SIGNAL_GROUP}}'{{else}}'{{.OUT_DIR}}/signalgroup.yaml'{{end}}"
+    env:
+     FMU_DIR: '{{.FMU_DIR}}'
     cmds:
+      - env | sort
       - task: gen-mcl
         vars:
           FMU_DIR: '{{.FMU_DIR}}'
@@ -35,6 +64,29 @@ tasks:
           OUTPUT: '{{.SIGNAL_GROUP}}'
     requires:
       vars: [FMU_DIR, MCL_PATH]
+    metadata:
+      vars:
+        FMU_DIR:
+          required: true
+          hint: URI identifying an FMU (select from 'uses' or manually enter a path).
+        OUT_DIR:
+          required: true
+          hint: Directory where the model should be created (sim relative).
+          default: out/model
+        MCL_PATH:
+          required: true
+          hint: Path where the FMI MCL shared library is located.
+        FMU_MODELDESC:
+          required: false
+          hint: Path where the FMI modelDescription.xml should be created.
+          default: '{{.FMU_DIR}}/modelDescription.xml'
+        SIGNAL_GROUP:
+          required: false
+          hint: Path where the associated Signal Group should be created.
+          default: '{{.OUT_DIR}}/signalgroup.yaml'
+      generates:
+        - data/model.yaml
+        - data/signalgroup.yaml
 
   generate-fmimodelc:
     desc: Generate a FMI ModelC FMU from an existing (DSE/ModelC) Simer simulation.
@@ -43,9 +95,36 @@ tasks:
     label: dse:fmi:generate-fmimodelc
     cmds:
       - task: gen-fmu
+    requires:
+      vars: [SIM, FMU_NAME]
+    metadata:
+      vars:
+        SIM:
+          required: true
+          hint: URI identifying the simulation (Simer layout) to be packaged as an FMU.
+        FMU_NAME:
+          required: true
+          hint: Name of the generated FMU.
+        PLATFORM:
+          required: false
+          hint: Selected platform of the generated FMU.
+        SIGNAL_GROUPS:
+          required: false
+          hint:
+          default:
+        VERSION:
+          required: false
+          hint: Version of the generated FMU.
+        UUID:
+          required: false
+          hint: UUID of the generated FMU.
+        OUT_DIR:
+          required: false
+          hint: Path where the FMU should be created.
+          default: out
 
   generate-fmigateway:
-    desc: Generate a FMI Gateway FMU from existing Signalgroups.
+    desc: Generate a FMI Gateway FMU from existing Signal Groups.
     run: always
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:generate-fmigateway
@@ -58,9 +137,9 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-mcl
     vars:
-      FMU_DIR: '{{.FMU_DIR | default "FMU_DIR_NOT_SPECIFIED"}}'
+      #FMU_DIR: '{{.FMU_DIR}}'
       OUT_DIR: '{{.OUT_DIR | default "out/model"}}'
-      MCL_PATH: '{{.MCL_PATH | default "MCL_PATH_NOT_SPECIFIED"}}'
+      #MCL_PATH: '{{.MCL_PATH}}'
       PLATFORM: "{{if .PLATFORM}}--platform '{{.PLATFORM}}'{{else}}{{end}}"
     cmds:
       - docker run --rm
@@ -79,9 +158,9 @@ tasks:
     run: always
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-signalgroup
-    vars:
-      INPUT: '{{.INPUT | default "INPUT_NOT_SPECIFIED"}}'
-      OUTPUT: '{{.OUTPUT | default "OUTPUT_NOT_SPECIFIED"}}'
+    vars: {}
+      #INPUT: '{{.INPUT}}'
+      #OUTPUT: '{{.OUTPUT}}'
     cmds:
       - docker run --rm
           -v {{.ENTRYDIR}}:/sim
@@ -98,8 +177,8 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-fmu
     vars:
-      SIM: '{{.SIM | default "SIM_NOT_SPECIFIED"}}'
-      FMU_NAME: '{{.FMU_NAME | default "FMU_NAME_NOT_SPECIFIED"}}'
+      #SIM: '{{.SIM}}'
+      #FMU_NAME: '{{.FMU_NAME}}'
       PLATFORM: "{{if .PLATFORM}}--platform '{{.PLATFORM}}'{{else}}{{end}}"
       SIGNAL_GROUPS: "{{if .SIGNAL_GROUPS}}--signalgroups '{{.SIGNAL_GROUPS}}'{{else}}{{end}}"
       VERSION: "{{if .VERSION}}--version '{{.VERSION}}'{{else}}{{end}}"
@@ -128,7 +207,7 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-gateway
     vars:
-      SIGNAL_GROUPS: '{{.SIGNAL_GROUPS | default "SIGNAL_GROUPS_NOT_SPECIFIED"}}'
+      #SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
       OUT_DIR: '{{.OUT_DIR | default "out"}}'
       SESSION: "{{if .SESSION}}--session '{{.SESSION}}'{{else}}{{end}}"
       VERSION: "{{if .VERSION}}--version '{{.VERSION}}'{{else}}{{end}}"
@@ -149,12 +228,13 @@ tasks:
       vars: [SIGNAL_GROUPS]
 
   patch-signalgroup:
+    desc: Patch changes into a generated Signal Group.
     run: always
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:patch-signalgroup
     vars:
-      INPUT: '{{.INPUT | default "INPUT_NOT_SPECIFIED"}}'
-      PATCH: '{{.PATCH | default "PATCH_NOT_SPECIFIED"}}'
+      #INPUT: '{{.INPUT}}'
+      #PATCH: '{{.PATCH}}'
       REMOVE_UNKNOWN: '{{if .REMOVE_UNKNOWN}}--remove-unknown{{else}}{{end}}'
     cmds:
       - docker run --rm
@@ -166,3 +246,14 @@ tasks:
             {{.REMOVE_UNKNOWN}}
     requires:
       vars: [INPUT, PATCH]
+    metadata:
+      vars:
+        INPUT:
+          required: true
+          hint: Path identifying the Signal Group to be patched.
+        PATCH:
+          required: true
+          hint: URI identifying the patch file to use.
+        REMOVE_UNKNOWN:
+          required: false
+          hint: Remove unknown items (i.e. not in the patch file).
