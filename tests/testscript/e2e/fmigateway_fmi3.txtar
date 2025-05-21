@@ -31,13 +31,20 @@ stdout 'Scalar: input=2, output=2'
 stdout 'Binary: rx=4, tx=4'
 stdout 'Encoding: enc=8, dec=8'
 
+stdout 'name       : can'
+stdout 'length     : 584'
+stdout 'buffer len : 584'
+
+stdout 'Importer: Calling fmi3DoStep\(\): model_time=0.004500, step_size=0.000500'
+stdout 'Model: RX\[20\] Hello from Importer \(0\)'
+stdout 'Model: RX\[93\] Hello from Importer \(3\)'
+stdout 'Importer received binary msg: Hello World! from node_id=1'
+
 stdout 'Importer:   \[1002\] 9'
 stdout 'Importer:   \[3\] F8u:'
 stdout 'Importer:   \[5\] F8u:'
 stdout 'Importer:   \[7\] F8u:'
 stdout 'Importer:   \[9\] F8u:'
-
-stdout 'Model: RX\[03f1\] Hello World! from node_id=2'
 
 -- test.sh --
 SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"

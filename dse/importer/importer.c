@@ -17,6 +17,7 @@
 #include <fmi2FunctionTypes.h>
 #include <fmi3FunctionTypes.h>
 #include <dse/importer/importer.h>
+#include <dse/fmu/fmu.h>
 
 
 /**
@@ -87,6 +88,28 @@ static void _log(const char* format, ...)
 }
 
 
+static void _write_ncodec_msg(char** val_tx_binary, char** val_rx_binary,
+    char* mimetype, uint32_t frame_id, char* response)
+{
+    size_t data_len = strlen(*val_tx_binary);
+    char*  ncodec_tx = ascii85_decode(*val_tx_binary, &data_len);
+    importer_ncodec_read(mimetype, (uint8_t*)ncodec_tx, data_len);
+
+    uint8_t* ncodec_rx = NULL;
+    size_t   ncodec_rx_len = 0;
+    importer_codec_write(frame_id, 2, (uint8_t*)response, strlen(response),
+        &ncodec_rx, &ncodec_rx_len, mimetype);
+
+    *val_rx_binary = ascii85_encode((char*)ncodec_rx, ncodec_rx_len);
+
+    /* Cleanup. */
+    free(ncodec_tx);
+    free(ncodec_rx);
+    free(*val_tx_binary);
+    *val_tx_binary = NULL;
+}
+
+
 static int _run_fmu2_cosim(
     modelDescription* desc, void* handle, double step_size, unsigned int steps)
 {
@@ -141,14 +164,29 @@ static int _run_fmu2_cosim(
     fmi2DoStep do_step = dlsym(handle, "fmi2DoStep");
     if (do_step == NULL) return EINVAL;
 
-    for (unsigned int i = 0; i < steps; i++) {
+    for (unsigned int j = 0; j < steps; j++) {
         /* Loopback the binary data. */
         for (size_t i = 0; i < desc->binary.tx_count; i++) {
             if (desc->binary.val_tx_binary[i]) {
+                if (desc->binary.tx_binary_info) {
+                    if (strcmp(desc->binary.tx_binary_info[i]->type, "frame") ==
+                        0) {
+                        int32_t frame_id = (i + (j * 10));
+                        char    resp[128];
+                        snprintf(resp, 128, "Hello from Importer (%ld)", i);
+                        _write_ncodec_msg(&(desc->binary.val_tx_binary[i]),
+                            &(desc->binary.val_rx_binary[i]),
+                            desc->binary.rx_binary_info[i]->mimetype, frame_id,
+                            resp);
+                        continue;
+                    }
+                }
+
                 desc->binary.val_rx_binary[i] = desc->binary.val_tx_binary[i];
                 desc->binary.val_tx_binary[i] = NULL;
             }
         }
+
         set_string(fmu, desc->binary.vr_rx_binary, desc->binary.rx_count,
             desc->binary.val_rx_binary);
         for (size_t i = 0; i < desc->binary.rx_count; i++) {
@@ -250,14 +288,28 @@ static int _run_fmu3_cosim(
     fmi3DoStep do_step = dlsym(handle, "fmi3DoStep");
     if (do_step == NULL) return EINVAL;
 
-    for (unsigned int i = 0; i < steps; i++) {
+    for (unsigned int j = 0; j < steps; j++) {
         /* Loopback the binary data. */
         for (size_t i = 0; i < desc->binary.tx_count; i++) {
             if (desc->binary.val_tx_binary[i]) {
+                if (desc->binary.tx_binary_info) {
+                    if (strcmp(desc->binary.tx_binary_info[i]->type, "frame") ==
+                        0) {
+                        int32_t frame_id = (i + (j * 10));
+                        char    resp[128];
+                        snprintf(resp, 128, "Hello from Importer (%ld)", i);
+                        _write_ncodec_msg(&(desc->binary.val_tx_binary[i]),
+                            &(desc->binary.val_rx_binary[i]),
+                            desc->binary.rx_binary_info[i]->mimetype, frame_id,
+                            resp);
+                        continue;
+                    }
+                }
                 desc->binary.val_rx_binary[i] = desc->binary.val_tx_binary[i];
                 desc->binary.val_tx_binary[i] = NULL;
             }
         }
+
         set_binary(fmu, desc->binary.vr_rx_binary, desc->binary.rx_count,
             desc->binary.val_size_rx_binary, desc->binary.val_rx_binary,
             desc->binary.rx_count);
@@ -424,10 +476,17 @@ int main(int argc, char** argv)
     /* Release allocated resources
      * =========================== */
     free(desc->version);
+    free(desc->fmu_lib_path);
     for (size_t i = 0; i < desc->binary.tx_count; i++) {
         if (desc->binary.val_tx_binary[i]) {
             free(desc->binary.val_tx_binary[i]);
             desc->binary.val_tx_binary[i] = NULL;
+        }
+        if (desc->binary.tx_binary_info[i]) {
+            free(desc->binary.tx_binary_info[i]->mimetype);
+            free(desc->binary.tx_binary_info[i]->start);
+            free(desc->binary.tx_binary_info[i]->type);
+            free(desc->binary.tx_binary_info[i]);
         }
     }
     for (size_t i = 0; i < desc->binary.rx_count; i++) {
@@ -435,7 +494,16 @@ int main(int argc, char** argv)
             free(desc->binary.val_rx_binary[i]);
             desc->binary.val_rx_binary[i] = NULL;
         }
+        if (desc->binary.rx_binary_info[i]) {
+            free(desc->binary.rx_binary_info[i]->mimetype);
+            free(desc->binary.rx_binary_info[i]->start);
+            free(desc->binary.rx_binary_info[i]->type);
+            free(desc->binary.rx_binary_info[i]);
+        }
     }
+    free(desc->binary.rx_binary_info);
+    free(desc->binary.tx_binary_info);
+
     free(desc->binary.vr_tx_binary);
     free(desc->binary.val_tx_binary);
     free(desc->binary.val_size_tx_binary);

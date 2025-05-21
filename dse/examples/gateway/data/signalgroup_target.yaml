@@ -29,37 +29,9 @@ spec:
 ---
 kind: SignalGroup
 metadata:
-  name: scalar_vector2
+  name: binary_vector_target
   labels:
-    channel: scalar
-  annotations:
-    vector_type: scalar
-spec:
-  signals:
-    - signal: scalar_in2
-      annotations:
-        fmi_variable_vref: 1004
-        fmi_variable_name: scalar_in2
-        fmi_variable_type: Real
-        fmi_variable_causality: input
-    - signal: scalar_out2
-      annotations:
-        fmi_variable_vref: 1005
-        fmi_variable_name: scalar_out2
-        fmi_variable_type: Real
-        fmi_variable_causality: output
-# - signal: scalar_param
-#   annotations:
-#     fmi_variable_vref: 1003
-#     fmi_variable_name: scalar_param
-#     fmi_variable_type: Real
-#     fmi_variable_causality: parameter
----
-kind: SignalGroup
-metadata:
-  name: binary_vector
-  labels:
-    channel: binary
+    channel: binary_target
     type: binary
   annotations:
     vector_type: binary
@@ -68,7 +40,7 @@ spec:
   signals:
     - signal: can
       annotations:
-        mime_type: 'application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; node_id=11; interface_id=0'
+        mime_type: 'application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; node_id=1; interface_id=0'
         #
         # FMI Value Reference
         # -------------------

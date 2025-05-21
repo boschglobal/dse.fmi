@@ -35,7 +35,6 @@ spec:
     - alias: scalar_vector
       selectors:
         side: scalar_vector
-    - alias: binary_vector
+    - alias: binary_vector_target
       selectors:
-        channel: binary
----
+        channel: binary_target

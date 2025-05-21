@@ -23,13 +23,13 @@ spec:
         name: Target
       runtime:
         files:
-          - fmu/resources/fmu.yaml
+          - fmu/resources/signalgroup_target.yaml
       channels:
         - name: scalar
           alias: scalar_vector
           selectors:
             channel: scalar
         - name: binary
-          alias: binary_vector
+          alias: binary_vector_target
           selectors:
-            channel: binary
+            channel: binary_target

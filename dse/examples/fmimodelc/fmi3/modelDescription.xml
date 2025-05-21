@@ -17,40 +17,116 @@
 
         <Binary name="network_1_1_rx" valueReference="2" causality="input" initial="" variability="" >
             <Start value=""/>
-        </Binary>
-        <Binary name="network_1_1_tx" valueReference="3" causality="output" initial="" variability="" />
-        <Binary name="network_1_2_rx" valueReference="4" causality="input" initial="" variability="">
             <Annotations>
-                <Tool name="dse.standards.fmi-ls-binary-codec">
-                    <Annotation name="mimetype">application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; interface_id=3</Annotation>
-                </Tool>
-                <Tool name="dse.standards.fmi-ls-binary-to-text">
-                    <Annotation name="encoding">ascii85</Annotation>
-                </Tool>
-                <Tool name="dse.standards.fmi-ls-bus-topology">
-                    <Annotation name="bus_id">1</Annotation>
-                </Tool>
+                <Annotation type="dse.standards.fmi-ls-binary-codec">
+                    <Mimetype>application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; interface_id=3</Mimetype>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-binary-to-text">
+                    <Encoding>ascii85</Encoding>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-bus-topology">
+                    <Bus_id>1</Bus_id>
+                </Annotation>
             </Annotations>
+        </Binary>
+        <Binary name="network_1_1_tx" valueReference="3" causality="output" initial="" variability="">
             <Start value=""/>
+            <Annotations>
+                <Annotation type="dse.standards.fmi-ls-binary-codec">
+                    <Mimetype>application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; interface_id=3</Mimetype>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-binary-to-text">
+                    <Encoding>ascii85</Encoding>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-bus-topology">
+                    <Bus_id>1</Bus_id>
+                </Annotation>
+            </Annotations>
+        </Binary>
+        <Binary name="network_1_2_rx" valueReference="4" causality="input" initial="" variability="">
+            <Start value=""/>
+            <Annotations>
+                <Annotation type="dse.standards.fmi-ls-binary-codec">
+                    <Mimetype>application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; interface_id=3</Mimetype>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-binary-to-text">
+                    <Encoding>ascii85</Encoding>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-bus-topology">
+                    <Bus_id>1</Bus_id>
+                </Annotation>
+            </Annotations>
         </Binary>
         <Binary name="network_1_2_tx" valueReference="5" causality="output" initial="" variability="">
+            <Start value=""/>
             <Annotations>
-                <Tool name="dse.standards.fmi-ls-binary-to-text">
-                    <Annotation name="encoding">ascii85</Annotation>
-                </Tool>
-                <Tool name="dse.standards.fmi-ls-bus-topology">
-                    <Annotation name="bus_id">1</Annotation>
-                </Tool>
+                <Annotation type="dse.standards.fmi-ls-binary-codec">
+                    <Mimetype>application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; interface_id=3</Mimetype>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-binary-to-text">
+                    <Encoding>ascii85</Encoding>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-bus-topology">
+                    <Bus_id>1</Bus_id>
+                </Annotation>
             </Annotations>
         </Binary>
         <Binary name="network_1_3_rx" valueReference="6" causality="input" initial="" variability="" >
             <Start value=""/>
+            <Annotations>
+                <Annotation type="dse.standards.fmi-ls-binary-codec">
+                    <Mimetype>application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; interface_id=3</Mimetype>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-binary-to-text">
+                    <Encoding>ascii85</Encoding>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-bus-topology">
+                    <Bus_id>1</Bus_id>
+                </Annotation>
+            </Annotations>
         </Binary>
-        <Binary name="network_1_3_tx" valueReference="7" causality="output" initial="" variability="" />
+        <Binary name="network_1_3_tx" valueReference="7" causality="output" initial="" variability="">
+            <Start value=""/>
+            <Annotations>
+                <Annotation type="dse.standards.fmi-ls-binary-codec">
+                    <Mimetype>application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; interface_id=3</Mimetype>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-binary-to-text">
+                    <Encoding>ascii85</Encoding>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-bus-topology">
+                    <Bus_id>1</Bus_id>
+                </Annotation>
+            </Annotations>
+        </Binary>
         <Binary name="network_1_4_rx" valueReference="8" causality="input" initial="" variability="" >
             <Start value=""/>
+            <Annotations>
+                <Annotation type="dse.standards.fmi-ls-binary-codec">
+                    <Mimetype>application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; interface_id=3</Mimetype>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-binary-to-text">
+                    <Encoding>ascii85</Encoding>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-bus-topology">
+                    <Bus_id>1</Bus_id>
+                </Annotation>
+            </Annotations>
         </Binary>
-        <Binary name="network_1_4_tx" valueReference="9" causality="output" initial="" variability="" />
+        <Binary name="network_1_4_tx" valueReference="9" causality="output" initial="" variability="">
+            <Start value=""/>
+            <Annotations>
+                <Annotation type="dse.standards.fmi-ls-binary-codec">
+                    <Mimetype>application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; interface_id=3</Mimetype>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-binary-to-text">
+                    <Encoding>ascii85</Encoding>
+                </Annotation>
+                <Annotation type="dse.standards.fmi-ls-bus-topology">
+                    <Bus_id>1</Bus_id>
+                </Annotation>
+            </Annotations>
+        </Binary>
 
     </ModelVariables>
 

@@ -280,9 +280,9 @@ DLL_PRIVATE void* fmu_var_table(FmuInstanceData* fmu);
 
 /* FMU Interface (example implementation in fmu.c)  */
 DLL_PRIVATE FmuInstanceData* fmu_create(FmuInstanceData* fmu);
-DLL_PRIVATE int32_t fmu_init(FmuInstanceData* fmu);
-DLL_PRIVATE int32_t fmu_step(
-    FmuInstanceData* fmu, double communication_point, double step_size);
+DLL_PRIVATE int32_t          fmu_init(FmuInstanceData* fmu);
+DLL_PRIVATE int32_t          fmu_step(
+             FmuInstanceData* fmu, double communication_point, double step_size);
 DLL_PRIVATE int32_t fmu_destroy(FmuInstanceData* fmu);
 DLL_PRIVATE void    fmu_log(FmuInstanceData* fmu, const int status,
        const char* category, const char* message, ...);

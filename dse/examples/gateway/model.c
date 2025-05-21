@@ -48,7 +48,7 @@ ModelDesc* model_create(ModelDesc* model)
     memcpy(m, model, sizeof(ModelDesc));
 
     /* Index the Network Codec. */
-    m->nc = _index(m, "binary_vector", "can");
+    m->nc = _index(m, "binary_vector_target", "can");
 
     /* Configure the Network Codec. */
     for (int i = 0; i >= 0; i++) {
@@ -75,15 +75,13 @@ int model_step(ModelDesc* model, double* model_time, double stop_time)
     if (counter.scalar == NULL) return -EINVAL;
     *(counter.scalar) += 1;
 
-    /* Message RX - spoof the node_id to avoid RX filtering. */
-    _adjust_node_id(m->nc, "49");
+    /* Message RX. */
     while (1) {
         NCodecCanMessage msg = {};
         int              len = ncodec_read(m->nc, &msg);
         if (len < 0) break;
-        log_notice("Model: RX[%04x] %s", msg.frame_id, msg.buffer);
+        log_notice("Model: RX[%d] %s", msg.frame_id, msg.buffer);
     }
-    _adjust_node_id(m->nc, m->node_id);
 
     /* Message TX. */
     char msg[100] = "Hello World!";

@@ -159,6 +159,7 @@ install(
         data/model.yaml
         data/stack.yaml
         data/stack_target.yaml
+        data/signalgroup_target.yaml
     DESTINATION
         examples/gateway/fmi2/resources
 )
@@ -223,6 +224,7 @@ install(
         data/model.yaml
         data/stack.yaml
         data/stack_target.yaml
+        data/signalgroup_target.yaml
     DESTINATION
         examples/gateway/fmi3/resources
 )

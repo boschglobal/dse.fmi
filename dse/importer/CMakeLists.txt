@@ -44,6 +44,30 @@ set(DSE_CLIB_SOURCE_FILES
 # Targets
 # =======
 
+# Target - importer_codec
+# ----------------------
+add_library(importer_codec OBJECT
+    ncodec.c
+    ${DSE_NCODEC_SOURCE_DIR}/codec.c
+    ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/codec.c
+    ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/frame_can_fbs.c
+    ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/pdu_fbs.c
+)
+target_include_directories(importer_codec
+    PRIVATE
+        ${DSE_CLIB_INCLUDE_DIR}
+        ${DSE_NCODEC_INCLUDE_DIR}
+        ${DSE_NCODEC_INCLUDE_DIR}/dse/ncodec/libs
+        ${FMU_INCLUDE_DIR}
+        ${FLATCC_INCLUDE_DIR}
+        ${AUTOMOTIVE_BUS_SCHEMA_SOURCE_DIR}
+        ../../..
+)
+target_link_libraries(importer_codec
+    PRIVATE
+        flatcc_runtime
+)
+
 # Importer
 # --------
 
@@ -51,6 +75,7 @@ add_executable(importer
     ${DSE_CLIB_SOURCE_FILES}
     importer.c
     xml.c
+    ../fmu/ascii85.c
 )
 set_target_properties(importer
     PROPERTIES
@@ -60,11 +85,14 @@ target_include_directories(importer
     PRIVATE
         ${FMI2_INCLUDE_DIR}
         ${FMI3_INCLUDE_DIR}
+        ${DSE_NCODEC_INCLUDE_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
         ../..
 )
 target_link_libraries(importer
     PRIVATE
+        importer_codec
+        flatcc_runtime
         xml
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${UNIX}>:mcheck>

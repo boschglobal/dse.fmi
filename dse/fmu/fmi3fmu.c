@@ -68,10 +68,10 @@ static void _log_binary_signal(FmuInstanceData* fmu, FmuSignalVectorIndex* idx)
         idx->sv->signal[index], idx->sv->length[index],
         idx->sv->buffer_size[index]);
 
-    uint8_t* buffer = *idx->sv->binary;
+    uint8_t* buffer = idx->sv->binary[index];
     for (uint32_t j = 0; j + 16 < idx->sv->length[index]; j += 16) {
         fmu_log(fmu, fmi3OK, "Debug",
-            "\n          %02x %02x %02x %02x %02x %02x %02x %02x "
+            "%02x %02x %02x %02x %02x %02x %02x %02x "
             "%02x %02x %02x %02x %02x %02x %02x %02x",
             buffer[j + 0], buffer[j + 1], buffer[j + 2], buffer[j + 3],
             buffer[j + 4], buffer[j + 5], buffer[j + 6], buffer[j + 7],
@@ -193,7 +193,7 @@ fmi3Instance fmi3InstantiateCoSimulation(fmi3String instanceName,
             "The FMU was not created correctly! (errro = %d)", errno);
     }
 
-    if(extended_fmu_inst && extended_fmu_inst != fmu) {
+    if (extended_fmu_inst && extended_fmu_inst != fmu) {
         free(fmu);
         fmu = extended_fmu_inst;
     }

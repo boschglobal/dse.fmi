@@ -5,6 +5,7 @@
 #include <libxml/xpath.h>
 #include <dse/clib/collections/hashmap.h>
 #include <dse/clib/collections/hashlist.h>
+#include <dse/ncodec/codec.h>
 #include <dse/importer/importer.h>
 
 
@@ -36,7 +37,7 @@ xmlChar*
 NULL
 : The annotation was not found.
 */
-__attribute__((unused)) static xmlChar* parse_tool_anno(
+static xmlChar* _parse_fmi2_tool_anno(
     xmlNode* node, const char* tool, const char* name)
 {
     xmlChar* result = NULL;
@@ -77,15 +78,61 @@ __attribute__((unused)) static xmlChar* parse_tool_anno(
 }
 
 
+static xmlChar* _parse_fmi3_tool_anno(
+    xmlNode* node, const char* tool, const char* name)
+{
+    xmlChar* result = NULL;
+    /* Build the XPath query. */
+    size_t   query_len =
+        snprintf(NULL, 0, "Annotations/Annotation[@type='%s']", tool) + 1;
+    char* query = calloc(query_len, sizeof(char));
+    snprintf(query, query_len, "Annotations/Annotation[@type='%s']", tool);
+    xmlXPathContext* ctx = xmlXPathNewContext(node->doc);
+    ctx->node = node;
+    xmlXPathObject* obj = xmlXPathEvalExpression((xmlChar*)query, ctx);
+
+    /* Locate the annotation value (if present). */
+    if (obj->type == XPATH_NODESET && obj->nodesetval) {
+        /* Annotation. */
+        for (int i = 0; i < obj->nodesetval->nodeNr; i++) {
+            xmlNode* a_node = obj->nodesetval->nodeTab[i];
+            for (xmlNode* cur_node = a_node->children; cur_node;
+                 cur_node = cur_node->next) {
+                if (cur_node->type == XML_ELEMENT_NODE &&
+                    cur_node->name != NULL) {
+                    if (strcmp((const char*)cur_node->name, name) == 0) {
+                        result = xmlNodeGetContent(cur_node);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /* Cleanup and return the result. */
+    free(query);
+    xmlXPathFreeObject(obj);
+    xmlXPathFreeContext(ctx);
+    return result;
+}
+
+
 static inline void _alloc_var(HashMap map, void** vr_ptr, void** val_ptr,
-    size_t ptr_size, size_t** val_size, size_t* count, bool is_string)
+    size_t ptr_size, size_t** val_size, size_t* count,
+    BinaryData*** binary_info, bool is_binary)
 {
     *count = map.used_nodes;
     *vr_ptr = calloc(*count, sizeof(unsigned int));
     *val_ptr = calloc(*count, ptr_size);
+
     if (val_size) {
         *val_size = calloc(*count, sizeof(size_t));
     }
+
+    if (is_binary) {
+        *binary_info = calloc(*count, sizeof(BinaryData*));
+    }
+
     char** keys = hashmap_keys(&map);
     for (uint64_t i = 0; i < map.used_nodes; i++) {
         unsigned int key = (unsigned int)atoi(keys[i]);
@@ -93,7 +140,8 @@ static inline void _alloc_var(HashMap map, void** vr_ptr, void** val_ptr,
         memcpy((void*)(*vr_ptr + i * sizeof(unsigned int)), &key,
             sizeof(unsigned int));
         if (value) {
-            if (is_string) {
+            if (is_binary) {
+                (*binary_info)[i] = (BinaryData*)value;
                 /* TODO Support for binary/string variables. */
                 // char** string_arr = *val_ptr;
                 // int   len = strlen(value);
@@ -127,16 +175,28 @@ static inline void _parse_fmi2_scalar(xmlNodePtr child, xmlChar* vr,
 }
 
 
-static inline void _parse_fmi2_string(xmlNodePtr child, xmlChar* vr,
+static void _parse_fmi2_string(xmlNode* variable, xmlNode* child, xmlChar* vr,
     xmlChar* causality, xmlChar* start, HashMap* vr_rx_binary,
     HashMap* vr_tx_binary)
 {
     if (xmlStrcmp(child->name, (xmlChar*)"String")) return;
 
+    BinaryData* data = calloc(1, sizeof(BinaryData));
+
+    data->start = strdup((char*)start);
+
+    xmlChar* mime_type = _parse_fmi2_tool_anno(
+        variable, "dse.standards.fmi-ls-binary-codec", "mimetype");
+    if (mime_type) {
+        data->mimetype = strdup((char*)mime_type);
+        importer_ncodec_stat((char*)mime_type, &data->type);
+    }
+    xmlFree(mime_type);
+
     if (strcmp((char*)causality, "input") == 0) {
-        hashmap_set_string(vr_rx_binary, (char*)vr, (char*)start);
+        hashmap_set(vr_rx_binary, (char*)vr, data);
     } else if (strcmp((char*)causality, "output") == 0) {
-        hashmap_set_string(vr_tx_binary, (char*)vr, (char*)start);
+        hashmap_set(vr_tx_binary, (char*)vr, data);
     }
 
     /* TODO Support for binary/string variables. */
@@ -146,9 +206,6 @@ static inline void _parse_fmi2_string(xmlNodePtr child, xmlChar* vr,
     // xmlChar* encoding = parse_tool_anno(
     //     child->name, "dse.standards.fmi-ls-binary-to-text",
     //     "encoding");
-    // xmlChar* encoding = parse_tool_anno(
-    //     child->name, "dse.standards.fmi-ls-binary-codec",
-    //     "mimetype");
 }
 
 
@@ -173,14 +230,15 @@ void _parse_fmi2_model_desc(HashMap* vr_rx_real, HashMap* vr_tx_real,
 
             _parse_fmi2_scalar(
                 child, vr, causality, start, vr_rx_real, vr_tx_real);
-            _parse_fmi2_string(
-                child, vr, causality, start, vr_rx_binary, vr_tx_binary);
+            _parse_fmi2_string(scalarVariable, child, vr, causality, start,
+                vr_rx_binary, vr_tx_binary);
+
+            if (start) xmlFree(start);
         }
     /* Cleanup. */
     next:
         if (vr) xmlFree(vr);
         if (causality) xmlFree(causality);
-        if (start) xmlFree(start);
     }
     xmlXPathFreeObject(xml_sv_obj);
 }
@@ -219,11 +277,22 @@ static inline void _parse_fmi3_binary(xmlNodePtr child, xmlChar* vr,
         }
     }
 
+    BinaryData* data = calloc(1, sizeof(BinaryData));
+
+    data->start = strdup((char*)start);
+
+    xmlChar* mime_type = _parse_fmi3_tool_anno(
+        child, "dse.standards.fmi-ls-binary-codec", "Mimetype");
+    if (mime_type) {
+        data->mimetype = strdup((char*)mime_type);
+        importer_ncodec_stat((char*)mime_type, &data->type);
+    }
+    xmlFree(mime_type);
+
     if (strcmp((char*)causality, "input") == 0) {
-        hashmap_set_string(
-            vr_rx_binary, (char*)vr, start ? (char*)start : (char*)"");
+        hashmap_set(vr_rx_binary, (char*)vr, data);
     } else if (strcmp((char*)causality, "output") == 0) {
-        hashmap_set_string(vr_tx_binary, (char*)vr, (char*)"");
+        hashmap_set(vr_tx_binary, (char*)vr, data);
     }
 
     /* Cleanup. */
@@ -321,6 +390,7 @@ static char* _get_fmu_binary_path(
     /* Cleanup. */
     free(_platform);
     xmlFree(model_identifier);
+    xmlXPathFreeObject(obj);
 
     return path;
 }
@@ -338,6 +408,9 @@ static inline char* _get_fmu_version(xmlXPathContext* ctx)
         result = strdup((char*)version);
         xmlFree(version);
     }
+
+    /* Cleanup. */
+    xmlXPathFreeObject(obj);
 
     return result;
 }
@@ -386,18 +459,20 @@ modelDescription* parse_model_desc(const char* docname, const char* platform)
     /* Setup the Scalar vr/ val array for the getter/ setter. */
     _alloc_var(vr_rx_real, (void**)&desc->real.vr_rx_real,
         (void**)&desc->real.val_rx_real, sizeof(double), NULL,
-        &desc->real.rx_count, false);
+        &desc->real.rx_count, NULL, false);
     _alloc_var(vr_tx_real, (void**)&desc->real.vr_tx_real,
         (void**)&desc->real.val_tx_real, sizeof(double), NULL,
-        &desc->real.tx_count, false);
+        &desc->real.tx_count, NULL, false);
 
     /* Setup the string vr/ val array for the getter/ setter. */
     _alloc_var(vr_rx_binary, (void**)&desc->binary.vr_rx_binary,
         (void**)&desc->binary.val_rx_binary, sizeof(char*),
-        &desc->binary.val_size_rx_binary, &desc->binary.rx_count, true);
+        &desc->binary.val_size_rx_binary, &desc->binary.rx_count,
+        &desc->binary.rx_binary_info, true);
     _alloc_var(vr_tx_binary, (void**)&desc->binary.vr_tx_binary,
         (void**)&desc->binary.val_tx_binary, sizeof(char*),
-        &desc->binary.val_size_tx_binary, &desc->binary.tx_count, true);
+        &desc->binary.val_size_tx_binary, &desc->binary.tx_count,
+        &desc->binary.tx_binary_info, true);
 
     /* Cleanup. */
     xmlXPathFreeContext(ctx);

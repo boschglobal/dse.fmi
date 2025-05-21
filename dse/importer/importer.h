@@ -5,6 +5,7 @@
 #ifndef DSE_IMPORTER_IMPORTER_H_
 #define DSE_IMPORTER_IMPORTER_H_
 
+#include <dse/ncodec/codec.h>
 
 #ifndef DLL_PUBLIC
 #define DLL_PUBLIC __attribute__((visibility("default")))
@@ -37,6 +38,13 @@ center footer Dynamic Simulation Environment
 */
 
 
+typedef struct BinaryData {
+    char* start;
+    char* mimetype;
+    char* type;
+} BinaryData;
+
+
 typedef struct modelDescription {
     char* name;
     char* version;
@@ -63,6 +71,8 @@ typedef struct modelDescription {
         size_t*       val_size_tx_binary;
         size_t        rx_count;
         size_t        tx_count;
+        BinaryData**  rx_binary_info;
+        BinaryData**  tx_binary_info;
     } binary;
 } modelDescription;
 
@@ -71,5 +81,12 @@ typedef struct modelDescription {
 DLL_PRIVATE modelDescription* parse_model_desc(
     const char* docname, const char* platform);
 
+/* importer NCodec Interface */
+DLL_PUBLIC void importer_codec_write(uint32_t frame_id, uint8_t frame_type,
+    const uint8_t* message_buffer, size_t message_len, uint8_t** out_buffer,
+    size_t* out_length, const char* mime_type);
+DLL_PUBLIC void importer_ncodec_read(
+    const char* mime_type, uint8_t* data, size_t len);
+DLL_PUBLIC void importer_ncodec_stat(const char* mime_type, char** value);
 
 #endif  // DSE_IMPORTER_IMPORTER_H_
