@@ -117,9 +117,9 @@ static WindowsModel* _gwfmu_model_generator(
         if (dse_yaml_get_double(
                 model_n, "annotations/cli/timeout", &model->timeout)) {
             model->timeout = DEFAULT_TIMEOUT;
-            if (doc) { 
-                dse_yaml_get_double(doc, "spec/runtime/env/timeout",
-                &model->timeout);
+            if (doc) {
+                dse_yaml_get_double(
+                    doc, "spec/runtime/env/timeout", &model->timeout);
             }
         };
 
@@ -196,8 +196,8 @@ static void _parse_script_envar(
 }
 
 
-static void _build_models(
-    uint32_t len, YamlNode* n_models, YamlNode* gw_doc, YamlNode* doc, HashList* list)
+static void _build_models(uint32_t len, YamlNode* n_models, YamlNode* gw_doc,
+    YamlNode* doc, HashList* list)
 {
     for (uint32_t i = 0; i < len; i++) {
         YamlNode* model = hashlist_at(&n_models->sequence, i);
@@ -450,15 +450,12 @@ static int _gateway_stack(ModelInstanceSpec* mi, SchemaObject* o)
         &session->visibility.models);
 
     bool start_redis = true;
-    dse_yaml_get_bool(o->doc, "metadata/annotations/start_redis",
-        &start_redis);
+    dse_yaml_get_bool(o->doc, "metadata/annotations/start_redis", &start_redis);
     if (start_redis) {
         session->transport = _parse_redis(fmu, o->doc);
-        fmu_log(fmu, 0, "Debug",
-            "Redis will be started by the gateway");
+        fmu_log(fmu, 0, "Debug", "Redis will be started by the gateway");
     } else {
-        fmu_log(fmu, 0, "Debug",
-            "Redis will NOT be started by the gateway");
+        fmu_log(fmu, 0, "Debug", "Redis will NOT be started by the gateway");
     }
 
     session->simbus = _parse_simbus(fmu, o->doc);
