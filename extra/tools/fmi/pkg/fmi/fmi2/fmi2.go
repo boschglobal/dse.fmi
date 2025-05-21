@@ -217,6 +217,7 @@ func buildBinarySignal(signal schema_kind.Signal, vref any, causality string, id
 	} else {
 		_causality = "output"
 	}
+	var variability *string = stringPtr("discrete")
 
 	tool := []Tool{
 		{
@@ -243,6 +244,7 @@ func buildBinarySignal(signal schema_kind.Signal, vref any, causality string, id
 		Name:           fmt.Sprintf("network_%d_%d_%s", bus_id, id, causality),
 		ValueReference: strconv.Itoa(vref.(int)),
 		Causality:      _causality,
+		Variability:    variability,
 		String: &FmiString{
 			Start: start,
 		},
@@ -283,7 +285,7 @@ func StringSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 	for _, signal := range signalGroupSpec.Signals {
 
 		causality := (*signal.Annotations)["fmi_variable_causality"].(string)
-		_start := (*signal.Annotations)["fmi_variable_start"]
+		_start := (*signal.Annotations)["fmi_variable_start_value"]
 		start := ""
 		var variability *string = nil
 
@@ -338,7 +340,9 @@ func SetGeneralFmuXmlFields(fmiConfig fmi.FmiConfig, fmuXml *ModelDescription) e
 	return nil
 }
 
-func VariablesFromSignalgroups(FmiXml *ModelDescription, signalGroups string, index *index.YamlFileIndex) error {
+func VariablesFromSignalgroups(
+	FmiXml *ModelDescription, signalGroups string, index *index.YamlFileIndex) ([]string, error) {
+	var channels []string
 	if signalGroupDocs, ok := index.DocMap["SignalGroup"]; ok {
 		filter := []string{}
 		if len(signalGroups) > 0 {
@@ -359,8 +363,11 @@ func VariablesFromSignalgroups(FmiXml *ModelDescription, signalGroups string, in
 					slog.Warn(fmt.Sprintf("Skipped Scalarsignal (Error: %s)", err.Error()))
 				}
 			}
+			if !slices.Contains(channels, doc.Metadata.Labels["channel"]) {
+				channels = append(channels, doc.Metadata.Labels["channel"])
+				slog.Debug(fmt.Sprintf("added %s", doc.Metadata.Labels["channel"]))
+			}
 		}
 	}
-	fmt.Printf("FmiXml: %v\n", FmiXml)
-	return nil
+	return channels, nil
 }

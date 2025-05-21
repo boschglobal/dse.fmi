@@ -34,6 +34,7 @@ type GenFmiModelcCommand struct {
 	fmiVersion   string
 	uuid         string
 	outdir       string
+	fmiPackage   string
 	logLevel     int
 
 	// Model parameter
@@ -54,6 +55,7 @@ func NewFmiModelcCommand(name string) *GenFmiModelcCommand {
 	c.fs.StringVar(&c.uuid, "uuid", "11111111-2222-3333-4444-555555555555", "UUID to assign to the FMU, set to '' to generate a new UUID")
 	c.fs.StringVar(&c.outdir, "outdir", "out", "Output directory for the FMU file")
 	c.fs.StringVar(&c.fmiVersion, "fmiVersion", "2", "Modelica FMI Version")
+	c.fs.StringVar(&c.fmiPackage, "fmiPackage", "", "Fmi Package path")
 	c.fs.IntVar(&c.logLevel, "log", 4, "Loglevel")
 
 	// Supports unit testing.
@@ -119,11 +121,12 @@ func (c *GenFmiModelcCommand) Run() error {
 		return fmt.Errorf("could not create FMU binaries directory (%v)", err)
 	}
 
+	// Copy the necessary binaries from the FMI package.
 	modelIdentifier := fmt.Sprintf("libfmi%smodelcfmu", c.fmiVersion)
-	if err := operations.Copy(c.getFmuLibPath(c.libRootPath, modelIdentifier, c.platform), c.getFmuBinPath(fmuBinPath, modelIdentifier, c.platform)); err != nil {
+	if err := operations.Copy(c.getFmuLibPath(c.fmiPackage, modelIdentifier, c.platform), c.getFmuBinPath(fmuBinPath, modelIdentifier, c.platform)); err != nil {
 		return fmt.Errorf("could not copy FMU binary (%v)", err)
 	}
-	if err := operations.Copy(c.getFmuLibPath(c.libRootPath, "libmodelc", c.platform), c.getFmuBinPath(fmuBinPath, "libmodelc", c.platform)); err != nil {
+	if err := operations.Copy(c.getFmuLibPath(c.fmiPackage, "libmodelc", c.platform), c.getFmuBinPath(fmuBinPath, "libmodelc", c.platform)); err != nil {
 		return fmt.Errorf("could not copy modelc binary (%v)", err)
 	}
 
@@ -198,35 +201,21 @@ func (c *GenFmiModelcCommand) getFmuBinaryDirName(platform string) (dir string) 
 	return
 }
 
-func (c *GenFmiModelcCommand) getFmuLibPath(libRootPath string, modelIdentifier string, platform string) string {
+func (c *GenFmiModelcCommand) getFmuLibPath(path string, modelIdentifier string, platform string) string {
 	var libpath string
-	filePrefix := ""
-	filePostfix := ""
 	extension := "so"
 
-	os, arch, found := strings.Cut(platform, "-")
+	os, _, found := strings.Cut(platform, "-")
 	if found {
 		switch os {
 		case "linux":
-			libpath = "lib"
-			switch arch {
-			case "x86":
-				libpath = "lib32"
-				filePostfix = "_x86"
-			case "i386":
-				libpath = "lib32"
-				filePostfix = "_i386"
-			}
+			libpath = "fmimodelc/lib"
 		case "windows":
 			libpath = "bin"
 			extension = "dll"
-			switch arch {
-			case "x86":
-				libpath = "bin32"
-			}
 		}
 	}
-	return fmt.Sprintf("%s/%s/%s%s%s.%s", libRootPath, libpath, filePrefix, modelIdentifier, filePostfix, extension)
+	return fmt.Sprintf("%s/%s/%s.%s", path, libpath, modelIdentifier, extension)
 }
 
 func (c *GenFmiModelcCommand) getFmuLicensesPath(libRootPath string) string {
@@ -265,7 +254,7 @@ func (c *GenFmiModelcCommand) createFmuXml(name string, uuid string, version str
 		if err := fmi2.SetGeneralFmuXmlFields(fmiConfig, &fmuXml); err != nil {
 			return err
 		}
-		if err := fmi2.VariablesFromSignalgroups(&fmuXml, signalGroups, index); err != nil {
+		if _, err := fmi2.VariablesFromSignalgroups(&fmuXml, signalGroups, index); err != nil {
 			return err
 		}
 		return fmuXml
@@ -276,7 +265,7 @@ func (c *GenFmiModelcCommand) createFmuXml(name string, uuid string, version str
 		if err := fmi3.SetGeneralFmuXmlFields(fmiConfig, &fmuXml); err != nil {
 			return err
 		}
-		if err := fmi3.VariablesFromSignalgroups(&fmuXml, signalGroups, index); err != nil {
+		if _, err := fmi3.VariablesFromSignalgroups(&fmuXml, signalGroups, index); err != nil {
 			return err
 		}
 		return fmuXml

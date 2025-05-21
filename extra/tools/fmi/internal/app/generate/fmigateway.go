@@ -12,12 +12,13 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/file/handler"
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/file/handler/kind"
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/file/index"
+	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/fmi"
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/fmi/fmi2"
+	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/fmi/fmi3"
 	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/log"
 	schema_kind "github.com/boschglobal/dse.schemas/code/go/dse/kind"
 	"github.com/google/uuid"
@@ -101,9 +102,13 @@ func (c *GenFmiGatewayCommand) Run() error {
 	if err != nil {
 		return err
 	}
-	if err := c.generateModel(*fmuXml, channels); err != nil {
+
+	fmt.Printf("channels: %v\n", channels)
+
+	if err := c.generateModel(channels); err != nil {
 		return err
 	}
+
 	fmuModelDescriptionFilename := filepath.Join(c.outdir, "modelDescription.xml")
 	if err := writeXml(fmuXml, fmuModelDescriptionFilename); err != nil {
 		return fmt.Errorf("could not generate the FMU Model Description (%v)", err)
@@ -203,30 +208,9 @@ func (c *GenFmiGatewayCommand) mergeSignalGroups(signalGroups string, outDir str
 	return nil
 }
 
-func (c *GenFmiGatewayCommand) setGeneralXmlFields(fmuXml *fmi2.ModelDescription) {
-	// Basic FMU Information.
-	fmuXml.ModelName = "Gateway"
-	fmuXml.FmiVersion = fmt.Sprintf("%s.0", c.fmiVersion)
-	fmuXml.Guid = fmt.Sprintf("{%s}", c.uuid)
-	fmuXml.GenerationTool = stringPtr("DSE FMI - FMU Gateway")
-	fmuXml.GenerationDateAndTime = stringPtr(time.Now().Format("2006-01-02T15:04:05Z"))
-	fmuXml.Author = "Robert Bosch GmbH"
-	fmuXml.Version = c.version
-	fmuXml.Description = "Gateway to connect to the DSE Simbus"
-
-	// Runtime Information.
-	fmuXml.DefaultExperiment.StartTime = fmt.Sprintf("%f", c.startTime)
-	fmuXml.DefaultExperiment.StopTime = fmt.Sprintf("%f", c.endTime)
-	fmuXml.DefaultExperiment.StepSize = fmt.Sprintf("%f", c.stepSize)
-
-	// Model Information.
-	fmuXml.CoSimulation.ModelIdentifier = fmt.Sprintf("libfmi%sgateway", c.fmiVersion) // This is the packaged SO/DLL file.
-	fmuXml.CoSimulation.CanHandleVariableCommunicationStepSize = "true"
-	fmuXml.CoSimulation.CanInterpolateInputs = "true"
-}
-
-func (c *GenFmiGatewayCommand) buildXmlSignals(fmuXml *fmi2.ModelDescription, index *index.YamlFileIndex, envars *[]schema_kind.SignalGroupSpec) ([]string, error) {
-	var channels []string
+func (c *GenFmiGatewayCommand) buildFmi2XmlSignals(
+	fmuXml *fmi2.ModelDescription, index *index.YamlFileIndex,
+	envars *[]schema_kind.SignalGroupSpec) ([]string, error) {
 
 	if envars != nil {
 		if err := fmi2.StringSignal((*envars)[0], fmuXml); err != nil {
@@ -237,32 +221,35 @@ func (c *GenFmiGatewayCommand) buildXmlSignals(fmuXml *fmi2.ModelDescription, in
 		}
 	}
 
-	if signalGroupDocs, ok := index.DocMap["SignalGroup"]; ok {
-		for _, doc := range signalGroupDocs {
-			fmt.Fprintf(flag.CommandLine.Output(), "Adding SignalGroup %s to %s\n", doc.Metadata.Name, doc.File)
-			signalGroupSpec := doc.Spec.(*schema_kind.SignalGroupSpec)
-			if doc.Metadata.Annotations["vector_type"] == "binary" {
-				if err := fmi2.BinarySignal(*signalGroupSpec, fmuXml); err != nil {
-					slog.Warn(fmt.Sprintf("Skipped BinarySignal (Error: %s)", err.Error()))
-				}
-			} else {
-				if err := fmi2.ScalarSignal(*signalGroupSpec, fmuXml); err != nil {
-					slog.Debug(fmt.Sprintf("Skipped Scalarsignal (Error: %s)", err.Error()))
-				}
-			}
-			if !slices.Contains(channels, doc.Metadata.Labels["channel"]) {
-				channels = append(channels, doc.Metadata.Labels["channel"])
-				slog.Debug(fmt.Sprintf("added %s", doc.Metadata.Labels["channel"]))
-			}
+	channels, err := fmi2.VariablesFromSignalgroups(fmuXml, "", index)
+	if err != nil {
+		return nil, err
+	}
+
+	return channels, nil
+}
+
+func (c *GenFmiGatewayCommand) buildFmi3XmlSignals(
+	fmuXml *fmi3.ModelDescription, index *index.YamlFileIndex,
+	envars *[]schema_kind.SignalGroupSpec) ([]string, error) {
+
+	if envars != nil {
+		if err := fmi3.StringSignal((*envars)[0], fmuXml); err != nil {
+			slog.Warn(fmt.Sprintf("could not set envars in xml (Error: %s)", err.Error()))
 		}
+		if err := fmi3.ScalarSignal((*envars)[1], fmuXml); err != nil {
+			slog.Warn(fmt.Sprintf("could not set envars in xml (Error: %s)", err.Error()))
+		}
+	}
+
+	channels, err := fmi3.VariablesFromSignalgroups(fmuXml, "", index)
+	if err != nil {
+		return nil, err
 	}
 	return channels, nil
 }
 
-func (c *GenFmiGatewayCommand) createFmuXml(envars *[]schema_kind.SignalGroupSpec) (*fmi2.ModelDescription, []string, error) {
-	fmuXml := fmi2.ModelDescription{}
-	c.setGeneralXmlFields(&fmuXml)
-
+func (c *GenFmiGatewayCommand) createFmuXml(envars *[]schema_kind.SignalGroupSpec) (interface{}, []string, error) {
 	index := index.NewYamlFileIndex()
 	_, docs, err := handler.ParseFile(filepath.Join(c.outdir, "fmu.yaml"))
 	if err != nil {
@@ -275,11 +262,48 @@ func (c *GenFmiGatewayCommand) createFmuXml(envars *[]schema_kind.SignalGroupSpe
 		}
 		index.DocMap[doc.Kind] = append(index.DocMap[doc.Kind], doc)
 	}
-	channels, err := c.buildXmlSignals(&fmuXml, index, envars)
-	if err != nil {
-		return nil, nil, err
+
+	fmiConfig := fmi.FmiConfig{
+		Name:           "Gateway",
+		UUID:           c.uuid,
+		Version:        c.version,
+		Description:    "Gateway to connect to the DSE Simbus",
+		StartTime:      c.startTime,
+		StopTime:       c.endTime,
+		StepSize:       c.stepSize,
+		GenerationTool: "DSE FMI - ModelC FMU",
 	}
-	return &fmuXml, channels, nil
+	switch c.fmiVersion {
+	case "2":
+		fmuXml := fmi2.ModelDescription{}
+		fmiConfig.FmiVersion = "2"
+		fmiConfig.ModelIdentifier = "libfmi2gateway"
+		if err := fmi2.SetGeneralFmuXmlFields(fmiConfig, &fmuXml); err != nil {
+			return nil, nil, err
+		}
+
+		channels, err := c.buildFmi2XmlSignals(&fmuXml, index, envars)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return fmuXml, channels, nil
+	case "3":
+		fmuXml := fmi3.ModelDescription{}
+		fmiConfig.FmiVersion = "3"
+		fmiConfig.ModelIdentifier = "libfmi3gateway"
+		if err := fmi3.SetGeneralFmuXmlFields(fmiConfig, &fmuXml); err != nil {
+			return nil, nil, err
+		}
+
+		channels, err := c.buildFmi3XmlSignals(&fmuXml, index, envars)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return fmuXml, channels, nil
+	}
+	return nil, nil, nil
 }
 
 func (c *GenFmiGatewayCommand) parseStack() (*[]schema_kind.SignalGroupSpec, error) {
@@ -357,13 +381,13 @@ func (c *GenFmiGatewayCommand) generateChannels(channel_map []string) ([]schema_
 	return channels, nil
 }
 
-func (c *GenFmiGatewayCommand) generateModel(fmiMD fmi2.ModelDescription, channel_map []string) error {
+func (c *GenFmiGatewayCommand) generateModel(channel_map []string) error {
 
 	// Build the model.xml
 	model := schema_kind.Model{
 		Kind: "Model",
 		Metadata: &schema_kind.ObjectMetadata{
-			Name: &fmiMD.ModelName,
+			Name: stringPtr("Gateway"),
 		},
 	}
 
