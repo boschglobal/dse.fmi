@@ -53,20 +53,21 @@ typedef struct WindowsModel {
     /* process Information */
     const char* exe;
     /* Model information. */
-    const char* name;
+    char*       name;
     double      step_size;
     double      end_time;
     int         log_level;
     char*       yaml;
     double      current_step;
     double      timeout;
+    bool        stacked;
     /* Windows Information. */
     void*       w_process;
 } WindowsModel;
 
 typedef struct FmiGatewaySession {
     const char*   model_stack;
-    YamlNode*     model_stack_file;
+    YamlDocList*  model_stack_files;
     WindowsModel* w_models;
     WindowsModel* simbus;
     WindowsModel* transport;
@@ -109,8 +110,8 @@ DLL_PRIVATE void fmigateway_index_text_encoding(FmuInstanceData* fmu,
 DLL_PRIVATE void fmigateway_parse(FmuInstanceData* fmu);
 
 /* session.c */
-DLL_PRIVATE void fmigateway_session_configure(FmuInstanceData* fmu);
-DLL_PRIVATE void fmigateway_session_end(FmuInstanceData* fmu);
+DLL_PRIVATE int fmigateway_session_configure(FmuInstanceData* fmu);
+DLL_PRIVATE int fmigateway_session_end(FmuInstanceData* fmu);
 DLL_PRIVATE int  fmigateway_setenv(const char* name, const char* value);
 
 /* session_win32.c */

@@ -97,14 +97,18 @@ int32_t fmu_init(FmuInstanceData* fmu)
     assert(fmi_gw);
     ModelGatewayDesc* gw = fmi_gw->model;
     assert(gw);
+    int rc;
 
-    fmigateway_session_configure(fmu);
+    rc = fmigateway_session_configure(fmu);
+    if (rc) return rc;
 
     /* Setup the Model Gateway object. */
     fmu_log(fmu, 0, "Debug", "Setting up the Simbus connection...");
-    model_gw_setup(gw, "gateway", fmi_gw->settings.yaml_files,
+    rc = model_gw_setup(gw, "gateway", fmi_gw->settings.yaml_files,
         fmi_gw->settings.log_level, fmi_gw->settings.step_size,
         fmi_gw->settings.end_time);
+    if (rc) return rc;
+
     fmu_log(fmu, 0, "Debug", "Connected to the Simbus...");
 
     fmigateway_index_scalar_signals(
@@ -203,17 +207,25 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
     for (size_t i = 0; fmi_gw->settings.yaml_files[i]; i++) {
         free((char*)fmi_gw->settings.yaml_files[i]);
     }
+
     FmiGatewaySession* session = fmi_gw->settings.session;
     if (session) {
         /* Cleanup Simbus model. */
-        if (session->simbus) free(session->simbus->yaml);
+        if (session->simbus) {
+            free(session->simbus->name);
+            free(session->simbus->yaml);
+        }
         free(session->simbus);
         /* Cleanup transport model. */
+        if (session->transport) free(session->transport->name);
         free(session->transport);
+        /* Cleanup model stack files. */
+        dse_yaml_destroy_doc_list(session->model_stack_files);
         /* Cleanup ModelC models. */
         for (WindowsModel* model = session->w_models; model && model->name;
              model++) {
             free(model->yaml);
+            free(model->name);
         }
         free(session->w_models);
 
@@ -222,7 +234,6 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
             free(e->default_value);
         }
         free(session->envar);
-
         free(session);
     }
     free(fmi_gw->settings.yaml_files);

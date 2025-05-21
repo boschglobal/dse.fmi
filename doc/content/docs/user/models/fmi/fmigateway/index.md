@@ -45,6 +45,7 @@ by the gateway. The stack follows the following [schema](https://github.com/bosc
 |»» simbus_show|boolean|false|Set to true if the simbus process should be shown as terminal window|
 |»» models_show|boolean|false|Set to true if the model processes should be shown as terminal windows|
 |»» model_stack|string|false|Name of the Stack.yaml containing the model descriptions. Required for session handling|
+|»» start_redis|string|true|Set to false with no redis instance should be started on windows|
 
 ```text
 ---
@@ -190,9 +191,12 @@ that is referenced as described in this [section](#stack-metadata). Additional i
 |Name|Type|Required|Description|
 |---|---|---|---|
 |spec|object|true|none|
+|» runtime|object|false|none|
+|»» env|object|false|none|
+|»»» cli|object|false|none|
 |» models|object|true|none|
 |»» annotations|object|false|none|
-|»»» cli|object|false|none|
+|»»» timeout|float64|false|Timeout definition for all models|
 |»»»» step_size|float64|false|Model step size. Default 0.0005|
 |»»»» end_time|float64|false|Model end size. Default 10min (36000), do not set if gateway end time is variable|
 |»»»» log_level|int|false|Model log level. Default 6 (lower equals to more information)|
@@ -212,6 +216,9 @@ spec:
       redispubsub:
         uri: redis://localhost:6379
         timeout: 60
+  runtime:
+    env:
+      timeout: 600
   models:
     - name: Model_1
       uid: 42

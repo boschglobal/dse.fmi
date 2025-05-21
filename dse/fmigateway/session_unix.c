@@ -12,3 +12,14 @@ int fmigateway_setenv(const char* name, const char* value)
 
     return setenv(name, value, true);
 }
+
+void fmigateway_session_windows_start(FmuInstanceData* fmu)
+{
+    UNUSED(fmu);
+}
+
+
+void fmigateway_session_windows_end(FmuInstanceData* fmu)
+{
+    UNUSED(fmu);
+}

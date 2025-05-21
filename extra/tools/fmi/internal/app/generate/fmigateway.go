@@ -145,6 +145,9 @@ func (c *GenFmiGatewayCommand) patchSignal(vr *int, sg_type string, signals []sc
 		if (*s.Annotations)["fmi_variable_causality"] != nil {
 			causality = ((*s.Annotations)["fmi_variable_causality"]).(string)
 		}
+		if causality == "local" {
+			continue
+		}
 
 		annotations := schema_kind.Annotations{
 			"fmi_variable_causality": causality,

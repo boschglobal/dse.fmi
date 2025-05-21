@@ -49,14 +49,21 @@ int test_fmigateway__parser_teardown(void** state)
         if (fmu->data) {
             FmiGatewaySession* session = fmi_gw->settings.session;
             free(fmi_gw->settings.yaml_files);
-            dse_yaml_destroy_node(session->model_stack_file);
+            dse_yaml_destroy_doc_list(session->model_stack_files);
 
-            if (session->simbus) free(session->simbus->yaml);
+            if (session->simbus) {
+                free(session->simbus->name);
+                free(session->simbus->yaml);
+            }
             free(session->simbus);
+
+            if (session->transport) free(session->transport->name);
             free(session->transport);
+
             for (WindowsModel* model = session->w_models; model && model->name;
                  model++) {
                 free(model->yaml);
+                free(model->name);
             }
             free(session->w_models);
 
@@ -86,7 +93,7 @@ void test_fmigateway__parser_gw_stack_default(void** state)
 
     // Test conditions.
     WindowsModel simbus = {
-        .name = "simbus",
+        .name = (char*)"simbus",
         .step_size = 0.0005,
         .end_time = 36000.0,
         .log_level = 6,
@@ -138,7 +145,7 @@ void test_fmigateway__parser_gw_stack(void** state)
 
     // Test conditions.
     WindowsModel simbus = {
-        .name = "simbus",
+        .name = (char*)"simbus",
         .step_size = 0.005,
         .end_time = 0.020,
         .log_level = 4,
@@ -147,7 +154,7 @@ void test_fmigateway__parser_gw_stack(void** state)
         .yaml = (char*)"stack.yaml",
     };
     WindowsModel connection = {
-        .name = "connection",
+        .name = (char*)"transport",
         .exe = "redis.exe",
     };
 
@@ -204,7 +211,7 @@ void test_fmigateway__parser_model_stack(void** state)
     // Test conditions.
     WindowsModel TC_models[] = {
         {
-            .name = "Model_1",
+            .name = (char*)"Model_1",
             .step_size = 0.0005,
             .end_time = 20.0,
             .log_level = 1,
@@ -214,13 +221,35 @@ void test_fmigateway__parser_model_stack(void** state)
         },
         {
             /* Model with default values. */
-            .name = "Model_2",
+            .name = (char*)"Model_2",
             .step_size = 0.0005,
             .end_time = 36000.0,
             .log_level = 6,
             .timeout = 60.0,
             .exe = "modelc.exe",
             .yaml = (char*)"stack.yaml model.yaml signalgroup.yaml",
+        },
+        {
+            /* Model with default values. */
+            .name = (char*)"Model_3,Model_4",
+            .step_size = 0.0005,
+            .end_time = 36000.0,
+            .log_level = 6,
+            .timeout = 60.0,
+            .exe = "modelc.exe",
+            .yaml = (char*)"stack_models_parser.yaml Model_3.yaml "
+                           "signalgroup_3.yaml model_4.yaml signalgroup_4.yaml",
+        },
+        {
+            /* Model with default values. */
+            .name = (char*)"Model_5,Model_6",
+            .step_size = 0.05,
+            .end_time = 20.0,
+            .log_level = 1,
+            .timeout = 600.0,
+            .exe = "different.exe",
+            .yaml = (char*)"stack_models_parser.yaml Model_5.yaml "
+                           "signalgroup_5.yaml Model_6.yaml signalgroup_6.yaml",
         },
     };
 
@@ -232,12 +261,12 @@ void test_fmigateway__parser_model_stack(void** state)
         WindowsModel* model = &fmi_gw->settings.session->w_models[i];
         WindowsModel* tc_model = &TC_models[i];
         assert_string_equal(tc_model->name, model->name);
-        assert_string_equal(tc_model->exe, model->exe);
         assert_string_equal(tc_model->yaml, model->yaml);
         assert_double_equal(tc_model->step_size, model->step_size, 0.0);
         assert_double_equal(tc_model->end_time, model->end_time, 0.0);
         assert_double_equal(tc_model->timeout, model->timeout, 0.0);
         assert_int_equal(tc_model->log_level, model->log_level);
+        assert_string_equal(tc_model->exe, model->exe);
     }
 }
 

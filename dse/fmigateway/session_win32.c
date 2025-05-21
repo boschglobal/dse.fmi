@@ -302,18 +302,22 @@ void fmigateway_session_windows_start(FmuInstanceData* fmu)
     FmiGatewaySession* session = fmi_gw->settings.session;
 
     /* Transport process. */
-    fmu_log(fmu, 0, "Debug", "Starting process: %s", session->transport->name);
-    session->transport->w_process = calloc(1, sizeof(WindowsProcess));
-    _configure_process(session->transport->w_process,
-        session->visibility.transport, session->transport->name);
-    _start_redis(fmu, session->transport, session->transport->w_process);
+    if (session->transport) {
+        fmu_log(fmu, 0, "Debug", "Starting process: %s", session->transport->name);
+        session->transport->w_process = calloc(1, sizeof(WindowsProcess));
+        _configure_process(session->transport->w_process,
+            session->visibility.transport, session->transport->name);
+        _start_redis(fmu, session->transport, session->transport->w_process);
+    }
 
     /* Simbus process. */
-    fmu_log(fmu, 0, "Debug", "Starting process: %s", session->simbus->name);
-    session->simbus->w_process = calloc(1, sizeof(WindowsProcess));
-    _configure_process(session->simbus->w_process, session->visibility.simbus,
-        session->simbus->name);
-    _start_model(fmu, session->simbus);
+    if (session->simbus) {
+        fmu_log(fmu, 0, "Debug", "Starting process: %s", session->simbus->name);
+        session->simbus->w_process = calloc(1, sizeof(WindowsProcess));
+        _configure_process(session->simbus->w_process, session->visibility.simbus,
+            session->simbus->name);
+        _start_model(fmu, session->simbus);
+    }
 
     for (WindowsModel* m = session->w_models; m && m->name; m++) {
         m->w_process = calloc(1, sizeof(WindowsProcess));

@@ -47,3 +47,91 @@ spec:
           selectors:
             model: Model_2
             channel: signal_vector
+---
+kind: Stack
+metadata:
+  name: stack_models_stacked_default
+spec:
+  connection:
+    transport:
+      redispubsub:
+        uri: redis://localhost:6379
+        timeout: 60
+  runtime:
+    stacked: true
+  models:
+    - name: Model_3
+      uid: 42
+      model:
+        name: Model_3
+      runtime:
+        files:
+          - Model_3.yaml
+          - signalgroup_3.yaml
+      channels:
+        - name: E2M_M2E
+          alias: signal_channel
+          selectors:
+            model: Model_3
+            channel: signal_vector
+    - name: Model_4
+      uid: 45
+      model:
+        name: Model_4
+      runtime:
+        files:
+          - model_4.yaml
+          - signalgroup_4.yaml
+      channels:
+        - name: com_phys
+          alias: signal_channel
+          selectors:
+            model: Model_4
+            channel: signal_vector
+---
+kind: Stack
+metadata:
+  name: stack_models_stacked
+spec:
+  connection:
+    transport:
+      redispubsub:
+        uri: redis://localhost:6379
+        timeout: 60
+  runtime:
+    env:
+      MODELC_EXE_PATH: different.exe
+      step_size: 0.05
+      end_time: 20.0
+      log_level: 1
+      timeout: 600.0
+    stacked: true
+  models:
+    - name: Model_5
+      uid: 2432
+      model:
+        name: Model_5
+      runtime:
+        files:
+          - Model_5.yaml
+          - signalgroup_5.yaml
+      channels:
+        - name: E2M_M2E
+          alias: signal_channel
+          selectors:
+            model: Model_5
+            channel: signal_vector
+    - name: Model_6
+      uid: 4345
+      model:
+        name: Model_6
+      runtime:
+        files:
+          - Model_6.yaml
+          - signalgroup_6.yaml
+      channels:
+        - name: com_phys
+          alias: signal_channel
+          selectors:
+            model: Model_6
+            channel: signal_vector

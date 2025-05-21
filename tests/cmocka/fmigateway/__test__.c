@@ -15,7 +15,7 @@ extern int run_fmigateway__fmi2_tests(void);
 
 int main()
 {
-    __log_level__ = LOG_QUIET;  // LOG_DEBUG;//LOG_QUIET;
+    __log_level__ = LOG_QUIET;  // commit with LOG_QUIET
 
     int rc = 0;
     rc |= run_fmigateway__parser_tests();

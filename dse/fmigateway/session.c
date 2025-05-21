@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <limits.h>
+#include <errno.h>
 #include <dse/clib/util/strings.h>
 #include <dse/fmu/fmu.h>
 #include <dse/fmigateway/fmigateway.h>
@@ -11,7 +12,7 @@
 #define UNUSED(x) ((void)x)
 
 
-static inline char* _get_fmu_env_value(
+static char* _get_fmu_env_value(
     FmuInstanceData* fmu, FmiGatewayEnvvar* e)
 {
     if (strcmp(e->type, "string") == 0) {
@@ -28,7 +29,7 @@ static inline char* _get_fmu_env_value(
     return NULL;
 }
 
-static inline void _set_envar(FmuInstanceData* fmu)
+static void _set_envar(FmuInstanceData* fmu)
 {
     FmiGateway* fmi_gw = fmu->data;
 
@@ -49,7 +50,7 @@ static inline void _set_envar(FmuInstanceData* fmu)
     }
 }
 
-static inline void _run_cmd(FmuInstanceData* fmu, const char* cmd_string)
+static int _run_cmd(FmuInstanceData* fmu, const char* cmd_string)
 {
     _set_envar(fmu);
 
@@ -58,10 +59,26 @@ static inline void _run_cmd(FmuInstanceData* fmu, const char* cmd_string)
         cmd_string);
     fmu_log(fmu, 0, "Debug", "Run cmd: %s", cmd);
 
-    if (system(cmd)) {
-        fmu_log(fmu, 4, "Error", "Could not execute the script %s correctly.",
-            cmd_string);
+    int exitCode = system(cmd);
+    switch(exitCode) {
+        case -1: {
+            fmu_log(fmu, 4, "Error", "Could not execute the cmd '%s' correctly.",
+                cmd_string);
+            return EINVAL;
+            break;
+        };
+        case 1: {
+            fmu_log(fmu, 4, "Error", "Cmd '%s' canceled, shutting down.", cmd_string);
+            return ECANCELED;
+            break;
+        }
+        default: {
+            fmu_log(fmu, 0, "Debug", "Executed the cmd '%s'.", cmd_string);
+            break;
+        };
     };
+
+    return 0;
 }
 
 /**
@@ -76,20 +93,23 @@ Parameters
 fmu (FmuInstanceData*)
 : The FMU Descriptor object representing an instance of the FMU Model.
 */
-void fmigateway_session_configure(FmuInstanceData* fmu)
+int fmigateway_session_configure(FmuInstanceData* fmu)
 {
     FmiGateway* fmi_gw = fmu->data;
 
     FmiGatewaySession* session = fmi_gw->settings.session;
-    if (session == NULL) return;
+    if (session == NULL) return 0;
 
     if (session->init_cmd) {
-        _run_cmd(fmu, session->init_cmd);
+        int rc = _run_cmd(fmu, session->init_cmd);
+        if (rc)  return rc;
     }
 
-    if (session->w_models && strcmp(PLATFORM_OS, "windows") == 0) {
+    if (strcmp(PLATFORM_OS, "windows") == 0) {
         fmigateway_session_windows_start(fmu);
     }
+
+    return 0;
 }
 
 
@@ -105,31 +125,21 @@ Parameters
 fmu (FmuInstanceData*)
 : The FMU Descriptor object representing an instance of the FMU Model.
 */
-void fmigateway_session_end(FmuInstanceData* fmu)
+int fmigateway_session_end(FmuInstanceData* fmu)
 {
     FmiGateway* fmi_gw = fmu->data;
 
     FmiGatewaySession* session = fmi_gw->settings.session;
-    if (session == NULL) return;
+    if (session == NULL) return 0;
 
-    if (session->w_models && strcmp(PLATFORM_OS, "windows") == 0) {
+    if (strcmp(PLATFORM_OS, "windows") == 0) {
         fmigateway_session_windows_end(fmu);
     }
 
     if (session->shutdown_cmd) {
-        _run_cmd(fmu, session->shutdown_cmd);
+        int rc = _run_cmd(fmu, session->shutdown_cmd);
+        if (rc)  return rc;
     }
-}
 
-
-__attribute__((weak)) void fmigateway_session_windows_start(
-    FmuInstanceData* fmu)
-{
-    UNUSED(fmu);
-}
-
-
-__attribute__((weak)) void fmigateway_session_windows_end(FmuInstanceData* fmu)
-{
-    UNUSED(fmu);
+    return 0;
 }
