@@ -58,6 +58,7 @@ tasks:
           FMU_DIR: '{{.FMU_DIR}}'
           OUT_DIR: '{{.OUT_DIR}}'
           MCL_PATH: '{{.MCL_PATH}}'
+          PLATFORM: '{{.PLATFORM}}'
       - task: gen-signalgroup
         vars:
           INPUT: '{{.FMU_MODELDESC}}'
@@ -84,6 +85,9 @@ tasks:
           required: false
           hint: Path where the associated Signal Group should be created.
           default: '{{.OUT_DIR}}/signalgroup.yaml'
+        PLATFORM:
+          required: false
+          hint: Platform of the FMU being generated (normally set automatically).
       generates:
         - data/model.yaml
         - data/signalgroup.yaml
@@ -95,6 +99,13 @@ tasks:
     label: dse:fmi:generate-fmimodelc
     cmds:
       - task: gen-fmu
+        vars:
+          PLATFORM: '{{.PLATFORM}}'
+          SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
+          VERSION: '{{.VERSION}}'
+          UUID: '{{.UUID}}'
+          FMIVERSION: '{{.FMIVERSION}}'
+          OUT_DIR: '{{.OUT_DIR}}'
     requires:
       vars: [SIM, FMU_NAME]
     metadata:
@@ -107,7 +118,7 @@ tasks:
           hint: Name of the generated FMU.
         PLATFORM:
           required: false
-          hint: Selected platform of the generated FMU.
+          hint: Platform of the FMU being generated (normally set automatically).
         SIGNAL_GROUPS:
           required: false
           hint:
@@ -118,6 +129,9 @@ tasks:
         UUID:
           required: false
           hint: UUID of the generated FMU.
+        FMIVERSION:
+          required: false
+          hint: FMI version of the generated FMU (i.e. 2 or 3).
         OUT_DIR:
           required: false
           hint: Path where the FMU should be created.
@@ -130,6 +144,36 @@ tasks:
     label: dse:fmi:generate-fmigateway
     cmds:
       - task: gen-gateway
+        vars:
+          SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
+          OUT_DIR: '{{.OUT_DIR}}'
+          SESSION: '{{.SESSION}}'
+          VERSION: '{{.VERSION}}'
+          FMIVERSION: '{{.FMIVERSION}}'
+          UUID: '{{.UUID}}'
+    requires:
+      vars: [SIGNAL_GROUPS]
+    metadata:
+      vars:
+        SIGNAL_GROUPS:
+          required: true
+          hint: Signalgroups represented by this Gateway.
+        OUT_DIR:
+          required: false
+          hint: Path where the FMU should be created.
+          default: out
+        SESSION:
+          required: false
+          hint: Generate session handling.
+        VERSION:
+          required: false
+          hint: Version of the generated FMU.
+        FMIVERSION:
+          required: false
+          hint: FMI version of the generated FMU (i.e. 2 or 3).
+        UUID:
+          required: false
+          hint: UUID of the generated FMU.
 
   gen-mcl:
     internal: true
@@ -233,8 +277,8 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:patch-signalgroup
     vars:
-      # INPUT: '{{.INPUT}}'
-      # PATCH: '{{.PATCH}}'
+      INPUT: '{{.INPUT}}'
+      PATCH: '{{.PATCH}}'
       REMOVE_UNKNOWN: '{{if .REMOVE_UNKNOWN}}--remove-unknown{{else}}{{end}}'
     cmds:
       - docker run --rm
