@@ -41,12 +41,12 @@ Returns
 string
 : string containing the cmd to start a windows model
 */
-static inline char* _build_cmd(WindowsModel* w_model, const char* path)
+static char* _build_cmd(WindowsModel* w_model, const char* path)
 {
     char   cmd[2048];
     size_t max_len = sizeof cmd;
     int    offset =
-        snprintf(cmd, max_len, "cmd /C cd %s && %s", path, w_model->exe);
+        snprintf(cmd, max_len, "cmd /C cd %s && set && %s", path, w_model->exe);
     offset += snprintf(cmd + offset, max_len, " --name %s", w_model->name);
     offset +=
         snprintf(cmd + offset, max_len, " --endtime %lf", w_model->end_time);
@@ -79,7 +79,7 @@ Returns
 HANDLE
 : open handle to the specified file
 */
-static inline HANDLE _create_file(char* name)
+static HANDLE _create_file(char* name)
 {
     SECURITY_ATTRIBUTES sa;
     sa.nLength = sizeof(sa);
@@ -106,7 +106,7 @@ Parameters
 w_model (WindowsModel)
 : Model Descriptor containing parameter information.
 */
-static inline void _terminate_process(WindowsModel* w_model)
+static void _terminate_process(WindowsModel* w_model)
 {
     WindowsProcess* w_process = w_model->w_process;
 
@@ -129,7 +129,7 @@ Parameters
 w_model (WindowsModel)
 : Model Descriptor containing parameter information.
 */
-static inline void _gracefully_termiante_process(WindowsModel* w_model)
+static void _gracefully_termiante_process(WindowsModel* w_model)
 {
     WindowsProcess* w_process = w_model->w_process;
     if (w_model->end_time != MODEL_MAX_TIME) return;
@@ -167,7 +167,7 @@ w_process (WindowsProcess)
 fmu (FmuInstanceData*)
 : The FMU Descriptor object representing an instance of the FMU Model.
 */
-static inline void _start_redis(
+static void _start_redis(
     FmuInstanceData* fmu, WindowsModel* w_model, WindowsProcess* w_process)
 {
     /* Redis Server. */
@@ -182,6 +182,40 @@ static inline void _start_redis(
     free(file_path);
 }
 
+
+static char* _build_env(WindowsModel* m)
+{
+    if (m->envar == NULL) return NULL;
+
+    const int ENV_LEN = 1024;
+    char* parentEnv = GetEnvironmentStrings();
+    /* Calculate size of parent env block (double-null terminated). */
+    char*  p = parentEnv;
+    size_t parentEnvSize = 0;
+    while (*p) {
+        size_t len = strlen(p) + 1;  // +1 for null terminator
+        parentEnvSize += len;
+        p += len;
+    }
+    parentEnvSize++;  // for the final extra null
+
+    char* envBlock = calloc(ENV_LEN, sizeof(char));
+    char* ptr = envBlock;
+    for (FmiGatewayEnvvar* e = m->envar; e && e->name; e++) {
+        int len = snprintf(ptr, ENV_LEN, "%s=%s", e->name, e->default_value);
+        ptr += len + 1;  // Move pointer past the null terminator
+    }
+    /* Add the final null terminator to end the block */
+    *ptr = '\0';
+
+    char* combinedEnv = calloc(parentEnvSize + ENV_LEN, sizeof(char));
+    memcpy(combinedEnv, parentEnv, parentEnvSize);
+    combinedEnv[parentEnvSize - 1] = '\0';
+    memcpy(combinedEnv + parentEnvSize - 1, envBlock, ENV_LEN);
+    free(envBlock);
+
+    return combinedEnv;
+}
 
 /*
 _start_model
@@ -200,7 +234,7 @@ w_process (WindowsProcess)
 fmu (FmuInstanceData*)
 : The FMU Descriptor object representing an instance of the FMU Model.
 */
-static inline void _start_model(FmuInstanceData* fmu, WindowsModel* m)
+static void _start_model(FmuInstanceData* fmu, WindowsModel* m)
 {
     FmiGateway*     fmi_gw = fmu->data;
     WindowsProcess* w_process = m->w_process;
@@ -219,17 +253,22 @@ static inline void _start_model(FmuInstanceData* fmu, WindowsModel* m)
         }
     }
 
+    /* Build Environment for this model. (NULL if no envar set) */
+    char* env = _build_env(m);
+
     /* ModelC models. */
     if (!CreateProcess(NULL, cmd, NULL, NULL, ((_log) ? TRUE : FALSE),
-            CREATE_NEW_CONSOLE | CREATE_NEW_PROCESS_GROUP, NULL, NULL,
+            CREATE_NEW_CONSOLE | CREATE_NEW_PROCESS_GROUP, env, NULL,
             &(w_process->s_info), &(w_process->p_info))) {
         log_fatal("Could not start %s (error %d)", m->name, GetLastError());
     }
+
+    free(env);
     free(cmd);
 }
 
 
-static inline void _configure_process(
+static void _configure_process(
     WindowsProcess* w_process, bool visible, const char* name)
 {
     /* Initialize the process handles and information for
@@ -265,7 +304,7 @@ w_model (WindowsModel)
 sec (integer)
 : Time in seconds.
 */
-inline static int32_t _check_shutdown(WindowsModel* w_model, int sec)
+static int32_t _check_shutdown(WindowsModel* w_model, int sec)
 {
     WindowsProcess* w_process = w_model->w_process;
     DWORD result = WaitForSingleObject(w_process->p_info.hProcess, sec * 1000);
@@ -303,7 +342,8 @@ void fmigateway_session_windows_start(FmuInstanceData* fmu)
 
     /* Transport process. */
     if (session->transport) {
-        fmu_log(fmu, 0, "Debug", "Starting process: %s", session->transport->name);
+        fmu_log(
+            fmu, 0, "Debug", "Starting process: %s", session->transport->name);
         session->transport->w_process = calloc(1, sizeof(WindowsProcess));
         _configure_process(session->transport->w_process,
             session->visibility.transport, session->transport->name);
@@ -314,8 +354,8 @@ void fmigateway_session_windows_start(FmuInstanceData* fmu)
     if (session->simbus) {
         fmu_log(fmu, 0, "Debug", "Starting process: %s", session->simbus->name);
         session->simbus->w_process = calloc(1, sizeof(WindowsProcess));
-        _configure_process(session->simbus->w_process, session->visibility.simbus,
-            session->simbus->name);
+        _configure_process(session->simbus->w_process,
+            session->visibility.simbus, session->simbus->name);
         _start_model(fmu, session->simbus);
     }
 

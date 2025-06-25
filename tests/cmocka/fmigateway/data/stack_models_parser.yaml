@@ -21,6 +21,9 @@ spec:
           timeout: 600.0
           exe: "different.exe"
       runtime:
+        env:
+          NCODEC_TRACE_1: "*"
+          NCODEC_TRACE_2: "0x42"
         files:
           - stack.yaml
           - model.yaml

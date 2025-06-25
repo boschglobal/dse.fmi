@@ -6,6 +6,7 @@
 #include <dse/testing.h>
 #include <dse/logger.h>
 #include <dse/clib/collections/hashlist.h>
+#include <dse/clib/collections/hashmap.h>
 #include <dse/clib/util/strings.h>
 #include <dse/modelc/schema.h>
 #include <dse/modelc/model.h>
@@ -74,6 +75,29 @@ static char* _generate_yaml_files(YamlNode* model_n)
 }
 
 
+static FmiGatewayEnvvar* _generate_model_envar(YamlNode* model_n)
+{
+    YamlNode* node = dse_yaml_find_node(model_n, "runtime/env");
+    if (node) {
+        if (node->node_type != 3) return NULL; // YAML_MAPPING_NODE
+        char** _keys = hashmap_keys(&node->mapping);
+        FmiGatewayEnvvar* envar = calloc(node->mapping.used_nodes + 1, sizeof(FmiGatewayEnvvar));
+        for (int i = 0; i < node->mapping.used_nodes; i++) {
+            YamlNode* _n = hashmap_get(&node->mapping, _keys[i]);
+            if (_n == NULL || _n->node_type != 1) continue; // YAML_SCALAR_NODE
+            envar[i].name = _n->name;
+            envar[i].default_value = _n->scalar;
+            log_debug("  %s = %s", _n->name, _n->scalar);
+        }
+        for (int _ = 0; _ < node->mapping.used_nodes; _++)
+            free(_keys[_]);
+        free(_keys);
+        return envar;
+    }
+    return NULL;
+}
+
+
 static void _print_model_info(WindowsModel* model)
 {
     log_notice("%s", model->name);
@@ -125,11 +149,9 @@ static WindowsModel* _gwfmu_model_generator(
 
         /* Check if an exe is given for this model. */
         _get_exe(gw_doc, model_n, "annotations/cli/exe", model, exe);
-
         model->yaml = _generate_yaml_files(model_n);
-
+        model->envar = _generate_model_envar(model_n);
         _print_model_info(model);
-
         return model;
     }
     return NULL;

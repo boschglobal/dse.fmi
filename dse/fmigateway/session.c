@@ -12,8 +12,7 @@
 #define UNUSED(x) ((void)x)
 
 
-static char* _get_fmu_env_value(
-    FmuInstanceData* fmu, FmiGatewayEnvvar* e)
+static char* _get_fmu_env_value(FmuInstanceData* fmu, FmiGatewayEnvvar* e)
 {
     if (strcmp(e->type, "string") == 0) {
         const char* value = hashmap_get(&fmu->variables.string.input, e->vref);
@@ -60,22 +59,23 @@ static int _run_cmd(FmuInstanceData* fmu, const char* cmd_string)
     fmu_log(fmu, 0, "Debug", "Run cmd: %s", cmd);
 
     int exitCode = system(cmd);
-    switch(exitCode) {
-        case -1: {
-            fmu_log(fmu, 4, "Error", "Could not execute the cmd '%s' correctly.",
-                cmd_string);
-            return EINVAL;
-            break;
-        };
-        case 1: {
-            fmu_log(fmu, 4, "Error", "Cmd '%s' canceled, shutting down.", cmd_string);
-            return ECANCELED;
-            break;
-        }
-        default: {
-            fmu_log(fmu, 0, "Debug", "Executed the cmd '%s'.", cmd_string);
-            break;
-        };
+    switch (exitCode) {
+    case -1: {
+        fmu_log(fmu, 4, "Error", "Could not execute the cmd '%s' correctly.",
+            cmd_string);
+        return EINVAL;
+        break;
+    };
+    case 1: {
+        fmu_log(
+            fmu, 4, "Error", "Cmd '%s' canceled, shutting down.", cmd_string);
+        return ECANCELED;
+        break;
+    }
+    default: {
+        fmu_log(fmu, 0, "Debug", "Executed the cmd '%s'.", cmd_string);
+        break;
+    };
     };
 
     return 0;
@@ -102,7 +102,7 @@ int fmigateway_session_configure(FmuInstanceData* fmu)
 
     if (session->init_cmd) {
         int rc = _run_cmd(fmu, session->init_cmd);
-        if (rc)  return rc;
+        if (rc) return rc;
     }
 
     if (strcmp(PLATFORM_OS, "windows") == 0) {
@@ -138,7 +138,7 @@ int fmigateway_session_end(FmuInstanceData* fmu)
 
     if (session->shutdown_cmd) {
         int rc = _run_cmd(fmu, session->shutdown_cmd);
-        if (rc)  return rc;
+        if (rc) return rc;
     }
 
     return 0;

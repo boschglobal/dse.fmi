@@ -54,6 +54,7 @@ int test_fmigateway__parser_teardown(void** state)
             if (session->simbus) {
                 free(session->simbus->name);
                 free(session->simbus->yaml);
+                free(session->simbus->envar);
             }
             free(session->simbus);
 
@@ -62,6 +63,7 @@ int test_fmigateway__parser_teardown(void** state)
 
             for (WindowsModel* model = session->w_models; model && model->name;
                  model++) {
+                free(model->envar);
                 free(model->yaml);
                 free(model->name);
             }
@@ -218,6 +220,9 @@ void test_fmigateway__parser_model_stack(void** state)
             .timeout = 600.0,
             .exe = "different.exe",
             .yaml = (char*)"stack.yaml model.yaml signalgroup.yaml",
+            .envar = (FmiGatewayEnvvar[3]){ { .name = "NCODEC_TRACE_1",
+                                                .default_value = "*" },
+                { .name = "NCODEC_TRACE_2", .default_value = "0x42" } },
         },
         {
             /* Model with default values. */
@@ -267,6 +272,13 @@ void test_fmigateway__parser_model_stack(void** state)
         assert_double_equal(tc_model->timeout, model->timeout, 0.0);
         assert_int_equal(tc_model->log_level, model->log_level);
         assert_string_equal(tc_model->exe, model->exe);
+        int i = 0;
+        for (FmiGatewayEnvvar* env = model->envar; env && env->name; env++) {
+            assert_string_equal(tc_model->envar[i].name, env->name);
+            assert_string_equal(
+                tc_model->envar[i].default_value, env->default_value);
+            i++;
+        }
     }
 }
 

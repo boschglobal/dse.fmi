@@ -127,8 +127,8 @@ void fmigateway_index_scalar_signals(
         }
     }
 
-    fmu_log(fmu, 0, "Debug", "  Scalar: input=%lu, output=%lu", input->used_nodes,
-        output->used_nodes);
+    fmu_log(fmu, 0, "Debug", "  Scalar: input=%lu, output=%lu",
+        input->used_nodes, output->used_nodes);
 }
 
 

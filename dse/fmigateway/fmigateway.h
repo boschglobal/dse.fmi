@@ -51,18 +51,19 @@ typedef struct FmiGatewayEnvvar {
 
 typedef struct WindowsModel {
     /* process Information */
-    const char* exe;
+    const char*       exe;
     /* Model information. */
-    char*       name;
-    double      step_size;
-    double      end_time;
-    int         log_level;
-    char*       yaml;
-    double      current_step;
-    double      timeout;
-    bool        stacked;
+    char*             name;
+    double            step_size;
+    double            end_time;
+    int               log_level;
+    char*             yaml;
+    double            current_step;
+    double            timeout;
+    bool              stacked;
+    FmiGatewayEnvvar* envar;
     /* Windows Information. */
-    void*       w_process;
+    void*             w_process;
 } WindowsModel;
 
 typedef struct FmiGatewaySession {
@@ -112,7 +113,7 @@ DLL_PRIVATE void fmigateway_parse(FmuInstanceData* fmu);
 /* session.c */
 DLL_PRIVATE int fmigateway_session_configure(FmuInstanceData* fmu);
 DLL_PRIVATE int fmigateway_session_end(FmuInstanceData* fmu);
-DLL_PRIVATE int  fmigateway_setenv(const char* name, const char* value);
+DLL_PRIVATE int fmigateway_setenv(const char* name, const char* value);
 
 /* session_win32.c */
 DLL_PRIVATE void fmigateway_session_windows_start(FmuInstanceData* fmu);

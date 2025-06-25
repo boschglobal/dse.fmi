@@ -214,6 +214,7 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
         if (session->simbus) {
             free(session->simbus->name);
             free(session->simbus->yaml);
+            free(session->simbus->envar);
         }
         free(session->simbus);
         /* Cleanup transport model. */
@@ -224,6 +225,7 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
         /* Cleanup ModelC models. */
         for (WindowsModel* model = session->w_models; model && model->name;
              model++) {
+            free(model->envar);
             free(model->yaml);
             free(model->name);
         }
