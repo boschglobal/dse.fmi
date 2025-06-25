@@ -182,6 +182,29 @@ jobs:
           files: |
             ${{ env.build_dir }}/_dist/${{ env.package_name }}-${{ env.PACKAGE_VERSION }}-${{ matrix.package_arch }}.zip
 
+  publish_examples:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: [ubuntu-latest]
+    needs: [build, test_e2e]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: Runnable-linux-amd64-sandbox
+          path: .
+      - name: Sandbox
+        run: |
+          tar xzf sandbox_out.tar.gz
+          ls -R
+          cp dse/build/_out/examples/fmu/network/fmi2/network.fmu dse/build/_out/examples/fmu/network/fmi2/example-network-linux-amd64-fmi2.fmu
+          cp dse/build/_out/examples/fmu/network/fmi3/network.fmu dse/build/_out/examples/fmu/network/fmi3/example-network-linux-amd64-fmi3.fmu
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dse/build/_out/examples/fmu/network/fmi2/example-network-linux-amd64-fmi2.fmu
+            dse/build/_out/examples/fmu/network/fmi2/example-network-linux-amd64-fmi3.fmu
+
   tools:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: [ubuntu-latest]
