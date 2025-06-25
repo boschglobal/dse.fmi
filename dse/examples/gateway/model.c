@@ -32,15 +32,6 @@ static inline NCODEC* _index(ExtendedModelDesc* m, const char* v, const char* s)
 }
 
 
-static void _adjust_node_id(NCODEC* nc, const char* node_id)
-{
-    ncodec_config(nc, (struct NCodecConfigItem){
-                          .name = "node_id",
-                          .value = node_id,
-                      });
-}
-
-
 ModelDesc* model_create(ModelDesc* model)
 {
     /* Extend the ModelDesc object (using a shallow copy). */

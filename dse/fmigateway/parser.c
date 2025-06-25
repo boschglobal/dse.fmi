@@ -82,14 +82,14 @@ static FmiGatewayEnvvar* _generate_model_envar(YamlNode* model_n)
         if (node->node_type != 3) return NULL; // YAML_MAPPING_NODE
         char** _keys = hashmap_keys(&node->mapping);
         FmiGatewayEnvvar* envar = calloc(node->mapping.used_nodes + 1, sizeof(FmiGatewayEnvvar));
-        for (int i = 0; i < node->mapping.used_nodes; i++) {
+        for (uint64_t i = 0; i < node->mapping.used_nodes; i++) {
             YamlNode* _n = hashmap_get(&node->mapping, _keys[i]);
             if (_n == NULL || _n->node_type != 1) continue; // YAML_SCALAR_NODE
             envar[i].name = _n->name;
             envar[i].default_value = _n->scalar;
             log_debug("  %s = %s", _n->name, _n->scalar);
         }
-        for (int _ = 0; _ < node->mapping.used_nodes; _++)
+        for (uint64_t _ = 0; _ < node->mapping.used_nodes; _++)
             free(_keys[_]);
         free(_keys);
         return envar;

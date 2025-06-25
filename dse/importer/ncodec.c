@@ -133,7 +133,7 @@ __stream mem_stream = {
     .pos = 0,
 };
 
-static void trace_read(NCODEC* nc, NCodecMessage* m)
+void trace_read(NCODEC* nc, NCodecMessage* m)
 {
     UNUSED(nc);
     NCodecCanMessage* msg = m;
@@ -141,7 +141,7 @@ static void trace_read(NCODEC* nc, NCodecMessage* m)
         msg->sender.node_id);
 }
 
-static void trace_write(NCODEC* nc, NCodecMessage* m)
+void trace_write(NCODEC* nc, NCodecMessage* m)
 {
     UNUSED(nc);
     NCodecCanMessage* msg = m;
@@ -151,6 +151,8 @@ static void trace_write(NCODEC* nc, NCodecMessage* m)
 
 NCODEC* ncodec_open(const char* mime_type, NCodecStreamVTable* stream)
 {
+    UNUSED(stream);
+
     NCODEC* nc = ncodec_create(mime_type);
     if (nc) {
         NCodecInstance* _nc = (NCodecInstance*)nc;
@@ -167,11 +169,10 @@ void importer_codec_write(uint32_t frame_id, uint8_t frame_type,
     size_t* out_length, const char* mime_type)
 {
     NCODEC* nc = (void*)ncodec_open(mime_type, (void*)&mem_stream);
-    int     rc;
 
     // Write and flush the message with provided arguments
     ncodec_seek(nc, 0, NCODEC_SEEK_RESET);
-    rc = ncodec_write(nc, &(struct NCodecCanMessage){ .frame_id = frame_id,
+    ncodec_write(nc, &(struct NCodecCanMessage){ .frame_id = frame_id,
                               .frame_type = frame_type,
                               .buffer = (uint8_t*)message_buffer,
                               .len = message_len });
@@ -201,9 +202,8 @@ void importer_codec_write(uint32_t frame_id, uint8_t frame_type,
 void importer_ncodec_read(const char* mime_type, uint8_t* data, size_t len)
 {
     NCODEC* nc = (void*)ncodec_open(mime_type, (void*)&mem_stream);
-    int     rc;
     ncodec_truncate(nc);
-    rc = stream_write(nc, data, len);
+    stream_write(nc, data, len);
 
     uint8_t* buffer;
     size_t   buffer_len;
