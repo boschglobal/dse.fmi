@@ -100,6 +100,8 @@ tasks:
     cmds:
       - task: gen-fmu
         vars:
+          SIM: '{{.SIM}}'
+          FMU_NAME: '{{.FMU_NAME}}'
           PLATFORM: '{{.PLATFORM}}'
           SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
           VERSION: '{{.VERSION}}'
