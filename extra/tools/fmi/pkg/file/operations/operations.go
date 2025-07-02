@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 )
 
 func Unzip(filename string, dest string) error {
@@ -128,7 +129,7 @@ func Zip(source, destination string) error {
 	})
 }
 
-func CopyDirectory(scrDir string, dest string) error {
+func CopyDirectory(scrDir string, dest string, excludes ...string) error {
 
 	if _, err := os.Stat(scrDir); err != nil {
 		return fmt.Errorf("Directory does not exist (%s)", err)
@@ -138,6 +139,9 @@ func CopyDirectory(scrDir string, dest string) error {
 	if err != nil {
 		return err
 	}
+	entries = slices.DeleteFunc(entries, func(e os.DirEntry) bool {
+		return slices.Contains(excludes, e.Name())
+	})
 
 	for _, entry := range entries {
 		sourcePath := filepath.Join(scrDir, entry.Name())

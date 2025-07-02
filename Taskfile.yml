@@ -109,12 +109,16 @@ tasks:
           FMIVERSION: '{{.FMIVERSION}}'
           OUT_DIR: '{{.OUT_DIR}}'
     requires:
-      vars: [SIM, FMU_NAME]
+      vars: [FMU_NAME]
     metadata:
       vars:
         SIM:
-          required: true
-          hint: URI identifying the simulation (Simer layout) to be packaged as an FMU.
+          required: false
+          hint: |
+            URI identifying the simulation (Simer layout) to
+            be packaged as an FMU. A container relative path, defaults to
+            container working directory (typically /sim).
+          default: .
         FMU_NAME:
           required: true
           hint: Name of the generated FMU.
@@ -136,8 +140,8 @@ tasks:
           hint: FMI version of the generated FMU (i.e. 2 or 3).
         OUT_DIR:
           required: false
-          hint: Path where the FMU should be created.
-          default: out
+          hint: Path where the FMU should be created. Relative to SIM folder.
+          default: fmu
 
   generate-fmigateway:
     desc: Generate a FMI Gateway FMU from existing Signal Groups.
@@ -223,20 +227,20 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-fmu
     vars:
-      # SIM: '{{.SIM}}'
+      SIM: "{{if .SIM}}--sim '{{.SIM}}'{{else}}{{end}}"
       # FMU_NAME: '{{.FMU_NAME}}'
       PLATFORM: "{{if .PLATFORM}}--platform '{{.PLATFORM}}'{{else}}{{end}}"
       SIGNAL_GROUPS: "{{if .SIGNAL_GROUPS}}--signalgroups '{{.SIGNAL_GROUPS}}'{{else}}{{end}}"
       VERSION: "{{if .VERSION}}--version '{{.VERSION}}'{{else}}{{end}}"
       UUID: "{{if .UUID}}--uuid '{{.UUID}}'{{else}}{{end}}"
       FMIVERSION: "{{if .FMIVERSION}}--fmiVersion '{{.FMIVERSION}}'{{else}}{{end}}"
-      OUT_DIR: '{{.OUT_DIR | default "out"}}'
+      OUT_DIR: '{{.OUT_DIR | default "fmu"}}'
     cmds:
       - docker run --rm
           -v {{.ENTRYDIR}}:/sim
           {{.FMI_IMAGE}}:{{.FMI_TAG}}
           gen-fmu
-            --sim {{.SIM}}
+            {{.SIM}}
             --name {{.FMU_NAME}}
             --outdir {{.OUT_DIR}}
             {{.PLATFORM}}

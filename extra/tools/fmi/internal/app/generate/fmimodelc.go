@@ -47,7 +47,7 @@ type GenFmiModelcCommand struct {
 
 func NewFmiModelcCommand(name string) *GenFmiModelcCommand {
 	c := &GenFmiModelcCommand{commandName: name, fs: flag.NewFlagSet(name, flag.ExitOnError)}
-	c.fs.StringVar(&c.simpath, "sim", "", "Path to simulation (Simer layout)")
+	c.fs.StringVar(&c.simpath, "sim", ".", "Path to simulation (Simer layout)")
 	c.fs.StringVar(&c.platform, "platform", "linux-amd64", "Platform of FMU to generate")
 	c.fs.StringVar(&c.signalGroups, "signalgroups", "", "Signal Groups to export as FMU variables, default is all, specify with comma-separated-list")
 	c.fs.StringVar(&c.name, "name", "", "Name of the FMU")
@@ -130,7 +130,8 @@ func (c *GenFmiModelcCommand) Run() error {
 		return fmt.Errorf("could not copy modelc binary (%v)", err)
 	}
 
-	if err := operations.CopyDirectory(c.simpath, filepath.Join(fmuOutDir, "resources", "sim")); err != nil {
+	outRoot := strings.SplitN(c.outdir, string(os.PathSeparator), 2)
+	if err := operations.CopyDirectory(c.simpath, filepath.Join(fmuOutDir, "resources", "sim"), outRoot[0]); err != nil {
 		return fmt.Errorf("could not copy FMU resources (%v)", err)
 	}
 
