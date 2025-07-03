@@ -47,13 +47,13 @@ type GenFmiModelcCommand struct {
 
 func NewFmiModelcCommand(name string) *GenFmiModelcCommand {
 	c := &GenFmiModelcCommand{commandName: name, fs: flag.NewFlagSet(name, flag.ExitOnError)}
-	c.fs.StringVar(&c.simpath, "sim", ".", "Path to simulation (Simer layout)")
+	c.fs.StringVar(&c.simpath, "sim", "/sim", "Path to simulation (Simer layout)")
 	c.fs.StringVar(&c.platform, "platform", "linux-amd64", "Platform of FMU to generate")
 	c.fs.StringVar(&c.signalGroups, "signalgroups", "", "Signal Groups to export as FMU variables, default is all, specify with comma-separated-list")
 	c.fs.StringVar(&c.name, "name", "", "Name of the FMU")
 	c.fs.StringVar(&c.version, "version", "0.0.1", "Version to assign to the FMU")
 	c.fs.StringVar(&c.uuid, "uuid", "11111111-2222-3333-4444-555555555555", "UUID to assign to the FMU, set to '' to generate a new UUID")
-	c.fs.StringVar(&c.outdir, "outdir", "out", "Output directory for the FMU file")
+	c.fs.StringVar(&c.outdir, "outdir", "/out", "Output directory for the FMU file")
 	c.fs.StringVar(&c.fmiVersion, "fmiVersion", "2", "Modelica FMI Version")
 	c.fs.StringVar(&c.fmiPackage, "fmiPackage", "", "Fmi Package path")
 	c.fs.IntVar(&c.logLevel, "log", 4, "Loglevel")
@@ -85,6 +85,9 @@ func (c *GenFmiModelcCommand) Run() error {
 	slog.SetDefault(log.NewLogger(c.logLevel))
 	if len(c.uuid) == 0 {
 		c.uuid = uuid.New().String()
+	}
+	if len(c.fmiPackage) == 0 {
+		c.fmiPackage = filepath.Join("/package", c.platform, "fmimodelc")
 	}
 
 	// Index the simulation files, layout is partly fixed:
@@ -130,13 +133,16 @@ func (c *GenFmiModelcCommand) Run() error {
 		return fmt.Errorf("could not copy modelc binary (%v)", err)
 	}
 
-	outRoot := strings.SplitN(c.outdir, string(os.PathSeparator), 2)
-	if err := operations.CopyDirectory(c.simpath, filepath.Join(fmuOutDir, "resources", "sim"), outRoot[0]); err != nil {
+	if err := operations.CopyDirectory(c.simpath, filepath.Join(fmuOutDir, "resources", "sim")); err != nil {
 		return fmt.Errorf("could not copy FMU resources (%v)", err)
 	}
 
-	if err := operations.CopyDirectory(c.getFmuLicensesPath(c.libRootPath), filepath.Join(fmuOutDir, "resources/licenses")); err != nil {
-		return fmt.Errorf("could not copy licenses (%v)", err)
+	if _, err := os.Stat(c.getFmuLicensesPath()); err == nil {
+		if err := operations.CopyDirectory(c.getFmuLicensesPath(), filepath.Join(fmuOutDir, "resources/licenses")); err != nil {
+			return fmt.Errorf("could not copy licenses (%v)", err)
+		}
+	} else {
+		return err
 	}
 
 	// Construct the FMU Model Description.
@@ -202,7 +208,7 @@ func (c *GenFmiModelcCommand) getFmuBinaryDirName(platform string) (dir string) 
 	return
 }
 
-func (c *GenFmiModelcCommand) getFmuLibPath(path string, modelIdentifier string, platform string) string {
+func (c *GenFmiModelcCommand) getFmuLibPath(packagePath string, modelIdentifier string, platform string) string {
 	var libpath string
 	extension := "so"
 
@@ -210,17 +216,17 @@ func (c *GenFmiModelcCommand) getFmuLibPath(path string, modelIdentifier string,
 	if found {
 		switch os {
 		case "linux":
-			libpath = "fmimodelc/lib"
+			libpath = "lib"
 		case "windows":
 			libpath = "bin"
 			extension = "dll"
 		}
 	}
-	return fmt.Sprintf("%s/%s/%s.%s", path, libpath, modelIdentifier, extension)
+	return filepath.Join(packagePath, libpath, fmt.Sprintf("%s.%s", modelIdentifier, extension))
 }
 
-func (c *GenFmiModelcCommand) getFmuLicensesPath(libRootPath string) string {
-	return filepath.Join(libRootPath, "licenses")
+func (c *GenFmiModelcCommand) getFmuLicensesPath() string {
+	return filepath.Join("/licenses")
 }
 
 func (c *GenFmiModelcCommand) getFmuBinPath(fmuBinPath string, modelIdentifier string, platform string) string {

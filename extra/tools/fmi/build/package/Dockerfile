@@ -42,6 +42,11 @@ COPY --from=fmi /src/bin/fmi /usr/local/bin/fmi
 COPY build/stage/licenses /licenses
 
 
+# Add FMI ModelC Packages
+# =======================
+COPY build/stage/package /package
+
+
 # Setup the entry conditions
 # ==========================
 # Run docker with --volume parameter to map the simulation folder into /sim.

@@ -92,6 +92,9 @@ func indexFiles(path string, extension string) ([]string, error) {
 	files := []string{}
 	fileSystem := os.DirFS(path)
 	err := fs.WalkDir(fileSystem, ".", func(s string, d fs.DirEntry, e error) error {
+		if e != nil {
+			return nil
+		}
 		slog.Debug(fmt.Sprintf("IndexFiles: %s (%t, %s)", s, d.IsDir(), filepath.Ext(s)))
 		if !d.IsDir() && filepath.Ext(s) == extension {
 			files = append(files, filepath.Join(path, s))

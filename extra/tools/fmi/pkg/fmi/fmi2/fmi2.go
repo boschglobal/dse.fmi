@@ -168,8 +168,11 @@ func getXmlData(file string) ([]byte, error) {
 
 func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDescription) error {
 	for _, signal := range signalGroupSpec.Signals {
-
-		causality := (*signal.Annotations)["fmi_variable_causality"].(string)
+		v := (*signal.Annotations)["fmi_variable_causality"]
+		if v == nil {
+			continue
+		}
+		causality := v.(string)
 		start := ""
 		var variability *string = nil
 		if causality == "input" || causality == "parameter" {
@@ -179,28 +182,28 @@ func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 			variability = stringPtr("tunable")
 		}
 
-		if (*signal.Annotations)["fmi_variable_start_value"] != nil {
-			start = strconv.Itoa((*signal.Annotations)["fmi_variable_start_value"].(int))
+		if v = (*signal.Annotations)["fmi_variable_start_value"]; v != nil {
+			start = strconv.Itoa(v.(int))
 		}
-		if (*signal.Annotations)["fmi_variable_vref"] == nil {
+		if v = (*signal.Annotations)["fmi_variable_vref"]; v != nil {
+			ScalarVariable := ScalarVariable{
+				Name:           signal.Signal,
+				ValueReference: strconv.Itoa(v.(int)),
+				Causality:      causality,
+				Variability:    variability,
+				Real: &FmiReal{
+					Start: start,
+				},
+			}
+			FmiXml.ModelVariables.ScalarVariable = append(FmiXml.ModelVariables.ScalarVariable, ScalarVariable)
+		} else {
 			return fmt.Errorf("could not get value reference for signal %s", signal.Signal)
 		}
-
-		ScalarVariable := ScalarVariable{
-			Name:           signal.Signal,
-			ValueReference: strconv.Itoa((*signal.Annotations)["fmi_variable_vref"].(int)),
-			Causality:      causality,
-			Variability:    variability,
-			Real: &FmiReal{
-				Start: start,
-			},
-		}
-		FmiXml.ModelVariables.ScalarVariable = append(FmiXml.ModelVariables.ScalarVariable, ScalarVariable)
 	}
 	return nil
 }
 
-func buildBinarySignal(signal schema_kind.Signal, vref any, causality string, id int) ScalarVariable {
+func buildBinarySignal(signal schema_kind.Signal, vref string, causality string, id int) ScalarVariable {
 
 	bus_id := (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.bus_id"].(int)
 	mime_type := (*signal.Annotations)["mime_type"].(string)
@@ -242,7 +245,7 @@ func buildBinarySignal(signal schema_kind.Signal, vref any, causality string, id
 	ann := Annotations{Tool: tool}
 	ScalarVariable := ScalarVariable{
 		Name:           fmt.Sprintf("network_%d_%d_%s", bus_id, id, causality),
-		ValueReference: strconv.Itoa(vref.(int)),
+		ValueReference: vref,
 		Causality:      _causality,
 		Variability:    variability,
 		String: &FmiString{
@@ -255,64 +258,67 @@ func buildBinarySignal(signal schema_kind.Signal, vref any, causality string, id
 
 func BinarySignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDescription) error {
 	for _, signal := range signalGroupSpec.Signals {
-		var rx_vref []interface{}
-		var tx_vref []interface{}
-		if rx_vref = (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.rx_vref"].([]interface{}); rx_vref == nil {
+		var v any
+
+		if v = (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.rx_vref"]; v == nil {
 			return fmt.Errorf("could not get rx_vref for signal %s", signal.Signal)
 		}
-		if tx_vref = (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.tx_vref"].([]interface{}); tx_vref == nil {
+		rx_vref := v.([]interface{})
+		if v = (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.tx_vref"]; v == nil {
 			return fmt.Errorf("could not get tx_vref for signal %s", signal.Signal)
 		}
+		tx_vref := v.([]interface{})
 		if len(rx_vref) != len(tx_vref) {
 			return errors.New("rx-tx mismatch")
 		}
 		for x := 0; x < len(rx_vref); x++ {
-			rx := rx_vref[x]
-			tx := tx_vref[x]
-
+			rx := strconv.Itoa(rx_vref[x].(int))
+			tx := strconv.Itoa(tx_vref[x].(int))
 			FmiXml.ModelVariables.ScalarVariable = append(
 				FmiXml.ModelVariables.ScalarVariable,
 				buildBinarySignal(signal, rx, "rx", x+1),
 				buildBinarySignal(signal, tx, "tx", x+1),
 			)
 		}
-
 	}
 	return nil
 }
 
 func StringSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDescription) error {
 	for _, signal := range signalGroupSpec.Signals {
+		v := (*signal.Annotations)["fmi_variable_causality"]
+		if v == nil {
+			continue
+		}
+		causality := v.(string)
 
-		causality := (*signal.Annotations)["fmi_variable_causality"].(string)
-		_start := (*signal.Annotations)["fmi_variable_start_value"]
 		start := ""
-		var variability *string = nil
-
-		if causality == "input" || causality == "parameter" {
-			if _start != nil {
-				start = _start.(string)
-			} else {
-				start = ""
+		if v = (*signal.Annotations)["fmi_variable_start_value"]; v != nil {
+			if causality == "input" || causality == "parameter" {
+				start = v.(string)
 			}
 		}
+
+		var variability *string = nil
 		if causality == "parameter" {
 			variability = stringPtr("tunable")
 		}
-		if (*signal.Annotations)["fmi_variable_vref"] == nil {
+
+		if v = (*signal.Annotations)["fmi_variable_vref"]; v != nil {
+			ScalarVariable := ScalarVariable{
+				Name:           signal.Signal,
+				ValueReference: strconv.Itoa((*signal.Annotations)["fmi_variable_vref"].(int)),
+				Causality:      causality,
+				Variability:    variability,
+				String: &FmiString{
+					Start: start,
+				},
+			}
+			FmiXml.ModelVariables.ScalarVariable = append(FmiXml.ModelVariables.ScalarVariable, ScalarVariable)
+		} else {
 			return fmt.Errorf("could not get value reference for signal %s", signal.Signal)
 		}
 
-		ScalarVariable := ScalarVariable{
-			Name:           signal.Signal,
-			ValueReference: strconv.Itoa((*signal.Annotations)["fmi_variable_vref"].(int)),
-			Causality:      causality,
-			Variability:    variability,
-			String: &FmiString{
-				Start: start,
-			},
-		}
-		FmiXml.ModelVariables.ScalarVariable = append(FmiXml.ModelVariables.ScalarVariable, ScalarVariable)
 	}
 	return nil
 }

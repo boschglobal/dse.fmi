@@ -106,13 +106,25 @@ test_tools:
 
 .PHONY: fmi
 fmi:
+	mkdir -p extra/tools/fmi/build/stage/package/linux-amd64
+	mkdir -p extra/tools/fmi/build/stage/package/linux-x86
+	mkdir -p extra/tools/fmi/build/stage/package/linux-i386
+	@if [ ${PACKAGE_ARCH} = "linux-amd64" ]; then \
+		cp -r dse/build/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-amd64 ;\
+		cp -r licenses -t extra/tools/fmi/build/stage ;\
+	fi
+	@if [ ${PACKAGE_ARCH} = "linux-x86" ]; then \
+		cp -r dse/build/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-x86 ;\
+	fi
+	@if [ ${PACKAGE_ARCH} = "linux-i386" ]; then \
+		cp -r dse/build/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-i386 ;\
+	fi
 
 .PHONY: tools
 tools:
 	for d in $(TOOL_DIRS) ;\
 	do \
 		mkdir -p extra/tools/$$d/build/stage ;\
-		cp -r licenses -t extra/tools/$$d/build/stage ;\
 		docker build -f extra/tools/$$d/build/package/Dockerfile \
 				--tag $$d:test extra/tools/$$d ;\
 	done;
@@ -168,7 +180,9 @@ clean:
 	@${DOCKER_BUILDER_CMD} $(MAKE) do-clean
 	for d in $(TOOL_DIRS) ;\
 	do \
-		rm -rf extra/tools/$$d/build/stage ;\
+		cd extra/tools/$$d ;\
+		rm -rf build/stage ;\
+		make clean ;\
 	done;
 	docker images -qf dangling=true | xargs -r docker rmi
 
