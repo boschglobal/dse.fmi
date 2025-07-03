@@ -250,35 +250,21 @@ jobs:
         with:
           name: ${{ env.package_name }}-linux-i386-sandbox
           path: sandbox/${{ env.package_name }}-linux-i386-sandbox
-      - uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.package_name }}-windows-x64-sandbox
-          path: sandbox/${{ env.package_name }}-windows-x64-sandbox
-      - uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.package_name }}-windows-x86-sandbox
-          path: sandbox/${{ env.package_name }}-windows-x86-sandbox
 
       - name: Sandbox
         run: |
           (cd sandbox/${{ env.package_name }}-linux-amd64-sandbox; tar xzf sandbox_out.tar.gz)
           (cd sandbox/${{ env.package_name }}-linux-x86-sandbox; tar xzf sandbox_out.tar.gz)
           (cd sandbox/${{ env.package_name }}-linux-i386-sandbox; tar xzf sandbox_out.tar.gz)
-          (cd sandbox/${{ env.package_name }}-windows-x64-sandbox; tar xzf sandbox_out.tar.gz)
-          (cd sandbox/${{ env.package_name }}-windows-x86-sandbox; tar xzf sandbox_out.tar.gz)
 
           mkdir -p extra/tools/fmi/build/stage/package/linux-amd64
           mkdir -p extra/tools/fmi/build/stage/package/linux-x86
           mkdir -p extra/tools/fmi/build/stage/package/linux-i386
-          mkdir -p extra/tools/fmi/build/stage/package/windows-x64
-          mkdir -p extra/tools/fmi/build/stage/package/windows-x86
 
           cp -r sandbox/${{ env.package_name }}-linux-amd64-sandbox/${{ env.build_dir }}/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-amd64
           cp -r sandbox/${{ env.package_name }}-linux-x86-sandbox/${{ env.build_dir }}/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-x86
           cp -r sandbox/${{ env.package_name }}-linux-i386-sandbox/${{ env.build_dir }}/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-i386
-          cp -r sandbox/${{ env.package_name }}-windows-x64-sandbox/${{ env.build_dir }}/_out/fmimodelc extra/tools/fmi/build/stage/package/windows-x64
-          cp -r sandbox/${{ env.package_name }}-windows-x86-sandbox/${{ env.build_dir }}/_out/fmimodelc extra/tools/fmi/build/stage/package/windows-x86
-
+          
           cp -r sandbox/${{ env.package_name }}-linux-amd64-sandbox/${{ env.build_dir }}/_out/licenses -t extra/tools/fmi/build/stage
           ls -R extra/tools/fmi/build/stage
 
