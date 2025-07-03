@@ -102,7 +102,7 @@ tasks:
     cmds:
       - task: gen-fmu
         vars:
-          SIM: '{{.SIM}}'
+          SIM_DIR: '{{.SIM_DIR}}'
           FMU_NAME: '{{.FMU_NAME}}'
           PLATFORM: '{{.PLATFORM}}'
           SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
@@ -114,7 +114,7 @@ tasks:
       vars: [FMU_NAME]
     metadata:
       vars:
-        SIM:
+        SIM_DIR:
           required: false
           hint: |
             URI identifying the simulation (Simer layout) to
@@ -237,7 +237,7 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-fmu
     vars:
-      SIM: "{{if .SIM}}--sim '{{.SIM}}'{{else}}{{end}}"
+      SIM_DIR: "{{if .SIM_DIR}}--sim '{{.SIM_DIR}}'{{else}}{{end}}"
       # FMU_NAME: '{{.FMU_NAME}}'
       PLATFORM: "{{if .PLATFORM}}--platform '{{.PLATFORM}}'{{else}}{{end}}"
       SIGNAL_GROUPS: "{{if .SIGNAL_GROUPS}}--signalgroups '{{.SIGNAL_GROUPS}}'{{else}}{{end}}"
@@ -249,13 +249,13 @@ tasks:
       # FIXME work around for Taskfile issue.
       FMI_TAG: '{{.FMI_TAG | default "latest"}}'
     cmds:
-      - mkdir -p {{.ENTRYDIR}}../fmu
+      - mkdir -p {{.ENTRYDIR}}/../fmu
       - docker run --rm
           -v {{.ENTRYDIR}}:/sim
-          -v {{.ENTRYDIR}}../fmu:/out
+          -v {{.ENTRYDIR}}/../fmu:/out
           {{.FMI_IMAGE}}:{{.FMI_TAG}}
           gen-fmu
-            {{.SIM}}
+            {{.SIM_DIR}}
             --name {{.FMU_NAME}}
             {{.OUT_DIR}}
             {{.PLATFORM}}
