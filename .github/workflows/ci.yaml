@@ -264,7 +264,7 @@ jobs:
           cp -r sandbox/${{ env.package_name }}-linux-amd64-sandbox/${{ env.build_dir }}/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-amd64
           cp -r sandbox/${{ env.package_name }}-linux-x86-sandbox/${{ env.build_dir }}/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-x86
           cp -r sandbox/${{ env.package_name }}-linux-i386-sandbox/${{ env.build_dir }}/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-i386
-          
+
           cp -r sandbox/${{ env.package_name }}-linux-amd64-sandbox/${{ env.build_dir }}/_out/licenses -t extra/tools/fmi/build/stage
           ls -R extra/tools/fmi/build/stage
 
