@@ -263,7 +263,7 @@ jobs:
         run: |
           (cd sandbox/${{ env.package_name }}-linux-amd64-sandbox; tar xzf sandbox_out.tar.gz)
           (cd sandbox/${{ env.package_name }}-linux-x86-sandbox; tar xzf sandbox_out.tar.gz)
-          (cd sandbox/${{ env.package_name }}-linux-x86-sandbox; tar xzf sandbox_out.tar.gz)
+          (cd sandbox/${{ env.package_name }}-linux-i386-sandbox; tar xzf sandbox_out.tar.gz)
           (cd sandbox/${{ env.package_name }}-windows-x64-sandbox; tar xzf sandbox_out.tar.gz)
           (cd sandbox/${{ env.package_name }}-windows-x86-sandbox; tar xzf sandbox_out.tar.gz)
 
