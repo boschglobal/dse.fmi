@@ -197,7 +197,7 @@ tasks:
       PLATFORM: "{{if .PLATFORM}}--platform '{{.PLATFORM}}'{{else}}{{end}}"
 
       # FIXME work around for Taskfile issue.
-      FMI_TAG: {{.FMI_TAG | default "latest"}}
+      FMI_TAG: '{{.FMI_TAG | default "latest"}}'
     cmds:
       - docker run --rm
           -v {{.ENTRYDIR}}:/sim
@@ -220,7 +220,7 @@ tasks:
     #   OUTPUT: '{{.OUTPUT}}'
 
       # FIXME work around for Taskfile issue.
-      FMI_TAG: {{.FMI_TAG | default "latest"}}
+      FMI_TAG: '{{.FMI_TAG | default "latest"}}'
     cmds:
       - docker run --rm
           -v {{.ENTRYDIR}}:/sim
@@ -247,7 +247,7 @@ tasks:
       OUT_DIR: "{{if .OUT_DIR}}--outdir '{{.OUT_DIR}}'{{else}}{{end}}"
 
       # FIXME work around for Taskfile issue.
-      FMI_TAG: {{.FMI_TAG | default "latest"}}
+      FMI_TAG: '{{.FMI_TAG | default "latest"}}'
     cmds:
       - mkdir -p {{.ENTRYDIR}}../fmu
       - docker run --rm
@@ -280,7 +280,7 @@ tasks:
       UUID: "{{if .UUID}}--uuid '{{.UUID}}'{{else}}{{end}}"
 
       # FIXME work around for Taskfile issue.
-      FMI_TAG: {{.FMI_TAG | default "latest"}}
+      FMI_TAG: '{{.FMI_TAG | default "latest"}}'
     cmds:
       - docker run --rm
           -v {{.ENTRYDIR}}:/sim
@@ -306,7 +306,7 @@ tasks:
       REMOVE_UNKNOWN: '{{if .REMOVE_UNKNOWN}}--remove-unknown{{else}}{{end}}'
 
       # FIXME work around for Taskfile issue.
-      FMI_TAG: {{.FMI_TAG | default "latest"}}
+      FMI_TAG: '{{.FMI_TAG | default "latest"}}'
     cmds:
       - docker run --rm
           -v {{.ENTRYDIR}}:/sim
