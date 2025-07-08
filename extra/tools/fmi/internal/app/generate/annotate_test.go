@@ -14,35 +14,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestGenFmuAnnotationCommand_Run(t *testing.T) {
-	signalgroup := "../../../test/testdata/fmimcl/signalgroup.yaml"
-	rule_file := "../../../test/testdata/fmimcl/rule.csv"
-	sg_annotated := "fmimcl_annotated_test.yaml"
-
-	cmd := NewGenFmuAnnotationCommand("test")
-	args := []string{"-input", signalgroup, "-output", sg_annotated, "-rule", rule_file}
-
-	// Parse arguments
-	err := cmd.Parse(args)
-	if err != nil {
-		t.Errorf("Error parsing arguments: %v", err)
-	}
-
-	// Run the command
-	err = cmd.Run()
-	if err != nil {
-		t.Errorf("Error running command: %v", err)
-	}
-	defer os.Remove(sg_annotated)
-
-	// Check if generated SignalGroup YAML exists
-	_, err = os.Stat(sg_annotated)
-	if os.IsNotExist(err) {
-		t.Errorf("Output Yaml file does not exist: %v", err)
-	}
-}
-
-func TestGenFmuAnnotationSignals_SignalGroup(t *testing.T) {
+func TestGenAnnotationSignals_SignalGroup(t *testing.T) {
 	signalgroup := "../../../test/testdata/fmimcl/signalgroup.yaml"
 	rule_file := "../../../test/testdata/fmimcl/rule.csv"
 	tmpdir := t.TempDir()
@@ -68,28 +40,28 @@ func TestGenFmuAnnotationSignals_SignalGroup(t *testing.T) {
 		{
 			"Signal":                 "input_1",
 			"fmi_variable_causality": "input",
-			"fmi_variable_vref":      1,
+			"fmi_variable_vref":      "1",
 			"fmi_variable_type":      "Real",
 			"fmi_variable_name":      "input_1",
 		},
 		{
 			"Signal":                 "input_2",
 			"fmi_variable_causality": "input",
-			"fmi_variable_vref":      2,
+			"fmi_variable_vref":      "2",
 			"fmi_variable_type":      "Real",
 			"fmi_variable_name":      "input_2",
 		},
 		{
 			"Signal":                 "output_1",
 			"fmi_variable_causality": "output",
-			"fmi_variable_vref":      3,
+			"fmi_variable_vref":      "3",
 			"fmi_variable_type":      "Real",
 			"fmi_variable_name":      "output_1",
 		},
 		{
 			"Signal":                 "output_2",
 			"fmi_variable_causality": "output",
-			"fmi_variable_vref":      4,
+			"fmi_variable_vref":      "4",
 			"fmi_variable_type":      "Real",
 			"fmi_variable_name":      "output_2",
 		},
@@ -104,13 +76,14 @@ func TestGenFmuAnnotationSignals_SignalGroup(t *testing.T) {
 	}
 }
 
-func TestGenFmuAnnotationSignals_Sim(t *testing.T) {
+func TestGenModelCFmuAnnotationSignals_Sim(t *testing.T) {
 	tmpdir := t.TempDir()
 	simPath := path.Join(tmpdir, "sim")
-	simPath = "sim"
+	//simPath = "sim"
+	//os.RemoveAll(simPath)
 	os.CopyFS(simPath, os.DirFS("../../../test/testdata/modelcfmu/sim"))
 
-	cmd := NewGenFmuAnnotationCommand("test")
+	cmd := NewGenModelCFmuAnnotationCommand("test")
 	args := []string{"-sim", simPath, "-signalgroups", "signal", "-ruleset", "signal-direction"}
 	if err := cmd.Parse(args); err != nil {
 		t.Fatalf("Failed parsing: %v", err)
@@ -152,6 +125,7 @@ func TestGenFmuAnnotationSignals_Sim(t *testing.T) {
 		},
 		// 3 and 4 (frame) not considered
 	}
+	assert.Equal(t, len(test_data), len(generatedYAML.Spec.Signals))
 	for i, s := range generatedYAML.Spec.Signals {
 		assert.Equal(t, s.Signal, test_data[i]["Signal"])
 		assert.Equal(t, (*s.Annotations)["fmi_variable_causality"], test_data[i]["fmi_variable_causality"])

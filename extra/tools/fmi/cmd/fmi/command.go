@@ -38,6 +38,12 @@ Examples:
 	-rule data/rule.csv \
 	-log 4
 
+  fmi gen-modelcfmu-annotations \
+  	-sim sim \
+	-signalgroups signal,network \
+	-ruleset signal-direction \
+	-log 4
+
   fmi gen-fmu \
   	-input sim \
 	-model Target \

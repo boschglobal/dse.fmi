@@ -103,7 +103,7 @@ tasks:
       # FMU_NAME: '{{.FMU_NAME}}'
       # SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
     cmds:
-      - task: gen-annotations
+      - task: gen-modelcfmu-annotations
         vars:
           SIM_DIR: '{{.SIM_DIR}}'
           RULESET: 'signal-direction'
@@ -273,15 +273,13 @@ tasks:
     requires:
       vars: [FMU_NAME]
 
-  gen-annotations:
+  gen-modelcfmu-annotations:
     internal: true
     run: always
     dir: '{{.USER_WORKING_DIR}}'
-    label: dse:fmi:gen-annotations
+    label: dse:fmi:gen-modelcfmu-annotations
     vars:
       SIM_DIR: "{{if .SIM_DIR}}--sim '{{.SIM_DIR}}'{{else}}{{end}}"
-      INPUT: "{{if .INPUT}}--input '{{.INPUT}}'{{else}}{{end}}"
-      OUTPUT: "{{if .OUTPUT}}--output '{{.OUTPUT}}'{{else}}{{end}}"
       SIGNAL_GROUPS: "{{if .SIGNAL_GROUPS}}--signalgroups '{{.SIGNAL_GROUPS}}'{{else}}{{end}}"
       RULEFILE: "{{if .RULEFILE}}--rule '{{.RULEFILE}}'{{else}}{{end}}"
       RULESET: "{{if .RULESET}}--ruleset '{{.RULESET}}'{{else}}{{end}}"
@@ -292,10 +290,8 @@ tasks:
       - docker run --rm
           -v {{.ENTRYDIR}}:/sim
           {{.FMI_IMAGE}}:{{.FMI_TAG}}
-          gen-annotations
+          gen-modelcfmu-annotations
             {{.SIM_DIR}}
-            {{.INPUT}}
-            {{.OUTPUT}}
             {{.SIGNAL_GROUPS}}
             {{.RULEFILE}}
             {{.RULESET}}
