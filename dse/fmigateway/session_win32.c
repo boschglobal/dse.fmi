@@ -46,7 +46,7 @@ static char* _build_cmd(WindowsModel* w_model, const char* path)
     char   cmd[2048];
     size_t max_len = sizeof cmd;
     int    offset =
-        snprintf(cmd, max_len, "cmd /C cd %s && set && %s", path, w_model->exe);
+        snprintf(cmd, max_len, "cmd /C cd %s && %s", path, w_model->exe);
     offset += snprintf(cmd + offset, max_len, " --name %s", w_model->name);
     offset +=
         snprintf(cmd + offset, max_len, " --endtime %lf", w_model->end_time);
@@ -183,11 +183,27 @@ static void _start_redis(
 }
 
 
+/*
+_build_env
+==========
+
+Add model specific environment variables to the parent environment
+and return a new environment block as string.
+
+Parameters
+----------
+w_model (WindowsModel)
+: Model Descriptor containing parameter information.
+
+Return
+------
+char*
+: A new environment block as a string, double-null terminated.
+*/
 static char* _build_env(WindowsModel* m)
 {
     if (m->envar == NULL) return NULL;
 
-    const int ENV_LEN = 1024;
     char* parentEnv = GetEnvironmentStrings();
     /* Calculate size of parent env block (double-null terminated). */
     char*  p = parentEnv;
@@ -199,23 +215,32 @@ static char* _build_env(WindowsModel* m)
     }
     parentEnvSize++;  // for the final extra null
 
-    char* envBlock = calloc(ENV_LEN, sizeof(char));
+    uint32_t env_size = 0;
+    for (FmiGatewayEnvvar* e = m->envar; e && e->name; e++) {
+        /* Calculate the size needed for each environment variable
+           + 1 for the "=" and + 1 for the Nullterminator. */
+        env_size += strlen(e->name) + 1 + strlen(e->default_value) + 1;
+    }
+    env_size++; // for the final extra null
+
+    char* envBlock = calloc(env_size, sizeof(char));
     char* ptr = envBlock;
     for (FmiGatewayEnvvar* e = m->envar; e && e->name; e++) {
-        int len = snprintf(ptr, ENV_LEN, "%s=%s", e->name, e->default_value);
+        int len = snprintf(ptr, env_size, "%s=%s", e->name, e->default_value);
         ptr += len + 1;  // Move pointer past the null terminator
     }
     /* Add the final null terminator to end the block */
     *ptr = '\0';
 
-    char* combinedEnv = calloc(parentEnvSize + ENV_LEN, sizeof(char));
+    char* combinedEnv = calloc(parentEnvSize + env_size, sizeof(char));
     memcpy(combinedEnv, parentEnv, parentEnvSize);
     combinedEnv[parentEnvSize - 1] = '\0';
-    memcpy(combinedEnv + parentEnvSize - 1, envBlock, ENV_LEN);
+    memcpy(combinedEnv + parentEnvSize - 1, envBlock, env_size);
     free(envBlock);
 
     return combinedEnv;
 }
+
 
 /*
 _start_model
@@ -268,6 +293,23 @@ static void _start_model(FmuInstanceData* fmu, WindowsModel* m)
 }
 
 
+/*
+_configure_process
+==================
+
+Initialize the process handles.
+
+Parameters
+----------
+w_model (WindowsModel)
+: Model Descriptor containing parameter information.
+
+visible (bool)
+: Indicates whether the process window should be visible.
+
+name (const char*)
+: Name of the process, used for the window title.
+*/
 static void _configure_process(
     WindowsProcess* w_process, bool visible, const char* name)
 {
