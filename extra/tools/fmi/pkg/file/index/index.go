@@ -22,25 +22,26 @@ type YamlKindLabel struct {
 
 type YamlFileIndex struct {
 	DocMap map[string][]kind.KindDoc
+	Files  []string
 }
 
 func NewYamlFileIndex() *YamlFileIndex {
 	index := &YamlFileIndex{}
 	index.DocMap = make(map[string][]kind.KindDoc)
+	index.Files = []string{}
 	return index
 }
 
 func (index *YamlFileIndex) Scan(path string) {
 	// Collect the list of yaml files within path.
 	file_exts := []string{".yml", ".yaml"}
-	files := []string{}
 	for _, ext := range file_exts {
 		indexed_files, _ := indexFiles(path, ext)
-		files = append(files, indexed_files...)
+		index.Files = append(index.Files, indexed_files...)
 	}
 
 	// Load each file into the index.
-	for _, f := range files {
+	for _, f := range index.Files {
 		// Each file may contain several yaml documents.
 		_, docs, err := handler.ParseFile(f)
 		if err != nil {

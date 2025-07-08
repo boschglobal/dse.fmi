@@ -141,8 +141,6 @@ func (c *GenFmiModelcCommand) Run() error {
 		if err := operations.CopyDirectory(c.getFmuLicensesPath(), filepath.Join(fmuOutDir, "resources/licenses")); err != nil {
 			return fmt.Errorf("could not copy licenses (%v)", err)
 		}
-	} else {
-		return err
 	}
 
 	// Construct the FMU Model Description.
@@ -218,7 +216,7 @@ func (c *GenFmiModelcCommand) getFmuLibPath(packagePath string, modelIdentifier 
 		case "linux":
 			libpath = "lib"
 		case "windows":
-			libpath = "bin"
+			libpath = "lib"
 			extension = "dll"
 		}
 	}

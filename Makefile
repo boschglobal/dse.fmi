@@ -111,6 +111,7 @@ fmi:
 	mkdir -p extra/tools/fmi/build/stage/package/linux-i386
 	@if [ ${PACKAGE_ARCH} = "linux-amd64" ]; then \
 		cp -r dse/build/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-amd64 ;\
+		cp -r dse/build/_out/examples extra/tools/fmi/build/stage ;\
 		cp -r licenses -t extra/tools/fmi/build/stage ;\
 	fi
 	@if [ ${PACKAGE_ARCH} = "linux-x86" ]; then \

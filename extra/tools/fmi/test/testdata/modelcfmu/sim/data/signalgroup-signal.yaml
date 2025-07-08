@@ -1,0 +1,29 @@
+---
+kind: SignalGroup
+metadata:
+  labels:
+    channel: signal_vector
+    runnable: signal
+  name: signal
+spec:
+  signals:
+    - annotations:
+        direction: input
+      signal: reset_counters
+    - annotations:
+        direction: output
+      signal: task_init_done
+    - annotations:
+        direction: output
+      signal: task_5_active
+    # - annotations:
+    #     cycle_time_ms: 10
+    #     frame_id: 0x1f0u
+    #     frame_length: 64u
+    #     network_signal: can_bus
+    #   signal: frame_in
+    # - annotations:
+    #     frame_id: 0x1f1u
+    #     frame_length: 64u
+    #     network_signal: can_bus
+    #   signal: frame_out

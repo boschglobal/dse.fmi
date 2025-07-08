@@ -183,12 +183,26 @@ func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 		}
 
 		if v = (*signal.Annotations)["fmi_variable_start_value"]; v != nil {
-			start = strconv.Itoa(v.(int))
+			switch v := v.(type) {
+			case int:
+				start = strconv.Itoa(v)
+			case float32:
+				start = fmt.Sprintf("%f", v)
+			case float64:
+				start = fmt.Sprintf("%f", v)
+			}
 		}
 		if v = (*signal.Annotations)["fmi_variable_vref"]; v != nil {
+			vRef := ""
+			switch v := v.(type) {
+			case string:
+				vRef = v
+			case int:
+				vRef = strconv.Itoa(v)
+			}
 			ScalarVariable := ScalarVariable{
 				Name:           signal.Signal,
-				ValueReference: strconv.Itoa(v.(int)),
+				ValueReference: vRef,
 				Causality:      causality,
 				Variability:    variability,
 				Real: &FmiReal{

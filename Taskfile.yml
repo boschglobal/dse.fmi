@@ -99,7 +99,15 @@ tasks:
     run: always
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:generate-fmimodelc
+    vars:
+      # FMU_NAME: '{{.FMU_NAME}}'
+      # SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
     cmds:
+      - task: gen-annotations
+        vars:
+          SIM_DIR: '{{.SIM_DIR}}'
+          RULESET: 'signal-direction'
+          SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
       - task: gen-fmu
         vars:
           SIM_DIR: '{{.SIM_DIR}}'
@@ -111,7 +119,7 @@ tasks:
           FMIVERSION: '{{.FMIVERSION}}'
           OUT_DIR: '{{.OUT_DIR}}'
     requires:
-      vars: [FMU_NAME]
+      vars: [FMU_NAME, SIGNAL_GROUPS]
     metadata:
       vars:
         SIM_DIR:
@@ -128,9 +136,8 @@ tasks:
           required: false
           hint: Platform of the FMU being generated (normally set automatically).
         SIGNAL_GROUPS:
-          required: false
-          hint:
-          default:
+          required: true
+          hint: Comma-delimited list of SignalGroup names. Matches 'doc.Metadata.Name'.
         VERSION:
           required: false
           hint: Version of the generated FMU.
@@ -265,6 +272,35 @@ tasks:
             {{.FMIVERSION}}
     requires:
       vars: [FMU_NAME]
+
+  gen-annotations:
+    internal: true
+    run: always
+    dir: '{{.USER_WORKING_DIR}}'
+    label: dse:fmi:gen-annotations
+    vars:
+      SIM_DIR: "{{if .SIM_DIR}}--sim '{{.SIM_DIR}}'{{else}}{{end}}"
+      INPUT: "{{if .INPUT}}--input '{{.INPUT}}'{{else}}{{end}}"
+      OUTPUT: "{{if .OUTPUT}}--output '{{.OUTPUT}}'{{else}}{{end}}"
+      SIGNAL_GROUPS: "{{if .SIGNAL_GROUPS}}--signalgroups '{{.SIGNAL_GROUPS}}'{{else}}{{end}}"
+      RULEFILE: "{{if .RULEFILE}}--rule '{{.RULEFILE}}'{{else}}{{end}}"
+      RULESET: "{{if .RULESET}}--ruleset '{{.RULESET}}'{{else}}{{end}}"
+
+      # FIXME work around for Taskfile issue.
+      FMI_TAG: '{{.FMI_TAG | default "latest"}}'
+    cmds:
+      - docker run --rm
+          -v {{.ENTRYDIR}}:/sim
+          {{.FMI_IMAGE}}:{{.FMI_TAG}}
+          gen-annotations
+            {{.SIM_DIR}}
+            {{.INPUT}}
+            {{.OUTPUT}}
+            {{.SIGNAL_GROUPS}}
+            {{.RULEFILE}}
+            {{.RULESET}}
+    requires:
+      vars: []
 
   gen-gateway:
     internal: true

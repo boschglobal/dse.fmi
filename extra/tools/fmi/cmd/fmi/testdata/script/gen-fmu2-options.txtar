@@ -1,17 +1,19 @@
-env SIM=$BUILD_DIR/examples/fmimodelc/sim
+env SIM=$BUILD_DIR/examples/fmimodelc/fmi2/resources/sim
+env PACKAGE=$BUILD_DIR/package/linux-amd64/fmimodelc
 env FMU_NAME=test_fmu
 env UUID=88888888-4444-4444-4444-121212121212
 env VERSION=1.2.3
 
 # Create the simulation folder (Simer layout)
 env
-mkdir sim out
+mkdir sim
 exec cp -r $SIM $WORK
+mkdir out
 exec ls -R $WORK
 
 # Generate the FMI ModelC FMU
 env
-exec fmi gen-fmu -sim sim -name $FMU_NAME -uuid $UUID -version $VERSION -outdir out -libroot $BUILD_DIR
+exec fmi gen-fmu -sim sim -name $FMU_NAME -uuid $UUID -version $VERSION -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
 exec ls -R $WORK/out
 exists out/$FMU_NAME.fmu
 
