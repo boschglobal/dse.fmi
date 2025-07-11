@@ -42,7 +42,8 @@ type GenFmiModelcCommand struct {
 	endTime   float64
 	stepSize  float64
 
-	libRootPath string
+	libRootPath     string
+	modelIdentifier string
 }
 
 func NewFmiModelcCommand(name string) *GenFmiModelcCommand {
@@ -89,6 +90,7 @@ func (c *GenFmiModelcCommand) Run() error {
 	if len(c.fmiPackage) == 0 {
 		c.fmiPackage = filepath.Join("/package", c.platform, "fmimodelc")
 	}
+	c.modelIdentifier = fmt.Sprintf("fmi%smodelcfmu", c.fmiVersion)
 
 	// Index the simulation files, layout is partly fixed:
 	//	<simpath>/data/simulation.yaml
@@ -125,18 +127,23 @@ func (c *GenFmiModelcCommand) Run() error {
 	}
 
 	// Copy the necessary binaries from the FMI package.
-	modelIdentifier := fmt.Sprintf("libfmi%smodelcfmu", c.fmiVersion)
-	if err := operations.Copy(c.getFmuLibPath(c.fmiPackage, modelIdentifier, c.platform), c.getFmuBinPath(fmuBinPath, modelIdentifier, c.platform)); err != nil {
+	// libfmi2modelcfmu.so => fmi2modelcfmu.so
+	src := c.getFmuLibPath(c.fmiPackage, fmt.Sprintf("lib%s", c.modelIdentifier), c.platform)
+	tgt := c.getFmuBinPath(fmuBinPath, c.modelIdentifier, c.platform)
+	if err := operations.Copy(src, tgt); err != nil {
 		return fmt.Errorf("could not copy FMU binary (%v)", err)
 	}
-	if err := operations.Copy(c.getFmuLibPath(c.fmiPackage, "libmodelc", c.platform), c.getFmuBinPath(fmuBinPath, "libmodelc", c.platform)); err != nil {
+	// libmodelc.so => libmodelc.so
+	src = c.getFmuLibPath(c.fmiPackage, "libmodelc", c.platform)
+	tgt = c.getFmuBinPath(fmuBinPath, "libmodelc", c.platform)
+	if err := operations.Copy(src, tgt); err != nil {
 		return fmt.Errorf("could not copy modelc binary (%v)", err)
 	}
-
+	// /sim => resources/sim
 	if err := operations.CopyDirectory(c.simpath, filepath.Join(fmuOutDir, "resources", "sim")); err != nil {
 		return fmt.Errorf("could not copy FMU resources (%v)", err)
 	}
-
+	// /licenses => resources/licenses
 	if _, err := os.Stat(c.getFmuLicensesPath()); err == nil {
 		if err := operations.CopyDirectory(c.getFmuLicensesPath(), filepath.Join(fmuOutDir, "resources/licenses")); err != nil {
 			return fmt.Errorf("could not copy licenses (%v)", err)
@@ -242,20 +249,20 @@ func (c *GenFmiModelcCommand) getFmuBinPath(fmuBinPath string, modelIdentifier s
 func (c *GenFmiModelcCommand) createFmuXml(name string, uuid string, version string, signalGroups string, index *index.YamlFileIndex) interface{} {
 
 	fmiConfig := fmi.FmiConfig{
-		Name:           name,
-		UUID:           uuid,
-		Version:        version,
-		Description:    fmt.Sprintf("Model: %s, via FMI ModelC FMU (using DSE ModelC Runtime).", name),
-		StartTime:      c.startTime,
-		StopTime:       c.endTime,
-		StepSize:       c.stepSize,
-		GenerationTool: "DSE FMI - ModelC FMU",
+		Name:            name,
+		UUID:            uuid,
+		Version:         version,
+		Description:     fmt.Sprintf("Model: %s, via FMI ModelC FMU (using DSE ModelC Runtime).", name),
+		StartTime:       c.startTime,
+		StopTime:        c.endTime,
+		StepSize:        c.stepSize,
+		GenerationTool:  "DSE FMI - ModelC FMU",
+		FmiVersion:      c.fmiVersion,
+		ModelIdentifier: c.modelIdentifier,
 	}
-	switch c.fmiVersion {
+	switch fmiConfig.FmiVersion {
 	case "2":
 		fmuXml := fmi2.ModelDescription{}
-		fmiConfig.FmiVersion = "2"
-		fmiConfig.ModelIdentifier = "fmi2modelcfmu"
 		if err := fmi2.SetGeneralFmuXmlFields(fmiConfig, &fmuXml); err != nil {
 			return err
 		}
@@ -265,8 +272,6 @@ func (c *GenFmiModelcCommand) createFmuXml(name string, uuid string, version str
 		return fmuXml
 	case "3":
 		fmuXml := fmi3.ModelDescription{}
-		fmiConfig.FmiVersion = "3"
-		fmiConfig.ModelIdentifier = "fmi3modelcfmu"
 		if err := fmi3.SetGeneralFmuXmlFields(fmiConfig, &fmuXml); err != nil {
 			return err
 		}

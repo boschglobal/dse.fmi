@@ -3,7 +3,7 @@ module github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi
 go 1.21.6
 
 require (
-	github.com/boschglobal/dse.schemas/code/go/dse v1.2.8
+	github.com/boschglobal/dse.schemas/code/go/dse v1.2.22
 	github.com/goccy/go-yaml v1.12.0
 	github.com/google/uuid v1.6.0
 	github.com/rogpeppe/go-internal v1.12.0
