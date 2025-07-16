@@ -1,0 +1,22 @@
+kind: Runnable
+metadata:
+    annotations:
+        function_lib: model/runnable/lib/function.so
+        measurement: measurement.txt
+        target_lib: model/runnable/lib/target.so
+    labels: {}
+    name: target
+spec:
+    tasks:
+        - function: task_init
+          schedule: 0
+        - function: task_5ms
+          schedule: 5
+        - function: task_10ms
+          schedule: 10
+        - function: task_20ms
+          schedule: 20
+        - function: task_40ms
+          schedule: 40
+        - function: SampleMeasData_V
+          schedule: 5

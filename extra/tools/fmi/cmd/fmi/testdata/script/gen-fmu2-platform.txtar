@@ -12,15 +12,15 @@ mkdir $BUILD_DIR/package/linux-x86/fmimodelc/lib
 mkdir $BUILD_DIR/package/linux-i386/fmimodelc/lib
 mkdir $BUILD_DIR/package/windows-x64/fmimodelc/lib
 mkdir $BUILD_DIR/package/windows-x86/fmimodelc/lib
-exec touch $BUILD_DIR/package/linux-amd64/fmimodelc/lib/libfmi2modelcfmu.so
+exec touch $BUILD_DIR/package/linux-amd64/fmimodelc/lib/fmi2modelcfmu.so
 exec touch $BUILD_DIR/package/linux-amd64/fmimodelc/lib/libmodelc.so
-exec touch $BUILD_DIR/package/linux-x86/fmimodelc/lib/libfmi2modelcfmu.so
+exec touch $BUILD_DIR/package/linux-x86/fmimodelc/lib/fmi2modelcfmu.so
 exec touch $BUILD_DIR/package/linux-x86/fmimodelc/lib/libmodelc.so
-exec touch $BUILD_DIR/package/linux-i386/fmimodelc/lib/libfmi2modelcfmu.so
+exec touch $BUILD_DIR/package/linux-i386/fmimodelc/lib/fmi2modelcfmu.so
 exec touch $BUILD_DIR/package/linux-i386/fmimodelc/lib/libmodelc.so
-exec touch $BUILD_DIR/package/windows-x64/fmimodelc/lib/libfmi2modelcfmu.dll
+exec touch $BUILD_DIR/package/windows-x64/fmimodelc/lib/fmi2modelcfmu.dll
 exec touch $BUILD_DIR/package/windows-x64/fmimodelc/lib/libmodelc.dll
-exec touch $BUILD_DIR/package/windows-x86/fmimodelc/lib/libfmi2modelcfmu.dll
+exec touch $BUILD_DIR/package/windows-x86/fmimodelc/lib/fmi2modelcfmu.dll
 exec touch $BUILD_DIR/package/windows-x86/fmimodelc/lib/libmodelc.dll
 
 # Generate for platform linux-amd64
@@ -30,7 +30,7 @@ mkdir out
 exec fmi gen-fmu -sim sim -name $FMU_NAME -platform linux-amd64 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
 exec ls -R $WORK/out
 exists out/$FMU_NAME.fmu
-exists out/$FMU_NAME/binaries/linux64/libfmi2modelcfmu.so
+exists out/$FMU_NAME/binaries/linux64/fmi2modelcfmu.so
 exists out/$FMU_NAME/binaries/linux64/libmodelc.so
 
 # Generate for platform linux-x86
@@ -40,7 +40,7 @@ mkdir out
 exec fmi gen-fmu -sim sim -name $FMU_NAME -platform linux-x86 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
 exec ls -R $WORK/out
 exists out/$FMU_NAME.fmu
-exists out/$FMU_NAME/binaries/linux32/libfmi2modelcfmu.so
+exists out/$FMU_NAME/binaries/linux32/fmi2modelcfmu.so
 exists out/$FMU_NAME/binaries/linux32/libmodelc.so
 
 # Generate for platform linux-i386
@@ -50,7 +50,7 @@ mkdir out
 exec fmi gen-fmu -sim sim -name $FMU_NAME -platform linux-i386 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
 exec ls -R $WORK/out
 exists out/$FMU_NAME.fmu
-exists out/$FMU_NAME/binaries/linux32/libfmi2modelcfmu.so
+exists out/$FMU_NAME/binaries/linux32/fmi2modelcfmu.so
 exists out/$FMU_NAME/binaries/linux32/libmodelc.so
 
 # Generate for platform windows-x64
@@ -60,7 +60,7 @@ mkdir out
 exec fmi gen-fmu -sim sim -name $FMU_NAME -platform windows-x64 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
 exec ls -R $WORK/out
 exists out/$FMU_NAME.fmu
-exists out/$FMU_NAME/binaries/win64/libfmi2modelcfmu.dll
+exists out/$FMU_NAME/binaries/win64/fmi2modelcfmu.dll
 exists out/$FMU_NAME/binaries/win64/libmodelc.dll
 
 # Generate for platform windows-x86
@@ -70,5 +70,5 @@ mkdir out
 exec fmi gen-fmu -sim sim -name $FMU_NAME -platform windows-x86 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
 exec ls -R $WORK/out
 exists out/$FMU_NAME.fmu
-exists out/$FMU_NAME/binaries/win32/libfmi2modelcfmu.dll
+exists out/$FMU_NAME/binaries/win32/fmi2modelcfmu.dll
 exists out/$FMU_NAME/binaries/win32/libmodelc.dll

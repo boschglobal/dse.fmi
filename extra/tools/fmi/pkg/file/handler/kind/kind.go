@@ -72,6 +72,8 @@ func SetSpec(kd *KindDoc) error {
 	switch kd.Kind {
 	case "Model":
 		kd.Spec = new(kind.ModelSpec)
+	case "Runnable":
+		kd.Spec = new(kind.RunnableSpec)
 	case "SignalGroup":
 		kd.Spec = new(kind.SignalGroupSpec)
 	case "Stack":

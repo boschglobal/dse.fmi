@@ -142,6 +142,7 @@ func TestGenModelCFmuAnnotationSignals_Sim(t *testing.T) {
 	}
 	yamlFiles := []interface{}{
 		"data/model.yaml",
+		"data/runnable.yaml",
 		"data/signalgroup-network.yaml",
 		"data/signalgroup-signal.yaml",
 		"data/simulation.yaml",

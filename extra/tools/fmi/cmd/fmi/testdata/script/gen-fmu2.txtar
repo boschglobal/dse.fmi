@@ -20,7 +20,7 @@ mkdir -p fmu/$FMU_NAME
 exec unzip -q -o out/$FMU_NAME.fmu -d fmu/$FMU_NAME
 exec ls -R $WORK/fmu
 exists fmu/$FMU_NAME/modelDescription.xml
-exists fmu/$FMU_NAME/binaries/linux64/libfmi2modelcfmu.so
+exists fmu/$FMU_NAME/binaries/linux64/fmi2modelcfmu.so
 exists fmu/$FMU_NAME/binaries/linux64/libmodelc.so
 exists fmu/$FMU_NAME/resources/sim
 exists fmu/$FMU_NAME/resources/sim/lib/libfmimodelctarget.so
