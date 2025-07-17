@@ -520,7 +520,8 @@ fmi3Status fmi3GetBinary(fmi3Instance instance,
         if (ef) {
             values[i] = (fmi3Binary)ef((char*)data, data_len);
         } else {
-            values[i] = data;
+            values[i] = malloc(data_len);
+            memcpy(values[i], data, data_len);
         }
         valueSizes[i] = data_len;
 
