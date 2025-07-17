@@ -14,12 +14,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/file/index"
-	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/file/operations"
-	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/fmi"
-	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/fmi/fmi2"
-	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/fmi/fmi3"
-	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/log"
+	"github.com/boschglobal/dse.clib/extra/go/file/index"
+	"github.com/boschglobal/dse.fmi/extra/tools/fmi/pkg/file/operations"
+	"github.com/boschglobal/dse.fmi/extra/tools/fmi/pkg/fmi"
+	"github.com/boschglobal/dse.fmi/extra/tools/fmi/pkg/fmi/fmi2"
+	"github.com/boschglobal/dse.fmi/extra/tools/fmi/pkg/fmi/fmi3"
+	"github.com/boschglobal/dse.fmi/extra/tools/fmi/pkg/log"
 )
 
 type GenFmiModelcCommand struct {

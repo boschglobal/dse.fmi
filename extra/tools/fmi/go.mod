@@ -1,6 +1,8 @@
-module github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi
+module github.com/boschglobal/dse.fmi/extra/tools/fmi
 
-go 1.21.6
+go 1.23.5
+
+toolchain go1.24.4
 
 require (
 	github.com/boschglobal/dse.schemas/code/go/dse v1.2.22
@@ -13,6 +15,7 @@ require (
 
 require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
+	github.com/boschglobal/dse.clib/extra/go/file v1.0.32 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

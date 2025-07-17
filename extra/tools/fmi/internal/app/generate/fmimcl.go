@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/fmi/fmi2"
+	"github.com/boschglobal/dse.fmi/extra/tools/fmi/pkg/fmi/fmi2"
 	"github.com/boschglobal/dse.schemas/code/go/dse/kind"
 )
 

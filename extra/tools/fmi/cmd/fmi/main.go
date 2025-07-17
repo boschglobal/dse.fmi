@@ -9,8 +9,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/internal/app/generate"
-	"github.com/boschdevcloud.com/dse.fmi/extra/tools/fmi/pkg/patch"
+	"github.com/boschglobal/dse.fmi/extra/tools/fmi/internal/app/generate"
+	"github.com/boschglobal/dse.fmi/extra/tools/fmi/pkg/patch"
 )
 
 var (
