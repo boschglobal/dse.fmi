@@ -141,7 +141,7 @@ static inline void _set_binary_variable(ModelDesc* m, SignalVector* sv,
 
     FmuSignalVectorIndex* fmu_idx = calloc(1, sizeof(FmuSignalVectorIndex));
     fmu_idx->sv = calloc(1, sizeof(FmuSignalVector));
-    fmu_idx->sv->binary = idx.binary;
+    fmu_idx->sv->binary = idx.sv->binary;
     fmu_idx->sv->signal = (char**)idx.sv->signal;
     fmu_idx->sv->length = idx.sv->length;
     fmu_idx->sv->buffer_size = idx.sv->buffer_size;
