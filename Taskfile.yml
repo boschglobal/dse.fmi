@@ -60,7 +60,7 @@ tasks:
           FMU_DIR: '{{.FMU_DIR}}'
           OUT_DIR: '{{.OUT_DIR}}'
           MCL_PATH: '{{.MCL_PATH}}'
-          PLATFORM: '{{.PLATFORM}}'
+          PLATFORM: '{{coalesce .PLATFORM .PLATFORM_ARCH}}'
       - task: gen-signalgroup
         vars:
           INPUT: '{{.FMU_MODELDESC}}'
@@ -112,7 +112,7 @@ tasks:
         vars:
           SIM_DIR: '{{.SIM_DIR}}'
           FMU_NAME: '{{.FMU_NAME}}'
-          PLATFORM: '{{.PLATFORM}}'
+          PLATFORM: '{{coalesce .PLATFORM .PLATFORM_ARCH}}'
           SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
           VERSION: '{{.VERSION}}'
           UUID: '{{.UUID}}'
