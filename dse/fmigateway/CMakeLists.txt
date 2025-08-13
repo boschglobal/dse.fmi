@@ -101,6 +101,8 @@ install(
         fmi2gateway
     LIBRARY DESTINATION
         ${MODULE_LC}/lib
+    RUNTIME DESTINATION
+        ${MODULE_LC}/lib
 )
 
 # FMI3 Gateway FMU
@@ -144,6 +146,8 @@ install(
     TARGETS
         fmi3gateway
     LIBRARY DESTINATION
+        ${MODULE_LC}/lib
+    RUNTIME DESTINATION
         ${MODULE_LC}/lib
 )
 

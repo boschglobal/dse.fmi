@@ -32,7 +32,7 @@ install(
     TARGETS
         input
     LIBRARY DESTINATION
-         ${MODEL_PATH}/lib
+        ${MODEL_PATH}/lib
 )
 install(
     FILES

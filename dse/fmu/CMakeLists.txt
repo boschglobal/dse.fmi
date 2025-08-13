@@ -125,4 +125,6 @@ install(
         fmi2fmu
     LIBRARY DESTINATION
         ${MODULE_LC}/lib
+    RUNTIME DESTINATION
+        ${MODULE_LC}/lib
 )
