@@ -21,10 +21,10 @@
     <DefaultExperiment startTime="0" stopTime="0.0020" stepSize="0.0005" />
 
     <ModelVariables>
-        <ScalarVariable name="counter" valueReference="1" causality="output">
-            <Real start="42" reinit="" derivative=""></Real>
+        <ScalarVariable name="counter" valueReference="1" causality="output" initial="exact">
+            <Real start="42"></Real>
         </ScalarVariable>
-        <ScalarVariable name="pdu_rx" valueReference="2" causality="input">
+        <ScalarVariable name="pdu_rx" valueReference="2" causality="input" variability="discrete">
             <String start=""></String>
             <Annotations>
                 <Tool name="dse.standards.fmi-ls-binary-to-text">
@@ -35,7 +35,7 @@
                 </Tool>
             </Annotations>
         </ScalarVariable>
-        <ScalarVariable name="pdu_tx" valueReference="3" causality="output">
+        <ScalarVariable name="pdu_tx" valueReference="3" causality="output" variability="discrete">
             <String start=""></String>
             <Annotations>
                 <Tool name="dse.standards.fmi-ls-binary-to-text">
@@ -47,5 +47,7 @@
             </Annotations>
         </ScalarVariable>
     </ModelVariables>
+
+    <ModelStructure></ModelStructure>
 
 </fmiModelDescription>
