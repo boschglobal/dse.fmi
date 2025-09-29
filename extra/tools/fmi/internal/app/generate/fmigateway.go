@@ -20,11 +20,12 @@ import (
 	"github.com/boschglobal/dse.fmi/extra/tools/fmi/pkg/fmi/fmi2"
 	"github.com/boschglobal/dse.fmi/extra/tools/fmi/pkg/fmi/fmi3"
 	"github.com/boschglobal/dse.fmi/extra/tools/fmi/pkg/log"
-	schema_kind "github.com/boschglobal/dse.schemas/code/go/dse/kind"
+	schemaKind "github.com/boschglobal/dse.schemas/code/go/dse/kind"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 )
 
+// GenFmiGatewayCommand handles FMI gateway generation.
 type GenFmiGatewayCommand struct {
 	commandName string
 	fs          *flag.FlagSet
@@ -38,16 +39,28 @@ type GenFmiGatewayCommand struct {
 	outdir       string
 	stack        string
 
-	// Model parameter
+	// Model parameters
 	startTime float64
 	endTime   float64
 	stepSize  float64
 
+	// Number of Envar Signals
+	signalIdx int
+
 	libRootPath string
 }
 
+// NewFmiGatewayCommand creates a new FMI Gateway command instance.
 func NewFmiGatewayCommand(name string) *GenFmiGatewayCommand {
-	c := &GenFmiGatewayCommand{commandName: name, fs: flag.NewFlagSet(name, flag.ExitOnError)}
+	c := &GenFmiGatewayCommand{
+		commandName: name,
+		fs:          flag.NewFlagSet(name, flag.ExitOnError),
+		// Default values
+		startTime: 0.0,
+		endTime:   9999.0,
+		stepSize:  0.0005,
+		signalIdx: 1,
+	}
 
 	c.fs.IntVar(&c.logLevel, "log", 4, "Loglevel")
 	c.fs.StringVar(&c.signalGroups, "signalgroups", "", "A list of signalgroups separated by comma")
@@ -60,26 +73,25 @@ func NewFmiGatewayCommand(name string) *GenFmiGatewayCommand {
 	// Supports unit testing.
 	c.fs.StringVar(&c.libRootPath, "libroot", "/usr/local", "System lib root path (where lib & lib32 directory are found)")
 
-	// Default values
-	c.startTime = 0.0
-	c.endTime = 9999.0
-	c.stepSize = 0.0005
-
 	return c
 }
 
+// Name returns the command name.
 func (c GenFmiGatewayCommand) Name() string {
 	return c.commandName
 }
 
+// FlagSet returns the flag set for this command.
 func (c GenFmiGatewayCommand) FlagSet() *flag.FlagSet {
 	return c.fs
 }
 
+// Parse parses the command line arguments.
 func (c *GenFmiGatewayCommand) Parse(args []string) error {
 	return c.fs.Parse(args)
 }
 
+// Run executes the FMI gateway generation.
 func (c *GenFmiGatewayCommand) Run() error {
 	slog.SetDefault(log.NewLogger(c.logLevel))
 	if len(c.uuid) == 0 {
@@ -89,12 +101,11 @@ func (c *GenFmiGatewayCommand) Run() error {
 	if err := os.MkdirAll(c.outdir, os.ModePerm); err != nil {
 		return err
 	}
-	if err := c.mergeSignalGroups(c.signalGroups, c.outdir); err != nil {
-		return err
-	}
-
 	envars, err := c.parseStack()
 	if err != nil {
+		return err
+	}
+	if err := c.mergeSignalGroups(c.signalGroups, c.outdir); err != nil {
 		return err
 	}
 
@@ -116,32 +127,34 @@ func (c *GenFmiGatewayCommand) Run() error {
 	return nil
 }
 
-func (c *GenFmiGatewayCommand) patchSignal(vr *int, sg_type string, signals []schema_kind.Signal, used_signals *[]string) ([]schema_kind.Signal, error) {
-	var signal_list []schema_kind.Signal
-	if sg_type == "string" {
-		return signals, nil
+func (c *GenFmiGatewayCommand) patchSignal(vr *int, sgType string, signals []schemaKind.Signal, usedSignals *[]string) ([]schemaKind.Signal, error) {
+	var signalList []schemaKind.Signal
+	if sgType == "string" {
+		for _, s := range signals {
+			(*s.Annotations)["fmi_variable_vref"] = *vr
+			(*s.Annotations)["fmi_variable_vref_input"] = *vr
+			(*s.Annotations)["fmi_variable_vref_output"] = *vr + 1
+			(*s.Annotations)["dse.standards.fmi-ls-binary-to-text.vref"] = []int{*vr, *vr + 1}
+			(*s.Annotations)["dse.standards.fmi-ls-bus-topology.rx_vref"] = []int{*vr}
+			(*s.Annotations)["dse.standards.fmi-ls-bus-topology.tx_vref"] = []int{*vr + 1}
+			signalList = append(signalList, s)
+		}
+		return signalList, nil
 	}
 	for _, s := range signals {
-		if slices.Contains(*used_signals, s.Signal) {
+		if slices.Contains(*usedSignals, s.Signal) {
 			continue
 		}
-		*used_signals = append(*used_signals, s.Signal)
+		*usedSignals = append(*usedSignals, s.Signal)
 		slog.Info(fmt.Sprintf("Patch Signals: %s", s.Signal))
 		causality := ""
 		if (*s.Annotations)["softecu_direction"] != nil {
 			switch (*s.Annotations)["softecu_direction"] {
 			case "M2E":
-				{
-					causality = "input"
-					break
-				}
+				causality = "input"
 			case "E2M":
-				{
-					causality = "output"
-					break
-				}
+				causality = "output"
 			default:
-				break
 			}
 		}
 		if (*s.Annotations)["direction"] != nil {
@@ -154,17 +167,17 @@ func (c *GenFmiGatewayCommand) patchSignal(vr *int, sg_type string, signals []sc
 			continue
 		}
 
-		annotations := schema_kind.Annotations{
+		annotations := schemaKind.Annotations{
 			"fmi_variable_causality": causality,
 			"fmi_variable_vref":      *vr,
-			"fmi_variable_type":      sg_type,
+			"fmi_variable_type":      sgType,
 			"fmi_variable_name":      s.Signal,
 		}
 		*s.Annotations = annotations
-		signal_list = append(signal_list, s)
+		signalList = append(signalList, s)
 		*vr++
 	}
-	return signal_list, nil
+	return signalList, nil
 }
 
 func (c *GenFmiGatewayCommand) mergeSignalGroups(signalGroups string, outDir string) error {
@@ -172,8 +185,7 @@ func (c *GenFmiGatewayCommand) mergeSignalGroups(signalGroups string, outDir str
 	if len(signalGroups) > 0 {
 		signalGroupList = strings.Split(signalGroups, ",")
 	}
-	vr := 1000
-	var signal_list []string
+	var signalList []string
 	for _, signalGroup := range signalGroupList {
 
 		// Load the Signal Group.
@@ -181,22 +193,22 @@ func (c *GenFmiGatewayCommand) mergeSignalGroups(signalGroups string, outDir str
 		if err != nil {
 			return fmt.Errorf("unable to read input file: %s (%w)", signalGroup, err)
 		}
-		sg := schema_kind.SignalGroup{}
+		sg := schemaKind.SignalGroup{}
 		if err := yaml.Unmarshal(inputYaml, &sg); err != nil {
 			return fmt.Errorf("unable to unmarshal signalgroup yaml: %s (%w)", signalGroup, err)
 		}
-		sg_type := "real"
+		sgType := "real"
 		if sg.Metadata.Annotations != nil {
 			if (*sg.Metadata.Annotations)["vector_type"] != nil {
 				if (*sg.Metadata.Annotations)["vector_type"] == "binary" {
-					sg_type = "string"
+					sgType = "string"
 				}
 			}
 		}
 
 		signals := sg.Spec.Signals
 
-		sg.Spec.Signals, err = c.patchSignal(&vr, sg_type, signals, &signal_list)
+		sg.Spec.Signals, err = c.patchSignal(&c.signalIdx, sgType, signals, &signalList)
 		if err != nil {
 			return err
 		}
@@ -210,13 +222,13 @@ func (c *GenFmiGatewayCommand) mergeSignalGroups(signalGroups string, outDir str
 
 func (c *GenFmiGatewayCommand) buildFmi2XmlSignals(
 	fmuXml *fmi2.ModelDescription, index *index.YamlFileIndex,
-	envars *[]schema_kind.SignalGroupSpec) ([]string, error) {
+	envars *[]schemaKind.SignalGroupSpec) ([]string, error) {
 
 	if envars != nil {
-		if err := fmi2.StringSignal((*envars)[0], fmuXml); err != nil {
+		if err := fmi2.ScalarSignal(fmuXml, (*envars)[1]); err != nil {
 			slog.Warn(fmt.Sprintf("could not set envars in xml (Error: %s)", err.Error()))
 		}
-		if err := fmi2.ScalarSignal((*envars)[1], fmuXml); err != nil {
+		if err := fmi2.StringSignal(fmuXml, (*envars)[0]); err != nil {
 			slog.Warn(fmt.Sprintf("could not set envars in xml (Error: %s)", err.Error()))
 		}
 	}
@@ -231,13 +243,13 @@ func (c *GenFmiGatewayCommand) buildFmi2XmlSignals(
 
 func (c *GenFmiGatewayCommand) buildFmi3XmlSignals(
 	fmuXml *fmi3.ModelDescription, index *index.YamlFileIndex,
-	envars *[]schema_kind.SignalGroupSpec) ([]string, error) {
+	envars *[]schemaKind.SignalGroupSpec) ([]string, error) {
 
 	if envars != nil {
-		if err := fmi3.StringSignal((*envars)[0], fmuXml); err != nil {
+		if err := fmi3.ScalarSignal((*envars)[1], fmuXml); err != nil {
 			slog.Warn(fmt.Sprintf("could not set envars in xml (Error: %s)", err.Error()))
 		}
-		if err := fmi3.ScalarSignal((*envars)[1], fmuXml); err != nil {
+		if err := fmi3.StringSignal((*envars)[0], fmuXml); err != nil {
 			slog.Warn(fmt.Sprintf("could not set envars in xml (Error: %s)", err.Error()))
 		}
 	}
@@ -249,7 +261,7 @@ func (c *GenFmiGatewayCommand) buildFmi3XmlSignals(
 	return channels, nil
 }
 
-func (c *GenFmiGatewayCommand) createFmuXml(envars *[]schema_kind.SignalGroupSpec) (interface{}, []string, error) {
+func (c *GenFmiGatewayCommand) createFmuXml(envars *[]schemaKind.SignalGroupSpec) (interface{}, []string, error) {
 	index := index.NewYamlFileIndex()
 	_, docs, err := handler.ParseFile(filepath.Join(c.outdir, "fmu.yaml"))
 	if err != nil {
@@ -306,74 +318,81 @@ func (c *GenFmiGatewayCommand) createFmuXml(envars *[]schema_kind.SignalGroupSpe
 	return nil, nil, nil
 }
 
-func (c *GenFmiGatewayCommand) parseStack() (*[]schema_kind.SignalGroupSpec, error) {
-	envvar_count := 0
-	var signal_spec = make([]schema_kind.SignalGroupSpec, 2)
+func (c *GenFmiGatewayCommand) getEnvar(envarList interface{}, signalSpec *[]schemaKind.SignalGroupSpec, expectedType string) {
+	for _, envar := range envarList.([]interface{}) {
+		_type := envar.(schemaKind.Annotations)["type"]
+		if _type == nil {
+			_type = "real"
+		}
+		if _type != expectedType {
+			continue
+		}
+		_name := envar.(schemaKind.Annotations)["name"].(string)
+		_start := envar.(schemaKind.Annotations)["default"]
+		var start string
+		if _start != nil {
+			start = _start.(string)
+		} else {
+			start = ""
+		}
+		signal := schemaKind.Signal{
+			Signal: _name,
+			Annotations: &schemaKind.Annotations{
+				"fmi_variable_causality": "parameter",
+				"fmi_variable_vref":      c.signalIdx,
+				"fmi_variable_start":     start,
+			},
+		}
+		switch expectedType {
+		case "string":
+			(*signalSpec)[0].Signals = append((*signalSpec)[0].Signals, signal)
+		case "real":
+			(*signalSpec)[1].Signals = append((*signalSpec)[1].Signals, signal)
+		}
+		c.signalIdx++
+	}
+}
+
+func (c *GenFmiGatewayCommand) parseStack() (*[]schemaKind.SignalGroupSpec, error) {
+	var signalSpec = make([]schemaKind.SignalGroupSpec, 2)
 	// Load the Stack.
-	stack_file, err := os.ReadFile(c.stack)
+	stackFile, err := os.ReadFile(c.stack)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read stack.yaml")
 	}
-	stack := schema_kind.Stack{}
-	if err := yaml.Unmarshal(stack_file, &stack); err != nil {
+	stack := schemaKind.Stack{}
+	if err := yaml.Unmarshal(stackFile, &stack); err != nil {
 		return nil, fmt.Errorf("unable to unmarshal stack.yaml")
 	}
 	for _, model := range *stack.Spec.Models {
 		if model.Model.Name == "Gateway" {
-			if step_size := (*model.Annotations)["step_size"]; step_size != nil {
-				c.stepSize = step_size.(float64)
+			if stepSize := (*model.Annotations)["step_size"]; stepSize != nil {
+				c.stepSize = stepSize.(float64)
 			}
-			if end_time := (*model.Annotations)["end_time"]; end_time != nil {
-				c.endTime = end_time.(float64)
+			if endTime := (*model.Annotations)["end_time"]; endTime != nil {
+				c.endTime = endTime.(float64)
 			}
-			if start_time := (*model.Annotations)["fmi_start_time"]; start_time != nil {
-				c.startTime = start_time.(float64)
+			if startTime := (*model.Annotations)["fmi_start_time"]; startTime != nil {
+				c.startTime = startTime.(float64)
 			}
 
-			if envar_list := (*model.Annotations)["cmd_envvars"]; envar_list != nil {
-				for _, envar := range envar_list.(([]interface{})) {
-					_name := envar.(schema_kind.Annotations)["name"].(string)
-					_type := envar.(schema_kind.Annotations)["type"]
-					_start := envar.(schema_kind.Annotations)["default"]
-					var start string
-					if _start != nil {
-						start = _start.(string)
-					} else {
-						start = ""
-					}
-					signal := schema_kind.Signal{
-						Signal: _name,
-						Annotations: &schema_kind.Annotations{
-							"fmi_variable_causality": "parameter",
-							"fmi_variable_vref":      envvar_count,
-							"fmi_variable_start":     start,
-						},
-					}
-					if _type != nil {
-						if _type.(string) == "string" {
-							signal_spec[0].Signals = append(signal_spec[0].Signals, signal)
-						} else if _type.(string) == "real" {
-							signal_spec[1].Signals = append(signal_spec[1].Signals, signal)
-						}
-					} else {
-						signal_spec[0].Signals = append(signal_spec[0].Signals, signal)
-					}
-					envvar_count++
-				}
+			if envarList := (*model.Annotations)["cmd_envvars"]; envarList != nil {
+				c.getEnvar(envarList, &signalSpec, "real")
+				c.getEnvar(envarList, &signalSpec, "string")
 			}
 		}
 	}
 
-	return &signal_spec, nil
+	return &signalSpec, nil
 }
 
-func (c *GenFmiGatewayCommand) generateChannels(channel_map []string) ([]schema_kind.Channel, error) {
-	channels := []schema_kind.Channel{}
-	for i := range channel_map {
-		channel := schema_kind.Channel{
-			Alias: stringPtr(channel_map[i]),
-			Selectors: &schema_kind.Labels{
-				"channel": channel_map[i],
+func (c *GenFmiGatewayCommand) generateChannels(channelMap []string) ([]schemaKind.Channel, error) {
+	channels := []schemaKind.Channel{}
+	for i := range channelMap {
+		channel := schemaKind.Channel{
+			Alias: stringPtr(channelMap[i]),
+			Selectors: &schemaKind.Labels{
+				"channel": channelMap[i],
 			},
 		}
 		channels = append(channels, channel)
@@ -381,30 +400,30 @@ func (c *GenFmiGatewayCommand) generateChannels(channel_map []string) ([]schema_
 	return channels, nil
 }
 
-func (c *GenFmiGatewayCommand) generateModel(channel_map []string) error {
+func (c *GenFmiGatewayCommand) generateModel(channelMap []string) error {
 
 	// Build the model.xml
-	model := schema_kind.Model{
+	model := schemaKind.Model{
 		Kind: "Model",
-		Metadata: &schema_kind.ObjectMetadata{
+		Metadata: &schemaKind.ObjectMetadata{
 			Name: stringPtr("Gateway"),
 		},
 	}
 
-	channels, err := c.generateChannels(channel_map)
+	channels, err := c.generateChannels(channelMap)
 	if err != nil {
 		return fmt.Errorf("could not generate channels: (%v)", err)
 	}
-	gw_spec := schema_kind.GatewaySpec{}
-	spec := schema_kind.ModelSpec{
+	gwSpec := schemaKind.GatewaySpec{}
+	spec := schemaKind.ModelSpec{
 		Channels: &channels,
 		Runtime: &struct {
-			Dynlib     *[]schema_kind.LibrarySpec    `yaml:"dynlib,omitempty"`
-			Executable *[]schema_kind.ExecutableSpec `yaml:"executable,omitempty"`
-			Gateway    *schema_kind.GatewaySpec      `yaml:"gateway,omitempty"`
-			Mcl        *[]schema_kind.LibrarySpec    `yaml:"mcl,omitempty"`
+			Dynlib     *[]schemaKind.LibrarySpec    `yaml:"dynlib,omitempty"`
+			Executable *[]schemaKind.ExecutableSpec `yaml:"executable,omitempty"`
+			Gateway    *schemaKind.GatewaySpec      `yaml:"gateway,omitempty"`
+			Mcl        *[]schemaKind.LibrarySpec    `yaml:"mcl,omitempty"`
 		}{
-			Gateway: &gw_spec,
+			Gateway: &gwSpec,
 		},
 	}
 	model.Spec = spec

@@ -73,28 +73,24 @@ type ScalarVariable struct {
 	Annotations    *Annotations `xml:"Annotations,omitempty"`
 }
 
+type Unknown struct {
+	Text  string `xml:",chardata"`
+	Index string `xml:"index,attr"`
+}
+
 type Outputs struct {
-	Text    string `xml:",chardata"`
-	Unknown []struct {
-		Text  string `xml:",chardata"`
-		Index string `xml:"index,attr"`
-	} `xml:"Unknown"`
+	Text    string    `xml:",chardata"`
+	Unknown []Unknown `xml:"Unknown,omitempty"`
 }
 
 type Derivates struct {
-	Text    string `xml:",chardata"`
-	Unknown []struct {
-		Text  string `xml:",chardata"`
-		Index string `xml:"index,attr"`
-	} `xml:"Unknown"`
+	Text    string    `xml:",chardata"`
+	Unknown []Unknown `xml:"Unknown,omitempty"`
 }
 
 type InitialUnknowns struct {
-	Text    string `xml:",chardata"`
-	Unknown []struct {
-		Text  string `xml:",chardata"`
-		Index string `xml:"index,attr"`
-	} `xml:"Unknown"`
+	Text    string    `xml:",chardata"`
+	Unknown []Unknown `xml:"Unknown,omitempty"`
 }
 
 // ModelDescription was generated 2023-05-23 07:27:35 by https://xml-to-go.github.io/ in Ukraine.
@@ -166,7 +162,23 @@ func getXmlData(file string) ([]byte, error) {
 	return data, nil
 }
 
-func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDescription) error {
+func expandModelStructure(fmiXml *ModelDescription, vref string) error {
+	output := Unknown{
+		Index: vref,
+	}
+	if fmiXml.ModelStructure.Outputs == nil {
+		fmiXml.ModelStructure.Outputs = &Outputs{}
+	}
+	if fmiXml.ModelStructure.InitialUnknowns == nil {
+		fmiXml.ModelStructure.InitialUnknowns = &InitialUnknowns{}
+	}
+	fmiXml.ModelStructure.Outputs.Unknown = append(fmiXml.ModelStructure.Outputs.Unknown, output)
+	fmiXml.ModelStructure.InitialUnknowns.Unknown = append(fmiXml.ModelStructure.InitialUnknowns.Unknown, output)
+
+	return nil
+}
+
+func ScalarSignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGroupSpec) error {
 	for _, signal := range signalGroupSpec.Signals {
 		v := (*signal.Annotations)["fmi_variable_causality"]
 		if v == nil {
@@ -210,6 +222,10 @@ func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 				},
 			}
 			FmiXml.ModelVariables.ScalarVariable = append(FmiXml.ModelVariables.ScalarVariable, ScalarVariable)
+
+			if causality == "output" {
+				expandModelStructure(FmiXml, vRef)
+			}
 		} else {
 			return fmt.Errorf("could not get value reference for signal %s", signal.Signal)
 		}
@@ -217,7 +233,7 @@ func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 	return nil
 }
 
-func buildBinarySignal(signal schema_kind.Signal, vref string, causality string, id int) ScalarVariable {
+func buildBinarySignal(FmiXml *ModelDescription, signal schema_kind.Signal, vref string, causality string, id int) ScalarVariable {
 
 	bus_id := (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.bus_id"].(int)
 	mime_type := (*signal.Annotations)["mime_type"].(string)
@@ -267,10 +283,15 @@ func buildBinarySignal(signal schema_kind.Signal, vref string, causality string,
 		},
 		Annotations: &ann,
 	}
+	FmiXml.ModelVariables.ScalarVariable = append(FmiXml.ModelVariables.ScalarVariable, ScalarVariable)
+	if _causality == "output" {
+		expandModelStructure(FmiXml, vref)
+	}
+
 	return ScalarVariable
 }
 
-func BinarySignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDescription) error {
+func BinarySignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGroupSpec) error {
 	for _, signal := range signalGroupSpec.Signals {
 		var v any
 
@@ -288,17 +309,14 @@ func BinarySignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 		for x := 0; x < len(rx_vref); x++ {
 			rx := strconv.Itoa(rx_vref[x].(int))
 			tx := strconv.Itoa(tx_vref[x].(int))
-			FmiXml.ModelVariables.ScalarVariable = append(
-				FmiXml.ModelVariables.ScalarVariable,
-				buildBinarySignal(signal, rx, "rx", x+1),
-				buildBinarySignal(signal, tx, "tx", x+1),
-			)
+			buildBinarySignal(FmiXml, signal, rx, "rx", x+1)
+			buildBinarySignal(FmiXml, signal, tx, "tx", x+1)
 		}
 	}
 	return nil
 }
 
-func StringSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDescription) error {
+func StringSignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGroupSpec) error {
 	for _, signal := range signalGroupSpec.Signals {
 		v := (*signal.Annotations)["fmi_variable_causality"]
 		if v == nil {
@@ -375,11 +393,11 @@ func VariablesFromSignalgroups(
 			fmt.Fprintf(flag.CommandLine.Output(), "Adding SignalGroup: %s (%s)\n", doc.Metadata.Name, doc.File)
 			signalGroupSpec := doc.Spec.(*schema_kind.SignalGroupSpec)
 			if doc.Metadata.Annotations["vector_type"] == "binary" {
-				if err := BinarySignal(*signalGroupSpec, FmiXml); err != nil {
+				if err := BinarySignal(FmiXml, *signalGroupSpec); err != nil {
 					slog.Warn(fmt.Sprintf("Skipped BinarySignal (Error: %s)", err.Error()))
 				}
 			} else {
-				if err := ScalarSignal(*signalGroupSpec, FmiXml); err != nil {
+				if err := ScalarSignal(FmiXml, *signalGroupSpec); err != nil {
 					slog.Warn(fmt.Sprintf("Skipped Scalarsignal (Error: %s)", err.Error()))
 				}
 			}
