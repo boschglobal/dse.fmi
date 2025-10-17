@@ -200,6 +200,7 @@ jobs:
         run: |
           gh release upload "$tag" \
             ${{ env.build_dir }}/_dist/${{ env.package_name }}-${{ env.PACKAGE_VERSION }}-${{ matrix.package_arch }}.zip
+            --clobber
 
   publish_examples:
     if: startsWith(github.ref, 'refs/tags/')
@@ -229,6 +230,7 @@ jobs:
           gh release upload "$tag" \
             dse/build/_out/examples/fmu/network/fmi2/example-network-linux-amd64-fmi2.fmu
             dse/build/_out/examples/fmu/network/fmi3/example-network-linux-amd64-fmi3.fmu
+            --clobber
 
   tools:
     if: startsWith(github.ref, 'refs/tags/')
