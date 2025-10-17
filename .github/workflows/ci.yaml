@@ -136,10 +136,28 @@ jobs:
           export HOST_DOCKER_WORKSPACE=${{ env.HOST_DOCKER_WORKSPACE }}
           make test_e2e
 
-  publish:
+  release:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: [ubuntu-latest]
     needs: [build, test_e2e]
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Create Release from Tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+        run: |
+          gh release create "$tag" \
+            --notes-from-tag
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: [ubuntu-latest]
+    needs: [release]
     permissions:
       contents: write
     strategy:
@@ -175,20 +193,24 @@ jobs:
           name: ${{ env.package_name }}-${{ matrix.package_arch }}-package
           path: ${{ env.build_dir }}/_dist
 
-      - name: Publish
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: |
+      - name: Upload Release Asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+        run: |
+          gh release upload "$tag" \
             ${{ env.build_dir }}/_dist/${{ env.package_name }}-${{ env.PACKAGE_VERSION }}-${{ matrix.package_arch }}.zip
 
   publish_examples:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: [ubuntu-latest]
-    needs: [build, test_e2e]
+    needs: [release]
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/download-artifact@v5
         with:
           name: Fmi-linux-amd64-sandbox
@@ -199,16 +221,19 @@ jobs:
           ls -R
           cp dse/build/_out/examples/fmu/network/fmi2/network.fmu dse/build/_out/examples/fmu/network/fmi2/example-network-linux-amd64-fmi2.fmu
           cp dse/build/_out/examples/fmu/network/fmi3/network.fmu dse/build/_out/examples/fmu/network/fmi3/example-network-linux-amd64-fmi3.fmu
-      - uses: softprops/action-gh-release@v2
-        with:
-          files: |
+      - name: Upload Release Asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+        run: |
+          gh release upload "$tag" \
             dse/build/_out/examples/fmu/network/fmi2/example-network-linux-amd64-fmi2.fmu
             dse/build/_out/examples/fmu/network/fmi3/example-network-linux-amd64-fmi3.fmu
 
   tools:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: [ubuntu-latest]
-    needs: [build]
+    needs: [build, release]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -304,7 +329,7 @@ jobs:
   docker_push:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: [ubuntu-latest]
-    needs: [tools, test_e2e]
+    needs: [tools, test_e2e, release]
     strategy:
       matrix:
         container:
