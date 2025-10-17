@@ -29,7 +29,8 @@ export AUTOMOTIVE_BUS_SCHEMA_URL ?= $(AUTOMOTIVE_BUS_SCHEMA_REPO)/releases/downl
 ## Docker Images.
 GCC_BUILDER_IMAGE ?= ghcr.io/boschglobal/dse-gcc-builder:main
 TESTSCRIPT_IMAGE ?= ghcr.io/boschglobal/dse-testscript:latest
-SIMER_IMAGE ?= ghcr.io/boschglobal/dse-simer:$(DSE_MODELC_VERSION)
+# SIMER_IMAGE ?= ghcr.io/boschglobal/dse-simer:$(DSE_MODELC_VERSION)
+SIMER_IMAGE ?= ghcr.io/boschglobal/dse-simer:2.2.9
 
 
 ###############
