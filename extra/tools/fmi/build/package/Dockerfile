@@ -6,7 +6,7 @@
 
 # Fmi Builder
 # ===========
-FROM golang:bullseye AS fmi
+FROM golang:bookworm AS fmi
 ADD . /src
 RUN cd /src && make build
 
@@ -14,7 +14,7 @@ RUN cd /src && make build
 
 # Fmi Container Image
 # ===================
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 LABEL maintainer="timothy.rule@de.bosch.com";
 
 RUN set -eux; \
