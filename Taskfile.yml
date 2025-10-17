@@ -99,9 +99,7 @@ tasks:
     run: always
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:generate-fmimodelc
-    vars:
-      # FMU_NAME: '{{.FMU_NAME}}'
-      # SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
+    vars: {}
     cmds:
       - task: gen-modelcfmu-annotations
         vars:
@@ -223,9 +221,6 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-signalgroup
     vars:
-    #   INPUT: '{{.INPUT}}'
-    #   OUTPUT: '{{.OUTPUT}}'
-
       # FIXME work around for Taskfile issue.
       FMI_TAG: '{{.FMI_TAG | default "latest"}}'
     cmds:
