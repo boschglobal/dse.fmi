@@ -10,7 +10,7 @@ permissions:
 jobs:
   dependabot:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'boschglobal/dse.fmi'
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == "${{github.event.repository.name}}"
     steps:
       - name: Dependabot metadata
         id: metadata
