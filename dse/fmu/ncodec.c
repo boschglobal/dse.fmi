@@ -7,11 +7,14 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <ctype.h>
 #include <dse/testing.h>
 #include <dse/logger.h>
 #include <dse/clib/util/strings.h>
 #include <dse/ncodec/codec.h>
+#include <dse/ncodec/interface/frame.h>
+#include <dse/ncodec/interface/pdu.h>
 #include <dse/fmu/fmu.h>
 
 
@@ -379,6 +382,10 @@ typedef struct __BinarySignalStream {
     uint32_t           pos;
 } __BinarySignalStream;
 
+static void fmu_sv_stream_destroy(void* stream)
+{
+    if (stream) free(stream);
+}
 
 static size_t stream_read(
     NCODEC* nc, uint8_t** data, size_t* len, int32_t pos_op)
@@ -488,11 +495,13 @@ static int32_t stream_eof(NCODEC* nc)
 
 static int32_t stream_close(NCODEC* nc)
 {
-    UNUSED(nc);
-
+    NCodecInstance* _nc = (NCodecInstance*)nc;
+    if (_nc && _nc->stream) {
+        fmu_sv_stream_destroy(_nc->stream);
+        _nc->stream = NULL;
+    }
     return 0;
 }
-
 
 static void* fmu_sv_stream_create(FmuSignalVector* sv, uint32_t idx)
 {
@@ -510,12 +519,6 @@ static void* fmu_sv_stream_create(FmuSignalVector* sv, uint32_t idx)
     stream->pos = 0;
 
     return stream;
-}
-
-
-static void fmu_sv_stream_destroy(void* stream)
-{
-    if (stream) free(stream);
 }
 
 
@@ -597,6 +600,6 @@ void fmu_ncodec_close(FmuInstanceData* fmu, void* ncodec)
     if (nc == NULL) return;
 
     trace_destroy(nc);
-    fmu_sv_stream_destroy(nc->stream);
+    // fmu_sv_stream_destroy(nc->stream);
     ncodec_close((NCODEC*)nc);
 }

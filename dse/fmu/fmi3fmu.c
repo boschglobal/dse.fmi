@@ -521,7 +521,7 @@ fmi3Status fmi3GetBinary(fmi3Instance instance,
             values[i] = (fmi3Binary)ef((char*)data, data_len);
         } else {
             values[i] = malloc(data_len);
-            memcpy(values[i], data, data_len);
+            memcpy((void*)values[i], data, data_len);
         }
         valueSizes[i] = data_len;
 
@@ -712,8 +712,8 @@ fmi3Status fmi3SetString(fmi3Instance instance,
         /* Lookup the binary signal, by VRef. */
         static char vr_idx[VREF_KEY_LEN];
         snprintf(vr_idx, VREF_KEY_LEN, "%i", valueReferences[i]);
-        hashmap_set_string(
-            &fmu->variables.string.input, vr_idx, (char*)values[i]);
+        hashmap_set_string(&fmu->variables.string.input,  // NOLINT
+            vr_idx, (char*)values[i]);
     }
 
     return fmi3OK;

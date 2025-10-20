@@ -11,8 +11,8 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 
 
-extern char* ascii85_encode(const char* source, size_t len);
-extern char* ascii85_decode(const char* source, size_t* len);
+extern char* dse_ascii85_encode(const char* source, size_t len);
+extern char* dse_ascii85_decode(const char* source, size_t* len);
 
 
 int test_ascii85_setup(void** state)
@@ -61,7 +61,7 @@ void test_ascii85__encode(void** state)
     };
 
     for (size_t i = 0; i < ARRAY_SIZE(tc); i++) {
-        char* encoded = ascii85_encode(tc[i].base, strlen(tc[i].base));
+        char* encoded = dse_ascii85_encode(tc[i].base, strlen(tc[i].base));
         assert_string_equal(encoded, tc[i].enc);
         free(encoded);
     }
@@ -92,7 +92,7 @@ void test_ascii85__decode(void** state)
     };
     for (size_t i = 0; i < ARRAY_SIZE(tc); i++) {
         size_t dec_len = 0;
-        char*  base = ascii85_decode(tc[i].enc, &dec_len);
+        char*  base = dse_ascii85_decode(tc[i].enc, &dec_len);
         assert_string_equal(base, tc[i].base);
         free(base);
     }
@@ -140,9 +140,9 @@ void test_ascii85__roundtrip(void** state)
         }, .data_len = 86 },
     };
     for (size_t i = 0; i < ARRAY_SIZE(tc); i++) {
-        char*  enc_string = ascii85_encode(tc[i].data, tc[i].data_len);
+        char*  enc_string = dse_ascii85_encode(tc[i].data, tc[i].data_len);
         size_t dec_len = 0;
-        char*  dec_string = ascii85_decode(enc_string, &dec_len);
+        char*  dec_string = dse_ascii85_decode(enc_string, &dec_len);
         assert_int_equal(tc[i].data_len, dec_len);
         assert_memory_equal(tc[i].data, dec_string, dec_len);
         free(enc_string);

@@ -33,14 +33,14 @@ DOC_TITLE_fmimcl := "FMI MCL API Reference"
 
 # Module "fmimodelc"
 DOC_INPUT_fmimodelc := dse/fmimodelc/fmimodelc.h
-DOC_CDIR_fmimodelc := dse/fmu/ascii85.c,dse/fmu/fmi2fmu.c,dse/fmimodelc/runtime.c,dse/fmimodelc/signal.c
+DOC_CDIR_fmimodelc := dse/fmu/fmi2fmu.c,dse/fmimodelc/runtime.c,dse/fmimodelc/signal.c
 DOC_OUTPUT_fmimodelc := doc/content/apis/fmi/fmimodelc/index.md
 DOC_LINKTITLE_fmimodelc := "ModelC FMU"
 DOC_TITLE_fmimodelc := "FMI ModelC FMU API Reference"
 
 # Module "fmu"
 DOC_INPUT_fmu := dse/fmu/fmu.h
-DOC_CDIR_fmu := dse/fmu/fmu.c,dse/fmu/ascii85.c,dse/fmu/signal.c,dse/fmu/fmi2fmu.c,dse/fmu/fmi2variable.c
+DOC_CDIR_fmu := dse/fmu/fmu.c,dse/fmu/signal.c,dse/fmu/fmi2fmu.c,dse/fmu/fmi2variable.c
 DOC_OUTPUT_fmu := doc/content/apis/fmi/fmu/index.md
 DOC_LINKTITLE_fmu := "FMU"
 DOC_TITLE_fmu := "FMU API Reference"

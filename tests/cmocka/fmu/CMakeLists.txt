@@ -4,94 +4,79 @@
 
 cmake_minimum_required(VERSION 3.21)
 
-# set(CMAKE_VERBOSE_MAKEFILE ON)
-
 project(test_fmu)
 
 
-# FMU Code
-# ========
-set(DSE_FMU_SOURCE_DIR ../../../dse/fmu)
-set(DSE_FMU2_SOURCE_FILES
-    ${DSE_FMU_SOURCE_DIR}/ascii85.c
-    ${DSE_FMU_SOURCE_DIR}/fmu.c
+# FMU Objects
+# -----------
+set(DSE_FMU_SOURCE_DIR ${REPO_DIR}/dse/fmu)
+add_library(fmi2_runtime OBJECT
+    ${DSE_CLIB_SOURCE_DIR}/util/ascii85.c
     ${DSE_FMU_SOURCE_DIR}/fmi2fmu.c
     ${DSE_FMU_SOURCE_DIR}/fmi2variable.c
+    ${DSE_FMU_SOURCE_DIR}/ncodec.c
     ${DSE_FMU_SOURCE_DIR}/signal.c
 )
-set(DSE_FMU3_SOURCE_FILES
-    ${DSE_FMU_SOURCE_DIR}/ascii85.c
-    ${DSE_FMU_SOURCE_DIR}/fmu.c
+target_include_directories(fmi2_runtime
+    PUBLIC
+        ${REPO_DIR}
+        ${FMI2_INCLUDE_DIR}
+        ${DSE_CLIB_INCLUDE_DIR}
+        ${DSE_MODELC_INCLUDE_DIR}
+)
+target_link_libraries(fmi2_runtime
+    PUBLIC
+        ab-codec
+    PRIVATE
+        xml
+        $<$<BOOL:${WIN32}>:bcrypt>
+        $<$<BOOL:${WIN32}>:dl>
+        m
+)
+add_library(fmi3_runtime OBJECT
+    ${DSE_CLIB_SOURCE_DIR}/util/ascii85.c
     ${DSE_FMU_SOURCE_DIR}/fmi3fmu.c
     ${DSE_FMU_SOURCE_DIR}/fmi3variable.c
+    ${DSE_FMU_SOURCE_DIR}/ncodec.c
     ${DSE_FMU_SOURCE_DIR}/signal.c
 )
-set(DSE_FMU_INCLUDE_DIR "${DSE_FMU_SOURCE_DIR}/../..")
-
-
-# NCodec Objects
-# ==============
-add_library(flatcc_runtime OBJECT
-    ${FLATCC_SOURCE_DIR}/src/builder.c
-    ${FLATCC_SOURCE_DIR}/src/emitter.c
-    ${FLATCC_SOURCE_DIR}/src/refmap.c
-)
-target_include_directories(flatcc_runtime
-    PRIVATE
-        ${FLATCC_INCLUDE_DIR}
-)
-add_library(network_codec OBJECT
-    ${DSE_FMU_SOURCE_DIR}/ncodec.c
-    ${DSE_NCODEC_SOURCE_DIR}/codec.c
-    ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/codec.c
-    ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/frame_can_fbs.c
-    ${DSE_NCODEC_SOURCE_DIR}/libs/automotive-bus/pdu_fbs.c
-)
-target_include_directories(network_codec
-    PRIVATE
+target_include_directories(fmi3_runtime
+    PUBLIC
+        ${REPO_DIR}
+        ${FMI3_INCLUDE_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
-        ${DSE_NCODEC_INCLUDE_DIR}
-        ${DSE_NCODEC_INCLUDE_DIR}/dse/ncodec/libs
-        ${FMU_INCLUDE_DIR}
-        ${FLATCC_INCLUDE_DIR}
-        ${AUTOMOTIVE_BUS_SCHEMA_SOURCE_DIR}
-        ../../..
+        ${DSE_MODELC_INCLUDE_DIR}
 )
-target_link_libraries(network_codec
+target_link_libraries(fmi3_runtime
+    PUBLIC
+        ab-codec
     PRIVATE
-        flatcc_runtime
+        xml
+        $<$<BOOL:${WIN32}>:bcrypt>
+        $<$<BOOL:${WIN32}>:dl>
+        m
 )
 
 
-# Targets
-# =======
-
-# Target - test_fmi2fmu / test_fmi3fmu
-# ------------------------------------
+# Target - test_fmiXfmu
+# =====================
 function(fmiXfmu_executable FMI_VERSION)
     set(EXE_NAME test_fmi${FMI_VERSION}fmu)
     set(FMU_SOURCE_FILES ${DSE_FMU${FMI_VERSION}_SOURCE_FILES})
-    list(REMOVE_ITEM FMU_SOURCE_FILES ${DSE_FMU_SOURCE_DIR}/fmu.c)
     add_executable(${EXE_NAME}
         ${EXE_NAME}.c
         mock_interface.c
-        ${FMU_SOURCE_FILES}
     )
     target_include_directories(${EXE_NAME}
         PRIVATE
-            ${FMI${FMI_VERSION}_INCLUDE_DIR}
-            ${DSE_CLIB_INCLUDE_DIR}
-            ${DSE_NCODEC_INCLUDE_DIR}
-            ${DSE_MODELC_INCLUDE_DIR}
-            ${DSE_FMU_INCLUDE_DIR}
             ./
     )
     target_link_libraries(${EXE_NAME}
         PUBLIC
-        PRIVATE
+            fmi${FMI_VERSION}_runtime
             clib_runtime
-            flatcc_runtime
-            network_codec
+        PRIVATE
+            ab-codec
             yaml
             xml
             cmocka
@@ -118,22 +103,15 @@ endfunction()
 fmiXfmu_executable(2)
 fmiXfmu_executable(3)
 
-# Target - FMU
-# ------------
+
+# Target - test_fmu
+# =================
 add_executable(test_fmu
     __test__.c
     test_ascii85.c
     test_signals.c
     test_variables.c
-    ${DSE_FMU2_SOURCE_FILES}
-)
-target_include_directories(test_fmu
-    PRIVATE
-        ${FMI2_INCLUDE_DIR}
-        ${DSE_CLIB_INCLUDE_DIR}
-        ${DSE_NCODEC_INCLUDE_DIR}
-        ${DSE_MODELC_INCLUDE_DIR}
-        ${DSE_FMU_INCLUDE_DIR}
+    ${DSE_FMU_SOURCE_DIR}/fmu.c
 )
 target_compile_definitions(test_fmu
     PUBLIC
@@ -148,10 +126,10 @@ target_link_directories(test_fmu
 )
 target_link_libraries(test_fmu
     PUBLIC
-    PRIVATE
+        fmi2_runtime
         clib_runtime
-        flatcc_runtime
-        network_codec
+    PRIVATE
+        ab-codec
         yaml
         xml
         cmocka

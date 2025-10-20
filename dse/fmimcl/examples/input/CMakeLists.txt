@@ -4,33 +4,33 @@
 
 cmake_minimum_required(VERSION 3.21)
 
-project(Input)
 set(MODEL_PATH "${MODULE_LC}/examples")
+project(Input)
 
 
-# Targets
-# =======
-
-add_library(input SHARED
+# Target - Input Model
+# ====================
+set(TARGET "input")
+add_library(${TARGET} SHARED
     model.c
-    ../../../fmu/ascii85.c
+    ${DSE_CLIB_SOURCE_DIR}/clib/util/ascii85.c
 )
-target_include_directories(input
+target_include_directories(${TARGET}
     PRIVATE
         ${DSE_CLIB_INCLUDE_DIR}
         ${DSE_MODELC_INCLUDE_DIR}
 )
-target_link_directories(input
+target_link_directories(${TARGET}
     PRIVATE
         $<$<BOOL:${WIN32}>:${dse_modelc_lib_SOURCE_DIR}/bin>
 )
-target_link_libraries(input
+target_link_libraries(${TARGET}
     PRIVATE
         $<$<BOOL:${WIN32}>:modelc>
 )
 install(
     TARGETS
-        input
+        ${TARGET}
     LIBRARY DESTINATION
         ${MODEL_PATH}/lib
 )

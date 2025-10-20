@@ -2,8 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <stdio.h>
 #include <dse/fmu/fmu.h>
 #include <dse/ncodec/codec.h>
+#include <dse/ncodec/interface/pdu.h>
 
 typedef struct {
     double  counter;

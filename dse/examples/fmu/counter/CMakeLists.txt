@@ -4,92 +4,38 @@
 
 cmake_minimum_required(VERSION 3.21)
 
-# set(CMAKE_VERBOSE_MAKEFILE ON)
-
-
-#################################################
-## Configure FMU here:
-## ------------------
-set(VERSION "$ENV{PACKAGE_VERSION}")
 set(MODULE "Counter")
 set(MODULE_LC "counter")
-set(FMU_FILES
-    counter.c
+project(${MODULE}
+    VERSION ${VERSION}
+    DESCRIPTION "Dynamic Simulation Environment - FMU Counter Example"
+    HOMEPAGE_URL "$ENV{PROJECT_URL}"
 )
-##
-#################################################
-
-
-project(Fmu VERSION ${VERSION})
-
-include(FetchContent)
-
-# set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_STANDARD_REQUIRED TRUE)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -ggdb -DLIBXML_STATIC")
-list(APPEND C_CXX_WARNING_FLAGS
-    -Wall
-    -W
-    -Wwrite-strings
-    -Wno-missing-field-initializers
-    -Wno-misleading-indentation
-)
-add_compile_options(${C_CXX_WARNING_FLAGS})
-
-
-set(DSE_CLIB_SOURCE_FILES
-    ${DSE_CLIB_SOURCE_DIR}/clib/util/strings.c
-    ${DSE_CLIB_SOURCE_DIR}/clib/util/binary.c
-    ${DSE_CLIB_SOURCE_DIR}/clib/collections/hashmap.c
-)
-set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
-set(FMI3_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi3/headers")
-set(FMU_SOURCE_DIR "../../../fmu")
-set(FMU_INCLUDE_DIR "../../../..")
-set(FMI_2_COMMON_FILES
-    ${FMU_SOURCE_DIR}/ascii85.c
-    ${FMU_SOURCE_DIR}/fmi2fmu.c
-    ${FMU_SOURCE_DIR}/fmi2variable.c
-    ${FMU_SOURCE_DIR}/signal.c
-)
-set(FMI_3_COMMON_FILES
-    ${FMU_SOURCE_DIR}/ascii85.c
-    ${FMU_SOURCE_DIR}/fmi3fmu.c
-    ${FMU_SOURCE_DIR}/fmi3variable.c
-    ${FMU_SOURCE_DIR}/signal.c
-)
 file(GENERATE
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/.keepme
     CONTENT "keepme"
 )
+set(FMU_FILES
+    counter.c
+)
 
 
-# Targets
-# =======
-
-# FMI2 FMU
-# --------
+# Targets - FMI2 FMU
+# ==================
 set(FMU_FMI2_PATH examples/fmu/${MODULE_LC}/fmi2)
 add_library(fmu2${MODULE_LC} SHARED
-    ${DSE_CLIB_SOURCE_FILES}
-    ${FMI_2_COMMON_FILES}
     ${FMU_FILES}
 )
 target_include_directories(fmu2${MODULE_LC}
     PRIVATE
-        ${FMI2_INCLUDE_DIR}
+        ${REPO_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
-        ${DSE_NCODEC_INCLUDE_DIR}
-        ${FMU_INCLUDE_DIR}
 )
 target_link_libraries(fmu2${MODULE_LC}
     PRIVATE
-        network_codec
-        flatcc_runtime
+        fmi2-common
+        ab-codec
         xml
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${WIN32}>:dl>
@@ -119,25 +65,21 @@ install(
 )
 
 
-# FMI3 FMU
-# --------
+# Targets - FMI3 FMU
+# ==================
 set(FMU_FMI3_PATH examples/fmu/${MODULE_LC}/fmi3)
 add_library(fmu3${MODULE_LC} SHARED
-    ${DSE_CLIB_SOURCE_FILES}
-    ${FMI_3_COMMON_FILES}
     ${FMU_FILES}
 )
 target_include_directories(fmu3${MODULE_LC}
     PRIVATE
-        ${FMI3_INCLUDE_DIR}
+        ${REPO_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
-        ${DSE_NCODEC_INCLUDE_DIR}
-        ${FMU_INCLUDE_DIR}
 )
 target_link_libraries(fmu3${MODULE_LC}
     PRIVATE
-        network_codec
-        flatcc_runtime
+        fmi2-common
+        ab-codec
         xml
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${WIN32}>:dl>
@@ -168,7 +110,7 @@ install(
 
 
 # Package FMU
-# -----------
+# ===========
 install(CODE "
     execute_process(
         COMMAND sh -c \"

@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <stdbool.h>
+#include <stdio.h>
 #include <stddef.h>
 #include <string.h>
 #include <dse/modelc/model.h>
 #include <dse/logger.h>
 
 
-extern char* ascii85_encode(const char* source, size_t source_len);
-extern char* ascii85_decode(const char* source, size_t* len);
+extern char* dse_ascii85_encode(const char* source, size_t source_len);
+extern char* dse_ascii85_decode(const char* source, size_t* len);
 
 
 typedef struct {
@@ -98,7 +99,7 @@ static inline void _write_message(
     char buffer[50];
     snprintf(buffer, sizeof(buffer), "%s %d", prefix, v);
     if (encoded) {
-        char* msg = ascii85_encode(buffer, strlen(buffer));
+        char* msg = dse_ascii85_encode(buffer, strlen(buffer));
         signal_append(b->sv, b->index, (uint8_t*)msg, strlen(msg) + 1);
         free(msg);
     } else {
@@ -115,7 +116,7 @@ static inline void _log_message(BinarySignalDesc* b, bool encoded)
     signal_read(b->sv, b->index, &buffer, &len);
     if (len) {
         if (encoded) {
-            char* msg = ascii85_decode((char*)buffer, &len);
+            char* msg = dse_ascii85_decode((char*)buffer, &len);
             log_info("String (%s) : %s", b->sv->signal[b->index], msg);
             free(msg);
         } else {

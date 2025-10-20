@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <string.h>
+#include <stdio.h>
 #include <assert.h>
 #include <dse/testing.h>
 #include <dse/platform.h>
@@ -170,8 +171,8 @@ void fmimcl_generate_marshal_table(FmuModel* m)
 }
 
 
-extern char* ascii85_encode(const char* source, size_t len);
-extern char* ascii85_decode(const char* source, size_t* len);
+extern char* dse_ascii85_encode(const char* source, size_t len);
+extern char* dse_ascii85_decode(const char* source, size_t* len);
 
 /**
 fmimcl_load_encoder_funcs
@@ -200,8 +201,8 @@ void fmimcl_load_encoder_funcs(FmuModel* m)
                 if (s->variable_annotation_encoding) {
                     if (strcmp("ascii85", s->variable_annotation_encoding) ==
                         0) {
-                        mg->functions.string_encode[i] = ascii85_encode;
-                        mg->functions.string_decode[i] = ascii85_decode;
+                        mg->functions.string_encode[i] = dse_ascii85_encode;
+                        mg->functions.string_decode[i] = dse_ascii85_decode;
                     }
                 }
             }

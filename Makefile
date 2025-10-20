@@ -8,29 +8,25 @@
 export PACKAGE_ARCH ?= linux-amd64
 
 DSE_CLIB_REPO ?= https://github.com/boschglobal/dse.clib
-DSE_CLIB_VERSION ?= 1.0.35
+DSE_CLIB_VERSION ?= 1.0.37
 export DSE_CLIB_URL ?= $(DSE_CLIB_REPO)/archive/refs/tags/v$(DSE_CLIB_VERSION).zip
 
 DSE_MODELC_REPO ?= https://github.com/boschglobal/dse.modelc
-DSE_MODELC_VERSION ?= 2.1.33
+DSE_MODELC_VERSION ?= 2.2.9
 export DSE_MODELC_URL ?= $(DSE_MODELC_REPO)/archive/refs/tags/v$(DSE_MODELC_VERSION).zip
 export DSE_MODELC_LIB_URL ?= $(DSE_MODELC_REPO)/releases/download/v$(DSE_MODELC_VERSION)/ModelC-$(DSE_MODELC_VERSION)-$(PACKAGE_ARCH).zip
 
-DSE_NCODEC_REPO ?= https://github.com/boschglobal/dse.standards
-DSE_NCODEC_VERSION ?= 1.2.0
+DSE_NCODEC_REPO ?= https://github.com/boschglobal/dse.ncodec
+DSE_NCODEC_VERSION ?= 1.1.8
 export DSE_NCODEC_URL ?= $(DSE_NCODEC_REPO)/archive/refs/tags/v$(DSE_NCODEC_VERSION).zip
-
-AUTOMOTIVE_BUS_SCHEMA_REPO ?= https://github.com/boschglobal/automotive-bus-schema
-AUTOMOTIVE_BUS_SCHEMA_VERSION ?= 1.0.5
-export AUTOMOTIVE_BUS_SCHEMA_URL ?= $(AUTOMOTIVE_BUS_SCHEMA_REPO)/releases/download/v$(AUTOMOTIVE_BUS_SCHEMA_VERSION)/automotive-bus-schema.tar.gz
 
 
 ###############
 ## Docker Images.
 GCC_BUILDER_IMAGE ?= ghcr.io/boschglobal/dse-gcc-builder:main
 TESTSCRIPT_IMAGE ?= ghcr.io/boschglobal/dse-testscript:latest
-# SIMER_IMAGE ?= ghcr.io/boschglobal/dse-simer:$(DSE_MODELC_VERSION)
-SIMER_IMAGE ?= ghcr.io/boschglobal/dse-simer:2.2.9
+SIMER_IMAGE ?= ghcr.io/boschglobal/dse-simer:$(DSE_MODELC_VERSION)
+DSE_CLANG_FORMAT_IMAGE ?= ghcr.io/boschglobal/dse-clang-format:main
 
 
 ###############
@@ -70,7 +66,10 @@ TESTSCRIPT_E2E_FILES = $(wildcard $(TESTSCRIPT_E2E_DIR)/*.txtar)
 
 
 ifneq ($(CI), true)
-	DOCKER_BUILDER_CMD := docker run -it --rm \
+DOCKER_BUILDER_CMD := \
+	mkdir -p $(EXTERNAL_BUILD_DIR); \
+	docker run -it --rm \
+		--user $$(id -u):$$(id -g) \
 		--env CMAKE_TOOLCHAIN_FILE=/tmp/repo/extra/cmake/$(PACKAGE_ARCH).cmake \
 		--env EXTERNAL_BUILD_DIR=$(EXTERNAL_BUILD_DIR) \
 		--env GDB_CMD="$(GDB_CMD)" \
@@ -79,11 +78,14 @@ ifneq ($(CI), true)
 		--env MAKE_NPROC=$(MAKE_NPROC) \
 		--volume $$(pwd):/tmp/repo \
 		--volume $(EXTERNAL_BUILD_DIR):$(EXTERNAL_BUILD_DIR) \
-		--volume ~/.ccache:/root/.ccache \
 		--workdir /tmp/repo \
 		$(GCC_BUILDER_IMAGE)
 endif
 
+DSE_CLANG_FORMAT_CMD := docker run -it --rm \
+	--user $$(id -u):$$(id -g) \
+	--volume $$(pwd):/tmp/code \
+	${DSE_CLANG_FORMAT_IMAGE}
 
 
 default: build
@@ -230,6 +232,11 @@ do-oss:
 generate:
 	$(MAKE) -C doc generate
 
+.PHONY: format
+format:
+	@${DSE_CLANG_FORMAT_CMD} dse
+	@${DSE_CLANG_FORMAT_CMD} tests/cmocka/
+
 .PHONY: super-linter
 super-linter:
 	docker run --rm --volume $$(pwd):/tmp/lint \
@@ -241,4 +248,4 @@ super-linter:
 		--env VALIDATE_DOCKERFILE=true \
 		--env VALIDATE_MARKDOWN=true \
 		--env VALIDATE_YAML=true \
-		ghcr.io/super-linter/super-linter:slim-v6
+		ghcr.io/super-linter/super-linter:slim-v8

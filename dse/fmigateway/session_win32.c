@@ -204,7 +204,7 @@ static char* _build_env(WindowsModel* m)
 {
     if (m->envar == NULL) return NULL;
 
-    char* parentEnv = GetEnvironmentStrings();
+    char*  parentEnv = GetEnvironmentStrings();
     /* Calculate size of parent env block (double-null terminated). */
     char*  p = parentEnv;
     size_t parentEnvSize = 0;
@@ -221,7 +221,7 @@ static char* _build_env(WindowsModel* m)
            + 1 for the "=" and + 1 for the Nullterminator. */
         env_size += strlen(e->name) + 1 + strlen(e->default_value) + 1;
     }
-    env_size++; // for the final extra null
+    env_size++;  // for the final extra null
 
     char* envBlock = calloc(env_size, sizeof(char));
     char* ptr = envBlock;

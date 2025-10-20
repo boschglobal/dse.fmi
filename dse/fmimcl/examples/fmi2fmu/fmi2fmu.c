@@ -28,8 +28,8 @@ typedef struct Fmu2InstanceData {
 } Fmu2InstanceData;
 
 
-extern char* ascii85_encode(const char* source, size_t len);
-extern char* ascii85_decode(const char* source, size_t* len);
+extern char* dse_ascii85_encode(const char* source, size_t len);
+extern char* dse_ascii85_decode(const char* source, size_t* len);
 
 
 /* required */
@@ -285,7 +285,7 @@ fmi2Status fmi2DoStep(fmi2Component c, fmi2Real currentCommunicationPoint,
     char* vr_102 = hashmap_get(&fmu_inst->var, "102");
     if (vr_102) {
         size_t len;
-        char*  vr_102_decoded = ascii85_decode(vr_102, &len);
+        char*  vr_102_decoded = dse_ascii85_decode(vr_102, &len);
         char*  head = vr_102_decoded;
         char*  tail = vr_102_decoded + strlen(vr_102_decoded) - 1;
         for (; head < tail; head++, tail--) {
@@ -294,7 +294,7 @@ fmi2Status fmi2DoStep(fmi2Component c, fmi2Real currentCommunicationPoint,
             *head = b;
             *tail = a;
         }
-        char* vr_103_encoded = ascii85_encode(vr_102_decoded, len);
+        char* vr_103_encoded = dse_ascii85_encode(vr_102_decoded, len);
         hashmap_set_string(&fmu_inst->var, "103", vr_103_encoded);
         hashmap_remove(&fmu_inst->var, "102");
         free(vr_102_decoded);

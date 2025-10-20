@@ -4,55 +4,49 @@
 
 cmake_minimum_required(VERSION 3.21)
 
-# set(CMAKE_VERBOSE_MAKEFILE ON)
-
-set(VERSION "$ENV{PACKAGE_VERSION}")
 set(MODULE "FmiMcl")
 set(MODULE_LC "fmimcl")
-
 project(${MODULE}
-    VERSION ${VERSION}
+    VERSION "$ENV{PACKAGE_VERSION}"
     DESCRIPTION "DSE FMI Model Compatibility Library"
     HOMEPAGE_URL "$ENV{PROJECT_URL}"
 )
 
 
-# Targets
-# =======
-
-# FMI MCL
-# -------
-add_library(fmimcl SHARED
+# Target - FMI MCL
+# ================
+add_library(${MODULE_LC} SHARED
     engine.c
     fmimcl.c
     model.c
     parser.c
     adapter/fmi2mcl.c
-    ../fmu/ascii85.c
+    ${DSE_CLIB_SOURCE_DIR}/clib/util/ascii85.c
     ${DSE_CLIB_SOURCE_DIR}/clib/mdf/mdf.c
 )
-target_include_directories(fmimcl
+target_include_directories(${MODULE_LC}
     PRIVATE
+        ${REPO_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
         ${DSE_MODELC_INCLUDE_DIR}
-        ../..
 )
-target_compile_definitions(fmimcl
+target_compile_definitions(${MODULE_LC}
     PRIVATE
         PLATFORM_OS="${CDEF_PLATFORM_OS}"
         PLATFORM_ARCH="${CDEF_PLATFORM_ARCH}"
 )
-target_link_directories(fmimcl
+target_link_directories(${MODULE_LC}
     PRIVATE
         $<$<BOOL:${WIN32}>:${dse_modelc_lib_SOURCE_DIR}/bin>
 )
-target_link_libraries(fmimcl
+target_link_libraries(${MODULE_LC}
     PRIVATE
         $<$<BOOL:${WIN32}>:modelc>
         $<$<BOOL:${WIN32}>:dl>
 )
 install(
-    TARGETS fmimcl
+    TARGETS
+        ${MODULE_LC}
     LIBRARY DESTINATION
         ${MODULE_LC}/lib
     RUNTIME DESTINATION
@@ -60,12 +54,9 @@ install(
 )
 
 
-
 # Sub Projects
 # ============
-
 add_subdirectory(examples)
-
 
 
 # Package

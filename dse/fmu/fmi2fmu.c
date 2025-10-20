@@ -555,8 +555,10 @@ void fmi2FreeInstance(fmi2Component c)
     fmu_log(fmu, fmi2OK, "Debug", "Destroy the index");
     hashmap_destroy(&fmu->variables.scalar.input);
     hashmap_destroy(&fmu->variables.scalar.output);
-    hashmap_destroy(&fmu->variables.string.input);
-    hashmap_destroy(&fmu->variables.string.output);
+    hashmap_destroy(
+        &fmu->variables.string.input);  // NOLINT (build/include_what_you_use)
+    hashmap_destroy(
+        &fmu->variables.string.output);  // NOLINT (build/include_what_you_use)
     hashmap_destroy(&fmu->variables.binary.rx);
     hashmap_destroy(&fmu->variables.binary.tx);
     hashmap_destroy(&fmu->variables.binary.encode_func);

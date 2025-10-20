@@ -147,8 +147,8 @@ typedef struct FMI2_TC {
     } init;
 } FMI2_TC;
 
-extern char* ascii85_encode(const char* source, size_t len);
-extern char* ascii85_decode(const char* source, size_t* len);
+extern char* dse_ascii85_encode(const char* source, size_t len);
+extern char* dse_ascii85_decode(const char* source, size_t* len);
 
 void test_fmi2__api(void** state)
 {
@@ -381,13 +381,13 @@ void test_fmi2__api(void** state)
             if (ptr_s[0]) ptr_l[0] = strlen(ptr_s[0]) + 1;
             if (ptr_s[1]) ptr_l[1] = strlen(ptr_s[1]) + 1;
             if (tc[i].mg[0].functions.string_encode)
-                tc[i].mg[0].functions.string_encode[0] = ascii85_encode;
+                tc[i].mg[0].functions.string_encode[0] = dse_ascii85_encode;
             if (tc[i].mg[0].functions.string_decode)
-                tc[i].mg[0].functions.string_decode[0] = ascii85_decode;
+                tc[i].mg[0].functions.string_decode[0] = dse_ascii85_decode;
             if (tc[i].mg[1].functions.string_encode)
-                tc[i].mg[1].functions.string_encode[0] = ascii85_encode;
+                tc[i].mg[1].functions.string_encode[0] = dse_ascii85_encode;
             if (tc[i].mg[1].functions.string_decode)
-                tc[i].mg[1].functions.string_decode[0] = ascii85_decode;
+                tc[i].mg[1].functions.string_decode[0] = dse_ascii85_decode;
             break;
         }
         default:

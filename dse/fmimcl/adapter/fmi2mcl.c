@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <string.h>
+#include <stdio.h>
 #include <dlfcn.h>
 #include <dse/fmimcl/fmimcl.h>
 #include <dse/fmimcl/adapter/fmi2mcl.h>

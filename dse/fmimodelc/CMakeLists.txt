@@ -4,123 +4,95 @@
 
 cmake_minimum_required(VERSION 3.21)
 
-# set(CMAKE_VERBOSE_MAKEFILE ON)
-
-set(VERSION "$ENV{PACKAGE_VERSION}")
 set(MODULE "FmiModelC")
 set(MODULE_LC "fmimodelc")
-
 project(${MODULE}
-    VERSION ${VERSION}
-    DESCRIPTION "DSE FMI ModelC FMU"
+    VERSION "$ENV{PACKAGE_VERSION}"
+    DESCRIPTION "Dynamic Simulation Environment - FMI ModelC FMU"
     HOMEPAGE_URL "$ENV{PROJECT_URL}"
 )
-
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_STANDARD_REQUIRED TRUE)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -ggdb -DLIBXML_STATIC")
-list(APPEND C_CXX_WARNING_FLAGS
-    -Wall
-    -W
-    -Wwrite-strings
-    -Wno-missing-field-initializers
-    -Wno-misleading-indentation
-)
-add_compile_options(${C_CXX_WARNING_FLAGS})
 
 
-set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
-set(FMI3_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi3/headers")
-set(FMU_SOURCE_DIR "../fmu")
-set(FMU_INCLUDE_DIR "../..")
-set(FMI_2_COMMON_FILES
-    ${FMU_SOURCE_DIR}/ascii85.c
-    ${FMU_SOURCE_DIR}/fmi2fmu.c
-)
-set(FMI_3_COMMON_FILES
-    ${FMU_SOURCE_DIR}/ascii85.c
-    ${FMU_SOURCE_DIR}/fmi3fmu.c
-)
-
+# FMI ModelC Files
+# ================
 set(FMIMODELC_FILES
     fmimodelc.c
     runtime.c
     signal.c
+    ${DSE_CLIB_SOURCE_DIR}/clib/util/ascii85.c
 )
 
 
-# Targets
-# =======
-
-# FMI2 ModelC FMU
-# ---------------
-add_library(fmi2modelcfmu SHARED
-    ${FMI_2_COMMON_FILES}
+# Target - FMI2 ModelC FMU
+# ========================
+set(FMI2_MODELC fmi2modelcfmu)
+add_library(${FMI2_MODELC} SHARED
+    ${REPO_DIR}/dse/fmu/fmi2fmu.c
     ${FMIMODELC_FILES}
 )
-target_include_directories(fmi2modelcfmu
+target_include_directories(${FMI2_MODELC}
     PRIVATE
-        ${DSE_CLIB_INCLUDE_DIR}
-        ${DSE_MODELC_INCLUDE_DIR}
-        ${DSE_MODELC_SOURCE_INCLUDE_DIR}
+        ${REPO_DIR}
         ${FMI2_INCLUDE_DIR}
-        ${FMU_INCLUDE_DIR}
-)
-set_target_properties(fmi2modelcfmu PROPERTIES
-    INSTALL_RPATH "$ORIGIN"
-)
-target_link_directories(fmi2modelcfmu
-    PRIVATE
-        $<$<BOOL:${UNIX}>:${dse_modelc_lib_SOURCE_DIR}/lib>
-        $<$<BOOL:${WIN32}>:${dse_modelc_lib_SOURCE_DIR}/bin>
-)
-target_link_libraries(fmi2modelcfmu
-    PRIVATE
-        modelc
-        xml
-        yaml
-        m
-        $<$<BOOL:${WIN32}>:bcrypt>
-        $<$<BOOL:${WIN32}>:dl>
-        $<$<BOOL:${WIN32}>:-Wl,-Bstatic>
-        $<$<BOOL:${WIN32}>:pthread>
-        $<$<BOOL:${WIN32}>:-Wl,-Bdynamic>
-)
-install(
-    TARGETS
-        fmi2modelcfmu
-    LIBRARY DESTINATION
-        ${MODULE_LC}/lib
-    RUNTIME DESTINATION
-        ${MODULE_LC}/lib
-)
-
-
-# FMI3 ModelC FMU
-# ---------------
-add_library(fmi3modelcfmu SHARED
-    ${FMI_3_COMMON_FILES}
-    ${FMIMODELC_FILES}
-)
-target_include_directories(fmi3modelcfmu
-    PRIVATE
         ${DSE_CLIB_INCLUDE_DIR}
         ${DSE_MODELC_INCLUDE_DIR}
         ${DSE_MODELC_SOURCE_INCLUDE_DIR}
-        ${FMI3_INCLUDE_DIR}
-        ${FMU_INCLUDE_DIR}
 )
-set_target_properties(fmi3modelcfmu PROPERTIES
+set_target_properties(${FMI2_MODELC} PROPERTIES
     INSTALL_RPATH "$ORIGIN"
 )
-target_link_directories(fmi3modelcfmu
+target_link_directories(${FMI2_MODELC}
     PRIVATE
         $<$<BOOL:${UNIX}>:${dse_modelc_lib_SOURCE_DIR}/lib>
         $<$<BOOL:${WIN32}>:${dse_modelc_lib_SOURCE_DIR}/bin>
 )
-target_link_libraries(fmi3modelcfmu
+target_link_libraries(${FMI2_MODELC}
+    PRIVATE
+        modelc
+        xml
+        yaml
+        m
+        $<$<BOOL:${WIN32}>:bcrypt>
+        $<$<BOOL:${WIN32}>:dl>
+        $<$<BOOL:${WIN32}>:-Wl,-Bstatic>
+        $<$<BOOL:${WIN32}>:pthread>
+        $<$<BOOL:${WIN32}>:-Wl,-Bdynamic>
+)
+install(
+    TARGETS
+        ${FMI2_MODELC}
+    LIBRARY DESTINATION
+        ${MODULE_LC}/lib
+    RUNTIME DESTINATION
+        ${MODULE_LC}/lib
+)
+
+
+# Target - FMI3 ModelC FMU
+# ========================
+set(FMI3_MODELC fmi3modelcfmu)
+add_library(${FMI3_MODELC} SHARED
+    ${REPO_DIR}/dse/fmu/fmi3fmu.c
+    ${FMIMODELC_FILES}
+)
+target_include_directories(${FMI3_MODELC}
+    PRIVATE
+        ${REPO_DIR}
+        ${FMI3_INCLUDE_DIR}
+        ${DSE_CLIB_INCLUDE_DIR}
+        ${DSE_MODELC_INCLUDE_DIR}
+        ${DSE_MODELC_SOURCE_INCLUDE_DIR}
+)
+set_target_properties(${FMI3_MODELC} PROPERTIES
+    INSTALL_RPATH "$ORIGIN"
+)
+target_link_directories(${FMI3_MODELC}
+    PRIVATE
+        $<$<BOOL:${UNIX}>:${dse_modelc_lib_SOURCE_DIR}/lib>
+        $<$<BOOL:${WIN32}>:${dse_modelc_lib_SOURCE_DIR}/bin>
+)
+target_link_libraries(${FMI3_MODELC}
     PRIVATE
         modelc
         yaml
@@ -134,13 +106,16 @@ target_link_libraries(fmi3modelcfmu
 )
 install(
     TARGETS
-        fmi3modelcfmu
+        ${FMI3_MODELC}
     LIBRARY DESTINATION
         ${MODULE_LC}/lib
     RUNTIME DESTINATION
         ${MODULE_LC}/lib
 )
 
+
+# Install the ModelC library
+# ==========================
 if (UNIX)
 install(
     FILES

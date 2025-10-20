@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <stdio.h>
 #include <libxml/xpath.h>
 #include <dse/clib/collections/hashmap.h>
 #include <dse/clib/collections/hashlist.h>

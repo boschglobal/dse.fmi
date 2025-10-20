@@ -9,40 +9,34 @@ cmake_minimum_required(VERSION 3.21)
 project(test_fmimodelc)
 
 
-
-# FMI ModelC Code
-# ===============
-set(DSE_FMIMODELC_SOURCE_DIR ../../../dse/fmimodelc)
-set(DSE_FMIMODELC_SOURCE_FILES
-    ${DSE_FMIMODELC_SOURCE_DIR}/runtime.c
+add_library(fmimodelc_runtime OBJECT
+    ${REPO_DIR}/dse/fmimodelc/runtime.c
+    ${DSE_CLIB_SOURCE_DIR}/util/ascii85.c
 )
-# FMU Code
-# ===============
-set(DSE_FMU_SOURCE_DIR ../../../dse/fmu)
-set(DSE_FMU_SOURCE_FILES
-    ${DSE_FMU_SOURCE_DIR}/ascii85.c
+target_include_directories(fmimodelc_runtime
+    PUBLIC
+        ${REPO_DIR}
+        ${DSE_MODELC_SOURCE_INCLUDE_DIR}
+        ${DSE_CLIB_INCLUDE_DIR}
 )
-set(DSE_FMIMODELC_INCLUDE_DIR "${DSE_FMIMODELC_SOURCE_DIR}/../..")
+target_compile_definitions(fmimodelc_runtime
+    PUBLIC
+        CMOCKA_TESTING
+    PRIVATE
+        PLATFORM_OS="${CDEF_PLATFORM_OS}"
+        PLATFORM_ARCH="${CDEF_PLATFORM_ARCH}"
+)
+target_link_libraries(fmimodelc_runtime
+    PRIVATE
+        cmocka
+)
 
 
-# Targets
-# =======
-
-# Target - FMI ModelC
-# -------------------
+# Target - test_fmimodelc
+# =======================
 add_executable(test_fmimodelc
     __test__.c
     test_index.c
-    ${DSE_FMU_SOURCE_FILES}
-    ${DSE_FMIMODELC_SOURCE_FILES}
-)
-target_include_directories(test_fmimodelc
-    PRIVATE
-        ${DSE_FMIMODELC_INCLUDE_DIR}
-        ${DSE_MODELC_INCLUDE_DIR}
-        ${DSE_MODELC_SOURCE_INCLUDE_DIR}
-        ${DSE_CLIB_INCLUDE_DIR}
-        ./
 )
 set_target_properties(test_fmimodelc PROPERTIES
     INSTALL_RPATH "$ORIGIN"
@@ -59,6 +53,8 @@ target_link_directories(test_fmimodelc
         ${dse_modelc_lib_SOURCE_DIR}/lib
 )
 target_link_libraries(test_fmimodelc
+    PUBLIC
+        fmimodelc_runtime
     PRIVATE
         modelc
         yaml

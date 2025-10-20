@@ -6,15 +6,14 @@ cmake_minimum_required(VERSION 3.21)
 
 # set(CMAKE_VERBOSE_MAKEFILE ON)
 
-project(test_cmocka)
+project(cmocka)
 
 include(FetchContent)
 include(ExternalProject)
 include(GNUInstallDirs)
+
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/_out)
-
 set(CMAKE_ENABLE_EXPORTS ON)
-
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED TRUE)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -28,6 +27,9 @@ list(APPEND C_CXX_WARNING_FLAGS
     -Wno-misleading-indentation
 )
 add_compile_options(${C_CXX_WARNING_FLAGS})
+
+
+set(REPO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
 
 # External Project - yaml
@@ -52,41 +54,23 @@ set_target_properties(yaml
 
 # External Project - xml
 # ----------------------
-ExternalProject_Add(libxml2
-    URL https://github.com/GNOME/libxml2/archive/refs/tags/v2.13.5.zip
-    CMAKE_ARGS
-        -D CMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/libxml2
-        -D CMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -D BUILD_SHARED_LIBS=OFF
-        -D LIBXML2_WITH_HTML=OFF
-        -D LIBXML2_WITH_HTTP=OFF
-        -D LIBXML2_WITH_ICONV=OFF
-        -D LIBXML2_WITH_LZMA=OFF
-        -D LIBXML2_WITH_PYTHON=OFF
-        -D LIBXML2_WITH_SCHEMATRON=OFF
-        -D LIBXML2_WITH_TESTS=OFF
-        -D LIBXML2_WITH_THREAD_ALLOC=OFF
-        -D LIBXML2_WITH_THREADS=OFF
-        -D LIBXML2_WITH_TREE=OFF
-        -D LIBXML2_WITH_VALID=OFF
-        -D LIBXML2_WITH_WRITER=OFF
-        -D LIBXML2_WITH_ZLIB=OFF
-    INSTALL_DIR "${CMAKE_BINARY_DIR}/libxml2"
-    UPDATE_COMMAND ""
+set(XML_SOURCE_DIR "$ENV{EXTERNAL_BUILD_DIR}/libxml2")
+set(XML_BINARY_DIR "$ENV{EXTERNAL_BUILD_DIR}/libxml2")
+set(XML_INCLUDE_DIR "$ENV{EXTERNAL_BUILD_DIR}/libxml2/install/include/libxml2")
+find_library(XML_LIB
+    NAMES
+        libxml2.a
+    PATHS
+        ${XML_BINARY_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH
 )
-ExternalProject_Get_property(libxml2 SOURCE_DIR BINARY_DIR INSTALL_DIR)
-set(XML_SOURCE_DIR "${SOURCE_DIR}")
-set(XML_BINARY_DIR "${BINARY_DIR}")
-set(XML_INSTALL_DIR "${INSTALL_DIR}")
-
 add_library(xml STATIC IMPORTED GLOBAL)
 add_dependencies(xml libxml2)
-file(MAKE_DIRECTORY "${XML_SOURCE_DIR}/include")
-file(MAKE_DIRECTORY "${XML_INSTALL_DIR}/include/libxml2")
 set_target_properties(xml
     PROPERTIES
-        IMPORTED_LOCATION "${XML_BINARY_DIR}/libxml2.a"
-        INTERFACE_INCLUDE_DIRECTORIES "${XML_INSTALL_DIR}/include/libxml2"
+        IMPORTED_LOCATION "${XML_LIB}"
+        INTERFACE_INCLUDE_DIRECTORIES "${XML_INCLUDE_DIR}"
 )
 
 
@@ -121,30 +105,6 @@ FetchContent_Declare(dse_clib
 FetchContent_MakeAvailable(dse_clib)
 set(DSE_CLIB_SOURCE_DIR ${dse_clib_SOURCE_DIR}/dse/clib)
 set(DSE_CLIB_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/../..")
-
-add_library(clib_runtime OBJECT
-    ${DSE_CLIB_SOURCE_DIR}/util/binary.c
-    ${DSE_CLIB_SOURCE_DIR}/util/strings.c
-    ${DSE_CLIB_SOURCE_DIR}/util/yaml.c
-    ${DSE_CLIB_SOURCE_DIR}/collections/hashmap.c
-    ${DSE_CLIB_SOURCE_DIR}/collections/set.c
-    ${DSE_CLIB_SOURCE_DIR}/data/marshal.c
-)
-target_include_directories(clib_runtime
-    PRIVATE
-        ${DSE_CLIB_INCLUDE_DIR}
-        ${FMI2_INCLUDE_DIR}
-        ${YAML_SOURCE_DIR}/include
-)
-
-set(DSE_CLIB_SOURCE_FILES
-    ${DSE_CLIB_SOURCE_DIR}/util/binary.c
-    ${DSE_CLIB_SOURCE_DIR}/util/strings.c
-    ${DSE_CLIB_SOURCE_DIR}/util/yaml.c
-    ${DSE_CLIB_SOURCE_DIR}/collections/hashmap.c
-    ${DSE_CLIB_SOURCE_DIR}/collections/set.c
-    ${DSE_CLIB_SOURCE_DIR}/data/marshal.c
-)
 set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/fmi/fmi2/headers")
 set(FMI3_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/fmi/fmi3/headers")
 
@@ -176,33 +136,35 @@ set(DSE_MODELC_INCLUDE_DIR "${dse_modelc_lib_SOURCE_DIR}/include")
 
 # External Project - DSE Network Codec
 # ------------------------------------
-FetchContent_Declare(dse_network_codec
+FetchContent_Declare(dse_ncodec
     URL                 $ENV{DSE_NCODEC_URL}
     HTTP_USERNAME       $ENV{DSE_NCODEC_URL_USER}
     HTTP_PASSWORD       $ENV{DSE_NCODEC_URL_TOKEN}
+    SOURCE_SUBDIR       dse/ncodec
 )
-FetchContent_MakeAvailable(dse_network_codec)
-set(DSE_NCODEC_SOURCE_DIR ${dse_network_codec_SOURCE_DIR}/dse/ncodec)
-set(DSE_NCODEC_INCLUDE_DIR "${DSE_NCODEC_SOURCE_DIR}/../..")
+FetchContent_MakeAvailable(dse_ncodec)
 
 
-# Automotive Bus Schema
-# ---------------------
-FetchContent_Declare(automotive_bus_schema
-    URL                 $ENV{AUTOMOTIVE_BUS_SCHEMA_URL}
-    HTTP_USERNAME       $ENV{AUTOMOTIVE_BUS_SCHEMA_URL_USER}
-    HTTP_PASSWORD       $ENV{AUTOMOTIVE_BUS_SCHEMA_URL_TOKEN}
-    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/automotive.bus.schema"
+# Common Targets
+# ==============
+add_library(clib_runtime OBJECT
+    ${DSE_CLIB_SOURCE_DIR}/util/binary.c
+    ${DSE_CLIB_SOURCE_DIR}/util/strings.c
+    ${DSE_CLIB_SOURCE_DIR}/util/yaml.c
+    ${DSE_CLIB_SOURCE_DIR}/collections/hashmap.c
+    ${DSE_CLIB_SOURCE_DIR}/collections/set.c
+    ${DSE_CLIB_SOURCE_DIR}/data/marshal.c
 )
-FetchContent_MakeAvailable(automotive_bus_schema)
-set(AUTOMOTIVE_BUS_SCHEMA_SOURCE_DIR ${automotive_bus_schema_SOURCE_DIR}/flatbuffers/c)
-set(FLATCC_SOURCE_DIR ${AUTOMOTIVE_BUS_SCHEMA_SOURCE_DIR}/automotive_bus_schema/flatcc)
-set(FLATCC_INCLUDE_DIR ${FLATCC_SOURCE_DIR}/include)
+target_include_directories(clib_runtime
+    PRIVATE
+        ${DSE_CLIB_INCLUDE_DIR}
+        ${FMI2_INCLUDE_DIR}
+        ${YAML_SOURCE_DIR}/include
+)
 
 
 # Targets
 # =======
-
 add_subdirectory(fmu)
 add_subdirectory(fmimcl)
 add_subdirectory(fmimodelc)

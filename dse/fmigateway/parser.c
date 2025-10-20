@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <assert.h>
+#include <stdio.h>
+#include <string.h>
 #include <dse/testing.h>
 #include <dse/logger.h>
 #include <dse/clib/collections/hashlist.h>
@@ -79,12 +81,13 @@ static FmiGatewayEnvvar* _generate_model_envar(YamlNode* model_n)
 {
     YamlNode* node = dse_yaml_find_node(model_n, "runtime/env");
     if (node) {
-        if (node->node_type != 3) return NULL; // YAML_MAPPING_NODE
-        char** _keys = hashmap_keys(&node->mapping);
-        FmiGatewayEnvvar* envar = calloc(node->mapping.used_nodes + 1, sizeof(FmiGatewayEnvvar));
+        if (node->node_type != 3) return NULL;  // YAML_MAPPING_NODE
+        char**            _keys = hashmap_keys(&node->mapping);
+        FmiGatewayEnvvar* envar =
+            calloc(node->mapping.used_nodes + 1, sizeof(FmiGatewayEnvvar));
         for (uint64_t i = 0; i < node->mapping.used_nodes; i++) {
             YamlNode* _n = hashmap_get(&node->mapping, _keys[i]);
-            if (_n == NULL || _n->node_type != 1) continue; // YAML_SCALAR_NODE
+            if (_n == NULL || _n->node_type != 1) continue;  // YAML_SCALAR_NODE
             envar[i].name = _n->name;
             envar[i].default_value = _n->scalar;
             log_debug("  %s = %s", _n->name, _n->scalar);
@@ -198,8 +201,8 @@ static void _parse_script_envar(
                 if (dse_yaml_get_string(_env, "default", &_str)) {
                     _str = "";
                 };
-                hashmap_set_string(
-                    &fmu->variables.string.input, envar->vref, (char*)_str);
+                hashmap_set_string(&fmu->variables.string.input,  // NOLINT
+                    envar->vref, (char*)_str);
                 envar->default_value = strdup((char*)_str);
             } else if (strcmp(envar->type, "real") == 0) {
                 double value = 0.0;

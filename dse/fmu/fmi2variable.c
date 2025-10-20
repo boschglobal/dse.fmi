@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <dlfcn.h>
 #include <libxml/xpath.h>
 #include <dse/clib/collections/hashlist.h>
@@ -141,9 +142,9 @@ static void __index_binary_variable(FmuInstanceData* fmu, FmuSignalVector* sv,
     if (encoding) {
         if (strcmp((char*)encoding, "ascii85") == 0) {
             hashmap_set(
-                &fmu->variables.binary.encode_func, (char*)vr, ascii85_encode);
+                &fmu->variables.binary.encode_func, (char*)vr, dse_ascii85_encode);
             hashmap_set(
-                &fmu->variables.binary.decode_func, (char*)vr, ascii85_decode);
+                &fmu->variables.binary.decode_func, (char*)vr, dse_ascii85_decode);
         }
         xmlFree(encoding);
     }

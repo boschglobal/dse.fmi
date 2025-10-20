@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <dse/fmimodelc/fmimodelc.h>
 #include <dse/fmu/fmu.h>
 #include <dse/modelc/runtime.h>
@@ -154,8 +155,8 @@ void fmimodelc_index_scalar_signals(
             }
         }
     }
-    _log(
-        "  Scalar: input=%lu, output=%lu", input->used_nodes, output->used_nodes);
+    _log("  Scalar: input=%lu, output=%lu", input->used_nodes,
+        output->used_nodes);
 }
 
 
@@ -255,8 +256,8 @@ void fmimodelc_index_text_encoding(
                         const char* vref = vref_list[j];
 
                         /* Encoding. */
-                        hashmap_set(encode_func, vref, ascii85_encode);
-                        hashmap_set(decode_func, vref, ascii85_decode);
+                        hashmap_set(encode_func, vref, dse_ascii85_encode);
+                        hashmap_set(decode_func, vref, dse_ascii85_decode);
                     }
                     free(vref_list);
                 }

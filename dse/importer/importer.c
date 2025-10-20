@@ -18,6 +18,10 @@
 #include <fmi3FunctionTypes.h>
 #include <dse/importer/importer.h>
 #include <dse/fmu/fmu.h>
+#include <dse/logger.h>
+
+
+uint8_t __log_level__ = LOG_ERROR; /* LOG_ERROR LOG_INFO LOG_DEBUG LOG_TRACE */
 
 
 /**
@@ -92,7 +96,7 @@ static void _write_ncodec_msg(char** val_tx_binary, char** val_rx_binary,
     char* mimetype, uint32_t frame_id, char* response)
 {
     size_t data_len = strlen(*val_tx_binary);
-    char*  ncodec_tx = ascii85_decode(*val_tx_binary, &data_len);
+    char*  ncodec_tx = dse_ascii85_decode(*val_tx_binary, &data_len);
     importer_ncodec_read(mimetype, (uint8_t*)ncodec_tx, data_len);
 
     uint8_t* ncodec_rx = NULL;
@@ -100,7 +104,7 @@ static void _write_ncodec_msg(char** val_tx_binary, char** val_rx_binary,
     importer_codec_write(frame_id, 2, (uint8_t*)response, strlen(response),
         &ncodec_rx, &ncodec_rx_len, mimetype);
 
-    *val_rx_binary = ascii85_encode((char*)ncodec_rx, ncodec_rx_len);
+    *val_rx_binary = dse_ascii85_encode((char*)ncodec_rx, ncodec_rx_len);
 
     /* Cleanup. */
     free(ncodec_tx);

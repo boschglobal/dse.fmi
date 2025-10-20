@@ -4,36 +4,31 @@
 
 cmake_minimum_required(VERSION 3.21)
 
-project(Fmi2FMU)
 set(MODEL_PATH "${MODULE_LC}/examples")
+project(Fmi2FMU)
 
-set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
 
-
-# Targets
-# =======
-
-add_library(mclfmi2fmu SHARED
+# Target - FMU for testing FMI MCL
+# ================================
+set(TARGET "mclfmi2fmu")
+add_library(${TARGET} SHARED
     fmi2fmu.c
-    ../../../fmu/ascii85.c
-    ${DSE_CLIB_SOURCE_DIR}/clib/collections/hashmap.c
-    ${DSE_CLIB_SOURCE_DIR}/clib/collections/set.c
+    ${CLIB_SOURCE_FILES}
 )
-target_include_directories(mclfmi2fmu
+target_include_directories(${TARGET}
     PRIVATE
-        ${DSE_CLIB_INCLUDE_DIR}
         ${FMI2_INCLUDE_DIR}
+        ${DSE_CLIB_INCLUDE_DIR}
 )
 install(
     TARGETS
-        mclfmi2fmu
+        ${TARGET}
     LIBRARY DESTINATION
         ${MODEL_PATH}/lib
 )
-
 install(
     TARGETS
-        mclfmi2fmu
+        ${TARGET}
     LIBRARY DESTINATION
         ${MODEL_PATH}/fmu/binaries/linux64
 )

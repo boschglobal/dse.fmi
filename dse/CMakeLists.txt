@@ -75,28 +75,13 @@ set(DSE_MODELC_INCLUDE_DIR "${dse_modelc_lib_SOURCE_DIR}/include")
 
 # External Project - DSE Network Codec
 # ------------------------------------
-FetchContent_Declare(dse_network_codec
+FetchContent_Declare(dse_ncodec
     URL                 $ENV{DSE_NCODEC_URL}
     HTTP_USERNAME       $ENV{DSE_NCODEC_URL_USER}
     HTTP_PASSWORD       $ENV{DSE_NCODEC_URL_TOKEN}
+    SOURCE_SUBDIR       dse/ncodec
 )
-FetchContent_MakeAvailable(dse_network_codec)
-set(DSE_NCODEC_SOURCE_DIR ${dse_network_codec_SOURCE_DIR}/dse/ncodec)
-set(DSE_NCODEC_INCLUDE_DIR "${DSE_NCODEC_SOURCE_DIR}/../..")
-
-
-# Automotive Bus Schema
-# ---------------------
-FetchContent_Declare(automotive_bus_schema
-    URL                 $ENV{AUTOMOTIVE_BUS_SCHEMA_URL}
-    HTTP_USERNAME       $ENV{AUTOMOTIVE_BUS_SCHEMA_URL_USER}
-    HTTP_PASSWORD       $ENV{AUTOMOTIVE_BUS_SCHEMA_URL_TOKEN}
-    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/automotive.bus.schema"
-)
-FetchContent_MakeAvailable(automotive_bus_schema)
-set(AUTOMOTIVE_BUS_SCHEMA_SOURCE_DIR ${automotive_bus_schema_SOURCE_DIR}/flatbuffers/c)
-set(FLATCC_SOURCE_DIR ${AUTOMOTIVE_BUS_SCHEMA_SOURCE_DIR}/automotive_bus_schema/flatcc)
-set(FLATCC_INCLUDE_DIR ${FLATCC_SOURCE_DIR}/include)
+FetchContent_MakeAvailable(dse_ncodec)
 
 
 # External Project - yaml
@@ -163,6 +148,58 @@ set_target_properties(dl
 endif()
 
 
+# Common Targets
+# ==============
+set(REPO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
+set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
+set(FMI3_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi3/headers")
+set(CLIB_SOURCE_FILES # TODO: redistribute CLib files?
+    ${DSE_CLIB_SOURCE_DIR}/clib/util/strings.c
+    ${DSE_CLIB_SOURCE_DIR}/clib/util/binary.c
+    ${DSE_CLIB_SOURCE_DIR}/clib/util/ascii85.c
+    ${DSE_CLIB_SOURCE_DIR}/clib/collections/hashmap.c
+    ${DSE_CLIB_SOURCE_DIR}/clib/collections/set.c
+)
+
+add_library(fmi2-common OBJECT
+    fmu/fmi2fmu.c
+    fmu/fmi2variable.c
+    fmu/signal.c
+    ${CLIB_SOURCE_FILES}
+)
+target_include_directories(fmi2-common
+    PRIVATE
+        ${REPO_DIR}
+        ${FMI2_INCLUDE_DIR}
+        ${DSE_CLIB_INCLUDE_DIR}
+        ${DSE_MODELC_INCLUDE_DIR}
+)
+target_link_libraries(fmi2-common
+    PUBLIC
+    PRIVATE
+        ab-codec
+        xml
+        $<$<BOOL:${WIN32}>:bcrypt>
+        $<$<BOOL:${WIN32}>:dl>
+        m
+)
+
+add_library(fmi3-common OBJECT
+    fmu/fmi3fmu.c
+    ${CLIB_SOURCE_FILES}
+)
+target_include_directories(fmi3-common
+    PRIVATE
+        ${REPO_DIR}
+        ${FMI3_INCLUDE_DIR}
+        ${DSE_CLIB_INCLUDE_DIR}
+        ${DSE_MODELC_INCLUDE_DIR}
+)
+target_link_libraries(fmi3-common
+    PUBLIC
+    PRIVATE
+)
+
 
 # Sub Modules
 # ===========
@@ -184,8 +221,8 @@ install(
 )
 
 
-# Common Targets
-# ==============
+# Administrative Targets
+# ======================
 install(
     DIRECTORY
         ../licenses/

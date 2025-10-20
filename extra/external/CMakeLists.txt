@@ -68,37 +68,30 @@ FetchContent_MakeAvailable(dse_modelc_lib)
 
 # DSE Network Codec
 # -----------------
-FetchContent_Declare(dse_network_codec
+include(FetchContent)
+FetchContent_Declare(dse_ncodec
     URL                 $ENV{DSE_NCODEC_URL}
     HTTP_USERNAME       $ENV{DSE_NCODEC_URL_USER}
     HTTP_PASSWORD       $ENV{DSE_NCODEC_URL_TOKEN}
-    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse.ncodec"
+    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse.ncodec/dse/ncodec"
 )
-FetchContent_MakeAvailable(dse_network_codec)
+FetchContent_MakeAvailable(dse_ncodec)
+set(DSE_NCODEC_SOURCE_DIR ${dse_ncodec_SOURCE_DIR}/dse/ncodec)
+set(DSE_NCODEC_INCLUDE_DIR "${DSE_NCODEC_SOURCE_DIR}/../..")
 
-# Automotive Bus Schema
-# ---------------------
-FetchContent_Declare(automotive_bus_schema
-    URL                 $ENV{AUTOMOTIVE_BUS_SCHEMA_URL}
-    HTTP_USERNAME       $ENV{AUTOMOTIVE_BUS_SCHEMA_URL_USER}
-    HTTP_PASSWORD       $ENV{AUTOMOTIVE_BUS_SCHEMA_URL_TOKEN}
-    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/automotive.bus.schema"
-)
-FetchContent_MakeAvailable(automotive_bus_schema)
-
-# DSE Network Codec (unit test only)
-# -----------------
-ExternalProject_Add(dse_ncodec
-    URL                 $ENV{DSE_NCODEC_URL}
-    HTTP_USERNAME       $ENV{DSE_NCODEC_URL_USER}
-    HTTP_PASSWORD       $ENV{DSE_NCODEC_URL_TOKEN}
-    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse_ncodec"
-    SOURCE_SUBDIR       "dse/ncodec/libs/automotive-bus"
-    BINARY_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse_ncodec"
-    CMAKE_ARGS
-        -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-    INSTALL_COMMAND     ""
-)
+# # DSE Network Codec (unit test only)
+# # -----------------
+# ExternalProject_Add(dse_ncodec
+#     URL                 $ENV{DSE_NCODEC_URL}
+#     HTTP_USERNAME       $ENV{DSE_NCODEC_URL_USER}
+#     HTTP_PASSWORD       $ENV{DSE_NCODEC_URL_TOKEN}
+#     SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse_ncodec"
+#     SOURCE_SUBDIR       "dse/ncodec/libs/automotive-bus"
+#     BINARY_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse_ncodec"
+#     CMAKE_ARGS
+#         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+#     INSTALL_COMMAND     ""
+# )
 
 # External Project - yaml (unit test only)
 # -----------------------
@@ -203,8 +196,7 @@ add_dependencies(oss
 )
 oss_copy(${dse_clib_SOURCE_DIR}                 boschglobal/dse.clib)
 oss_copy(${dse_modelc_SOURCE_DIR}               boschglobal/dse.modelc)
-oss_copy(${dse_network_codec_SOURCE_DIR}        boschglobal/dse.ncodec)
-oss_copy(${automotive_bus_schema_SOURCE_DIR}    boschglobal/automotive.bus.schema)
+oss_copy(${dse_ncodec_SOURCE_DIR}               boschglobal/dse.ncodec)
 oss_copy($ENV{EXTERNAL_BUILD_DIR}/dlfcnwin32    dlfcn-win32/dlfcn-win32)
 oss_copy($ENV{EXTERNAL_BUILD_DIR}/libxml2       GNOME/libxml2)
 oss_copy($ENV{EXTERNAL_BUILD_DIR}/msgpackc      msgpack/msgpackc)

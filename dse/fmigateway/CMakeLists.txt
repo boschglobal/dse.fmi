@@ -4,48 +4,18 @@
 
 cmake_minimum_required(VERSION 3.21)
 
-# set(CMAKE_VERBOSE_MAKEFILE ON)
-
-set(VERSION "$ENV{PACKAGE_VERSION}")
 set(MODULE "FmiGateway")
 set(MODULE_LC "fmigateway")
-
 project(${MODULE}
-    VERSION ${VERSION}
-    DESCRIPTION "DSE FMI ModelC Gateway"
+    VERSION "$ENV{PACKAGE_VERSION}"
+    DESCRIPTION "Dynamic Simulation Environment - FMI Gateway"
     HOMEPAGE_URL "$ENV{PROJECT_URL}"
 )
-
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_STANDARD_REQUIRED TRUE)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -ggdb -DLIBXML_STATIC")
-list(APPEND C_CXX_WARNING_FLAGS
-    -Wall
-    -W
-    -Wwrite-strings
-    -Wno-missing-field-initializers
-    -Wno-misleading-indentation
-)
-add_compile_options(${C_CXX_WARNING_FLAGS})
 
 
-set(FMI2_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi2/headers")
-set(FMI3_INCLUDE_DIR "${DSE_CLIB_SOURCE_DIR}/clib/fmi/fmi3/headers")
-
-
-set(FMU_SOURCE_DIR "../fmu")
-set(FMU_INCLUDE_DIR "../..")
-set(FMI_2_COMMON_FILES
-    ${FMU_SOURCE_DIR}/ascii85.c
-    ${FMU_SOURCE_DIR}/fmi2fmu.c
-)
-set(FMI_3_COMMON_FILES
-    ${FMU_SOURCE_DIR}/ascii85.c
-    ${FMU_SOURCE_DIR}/fmi3fmu.c
-)
-
+# Gateway Files
+# =============
 set(FMIGATEWAY_FILES
     fmigateway.c
     index.c
@@ -54,36 +24,36 @@ set(FMIGATEWAY_FILES
     signal.c
     $<$<BOOL:${WIN32}>:session_win32.c>
     $<$<BOOL:${UNIX}>:session_unix.c>
+    ${DSE_CLIB_SOURCE_DIR}/clib/util/ascii85.c
 )
 
-# Targets
-# =======
 
-# FMI2 Gateway FMU
-# ---------------
-add_library(fmi2gateway SHARED
-    ${FMI_2_COMMON_FILES}
+# Target - FMI2 Gateway FMU
+# =========================
+set(FMI2_GW fmi2gateway)
+add_library(${FMI2_GW} SHARED
+    ${REPO_DIR}/dse/fmu/fmi2fmu.c
     ${FMIGATEWAY_FILES}
 )
-target_include_directories(fmi2gateway
+target_include_directories(${FMI2_GW}
     PRIVATE
+        ${REPO_DIR}
+        ${FMI2_INCLUDE_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
         ${DSE_MODELC_INCLUDE_DIR}
         ${DSE_MODELC_SOURCE_INCLUDE_DIR}
-        ${FMI2_INCLUDE_DIR}
-        ${FMU_INCLUDE_DIR}
 )
-target_link_directories(fmi2gateway
+target_link_directories(${FMI2_GW}
     PRIVATE
         $<$<BOOL:${UNIX}>:${dse_modelc_lib_SOURCE_DIR}/lib>
         $<$<BOOL:${WIN32}>:${dse_modelc_lib_SOURCE_DIR}/bin>
 )
-target_compile_definitions(fmi2gateway
+target_compile_definitions(${FMI2_GW}
     PRIVATE
         PLATFORM_OS="${CDEF_PLATFORM_OS}"
         PLATFORM_ARCH="${CDEF_PLATFORM_ARCH}"
 )
-target_link_libraries(fmi2gateway
+target_link_libraries(${FMI2_GW}
     PRIVATE
         yaml
         xml
@@ -94,42 +64,43 @@ target_link_libraries(fmi2gateway
         $<$<BOOL:${UNIX}>:rt>
         $<$<BOOL:${WIN32}>:modelc>
         $<$<BOOL:${WIN32}>:dl>
-
 )
 install(
     TARGETS
-        fmi2gateway
+        ${FMI2_GW}
     LIBRARY DESTINATION
         ${MODULE_LC}/lib
     RUNTIME DESTINATION
         ${MODULE_LC}/lib
 )
 
-# FMI3 Gateway FMU
-# ---------------
-add_library(fmi3gateway SHARED
-    ${FMI_3_COMMON_FILES}
+
+# Target - FMI3 Gateway FMU
+# =========================
+set(FMI3_GW fmi3gateway)
+add_library(${FMI3_GW} SHARED
+    ${REPO_DIR}/dse/fmu/fmi3fmu.c
     ${FMIGATEWAY_FILES}
 )
-target_include_directories(fmi3gateway
+target_include_directories(${FMI3_GW}
     PRIVATE
+        ${REPO_DIR}
+        ${FMI3_INCLUDE_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
         ${DSE_MODELC_INCLUDE_DIR}
         ${DSE_MODELC_SOURCE_INCLUDE_DIR}
-        ${FMI3_INCLUDE_DIR}
-        ${FMU_INCLUDE_DIR}
 )
-target_link_directories(fmi3gateway
+target_link_directories(${FMI3_GW}
     PRIVATE
         $<$<BOOL:${UNIX}>:${dse_modelc_lib_SOURCE_DIR}/lib>
         $<$<BOOL:${WIN32}>:${dse_modelc_lib_SOURCE_DIR}/bin>
 )
-target_compile_definitions(fmi3gateway
+target_compile_definitions(${FMI3_GW}
     PRIVATE
         PLATFORM_OS="${CDEF_PLATFORM_OS}"
         PLATFORM_ARCH="${CDEF_PLATFORM_ARCH}"
 )
-target_link_libraries(fmi3gateway
+target_link_libraries(${FMI3_GW}
     PRIVATE
         yaml
         xml
@@ -140,11 +111,10 @@ target_link_libraries(fmi3gateway
         $<$<BOOL:${UNIX}>:rt>
         $<$<BOOL:${WIN32}>:modelc>
         $<$<BOOL:${WIN32}>:dl>
-
 )
 install(
     TARGETS
-        fmi3gateway
+        ${FMI3_GW}
     LIBRARY DESTINATION
         ${MODULE_LC}/lib
     RUNTIME DESTINATION

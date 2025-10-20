@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <limits.h>
 #include <libxml/xpath.h>
 #include <dse/clib/collections/hashlist.h>

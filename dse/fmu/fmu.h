@@ -266,8 +266,8 @@ typedef struct FmuInstanceData {
 
 
 /* ascii85.c */
-DLL_PRIVATE char* ascii85_encode(const char* source, size_t len);
-DLL_PRIVATE char* ascii85_decode(const char* source, size_t* len);
+DLL_PRIVATE char* dse_ascii85_encode(const char* source, size_t len);
+DLL_PRIVATE char* dse_ascii85_decode(const char* source, size_t* len);
 
 /* signal.c (default implementations for generic FMU) */
 DLL_PUBLIC void    fmu_load_signal_handlers(FmuInstanceData* fmu);

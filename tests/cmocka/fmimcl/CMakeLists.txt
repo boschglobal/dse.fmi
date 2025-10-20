@@ -9,33 +9,68 @@ cmake_minimum_required(VERSION 3.21)
 project(test_fmimcl)
 
 
-set(DSE_MODELC_SOURCE_FILES
+add_library(modelc_runtime OBJECT
     ${DSE_MODELC_SOURCE_DIR}/model/mcl.c
     ${DSE_MODELC_SOURCE_DIR}/model/schema.c
 )
+target_include_directories(modelc_runtime
+    PUBLIC
+        ${DSE_MODELC_INCLUDE_DIR}
+        ${YAML_SOURCE_DIR}/include
+)
+target_link_libraries(modelc_runtime
+    PRIVATE
+        xml
+        m
+)
 
-set(DSE_MODELC_LIB_MOCK_SOURCE_DIR "${dse_modelc_lib_SOURCE_DIR}/mocks")
-set(DSE_MODELC_LIB_MOCK_SOURCE_FILES
-    ${DSE_MODELC_LIB_MOCK_SOURCE_DIR}/simmock.c
-    ${DSE_CLIB_SOURCE_DIR}/data/marshal.c
+add_library(modelc_mock OBJECT
+    ${dse_modelc_SOURCE_DIR}/dse/mocks/simmock.c
+    ${dse_clib_SOURCE_DIR}/dse/clib/data/marshal.c
+)
+target_include_directories(modelc_mock
+    PUBLIC
+        ${DSE_MODELC_INCLUDE_DIR}
+        ${DSE_MODELC_SOURCE_INCLUDE_DIR}
+        ${DSE_CLIB_INCLUDE_DIR}
+)
+target_compile_definitions(modelc_mock
+    PUBLIC
+        CMOCKA_TESTING
+)
+target_link_libraries(modelc_mock
+    PRIVATE
+        cmocka
+)
+
+add_library(fmimcl_runtime OBJECT
+    ${DSE_CLIB_SOURCE_DIR}/util/ascii85.c
+    ${REPO_DIR}/dse/fmimcl/engine.c
+    ${REPO_DIR}/dse/fmimcl/fmimcl.c
+    ${REPO_DIR}/dse/fmimcl/parser.c
+    ${REPO_DIR}/dse/fmimcl/adapter/fmi2mcl.c
+)
+target_include_directories(fmimcl_runtime
+    PUBLIC
+        ${REPO_DIR}
+        ${DSE_MODELC_INCLUDE_DIR}
+        ${DSE_CLIB_INCLUDE_DIR}
+)
+target_compile_definitions(fmimcl_runtime
+    PUBLIC
+        CMOCKA_TESTING
+    PRIVATE
+        PLATFORM_OS="${CDEF_PLATFORM_OS}"
+        PLATFORM_ARCH="${CDEF_PLATFORM_ARCH}"
+)
+target_link_libraries(fmimcl_runtime
+    PRIVATE
+        cmocka
 )
 
 
-# FMIMCL Code
-# ===========
-set(DSE_FMIMCL_SOURCE_DIR ../../../dse/fmimcl)
-set(DSE_FMIMCL_SOURCE_FILES
-    ${DSE_FMIMCL_SOURCE_DIR}/engine.c
-    ${DSE_FMIMCL_SOURCE_DIR}/fmimcl.c
-    ${DSE_FMIMCL_SOURCE_DIR}/parser.c
-    ${DSE_FMIMCL_SOURCE_DIR}/adapter/fmi2mcl.c
-    ${DSE_FMIMCL_SOURCE_DIR}/../fmu/ascii85.c
-)
-set(DSE_FMIMCL_INCLUDE_DIR "${DSE_FMIMCL_SOURCE_DIR}/../..")
-
-
-# Target - FMI MCL
-# ----------------
+# Target - test_fmimcl
+# ====================
 add_executable(test_fmimcl
     __test__.c
     test_parser.c
@@ -43,16 +78,9 @@ add_executable(test_fmimcl
     test_engine.c
     test_fmi2.c
     mock/mock.c
-    ${DSE_FMIMCL_SOURCE_FILES}
-    ${DSE_MODELC_SOURCE_FILES}
-    ${DSE_CLIB_SOURCE_FILES}
 )
 target_include_directories(test_fmimcl
     PRIVATE
-        ${DSE_FMIMCL_INCLUDE_DIR}
-        ${DSE_MODELC_INCLUDE_DIR}
-        ${DSE_CLIB_INCLUDE_DIR}
-        ${YAML_SOURCE_DIR}/include
         ./
 )
 target_compile_definitions(test_fmimcl
@@ -63,9 +91,13 @@ target_compile_definitions(test_fmimcl
         PLATFORM_ARCH="${CDEF_PLATFORM_ARCH}"
 )
 target_link_libraries(test_fmimcl
+    PUBLIC
+        fmimcl_runtime
+        modelc_runtime
+        clib_runtime
     PRIVATE
-        cmocka
         yaml
+        cmocka
         dl
         m
 )
@@ -84,20 +116,16 @@ install(
         data
 )
 
-# Target - MSTEP
-# --------------
+
+# Target - test_mstep
+# ===================
 add_executable(test_mstep
     mstep/__test__.c
     mstep/test_mstep.c
-    ${DSE_MODELC_LIB_MOCK_SOURCE_FILES}
 )
 target_include_directories(test_mstep
     PRIVATE
-        ${DSE_FMIMCL_INCLUDE_DIR}
-        ${DSE_CLIB_INCLUDE_DIR}
-        ${DSE_MODELC_INCLUDE_DIR}
-        ${DSE_MODELC_SOURCE_INCLUDE_DIR}
-        ./
+#        ./
 )
 target_compile_definitions(test_mstep
     PUBLIC
@@ -112,6 +140,7 @@ target_link_directories(test_mstep
 )
 target_link_libraries(test_mstep
     PUBLIC
+        modelc_mock
         -Wl,-Bstatic modelc_bundled -Wl,-Bdynamic ${CMAKE_DL_LIBS}
     PRIVATE
         cmocka

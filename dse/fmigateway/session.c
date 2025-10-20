@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <limits.h>
 #include <errno.h>
 #include <dse/clib/util/strings.h>
@@ -15,7 +16,8 @@
 static char* _get_fmu_env_value(FmuInstanceData* fmu, FmiGatewayEnvvar* e)
 {
     if (strcmp(e->type, "string") == 0) {
-        const char* value = hashmap_get(&fmu->variables.string.input, e->vref);
+        const char* value = hashmap_get(&fmu->variables.string.input,  // NOLINT
+            e->vref);
         if (value) return strdup(value);
     } else if (strcmp(e->type, "real") == 0) {
         double* d = hashmap_get(&fmu->variables.scalar.input, e->vref);

@@ -231,8 +231,8 @@ void fmigateway_index_text_encoding(FmuInstanceData* fmu, ModelGatewayDesc* m,
                         const char* vref = vref_list[j];
 
                         /* Encoding. */
-                        hashmap_set(encode_func, vref, ascii85_encode);
-                        hashmap_set(decode_func, vref, ascii85_decode);
+                        hashmap_set(encode_func, vref, dse_ascii85_encode);
+                        hashmap_set(decode_func, vref, dse_ascii85_decode);
                     }
                     free(vref_list);
                 }
