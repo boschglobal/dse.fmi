@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 cmake_minimum_required(VERSION 3.21)
+cmake_policy(SET CMP0135 NEW)
 
 # set(CMAKE_VERBOSE_MAKEFILE ON)
 set(VERSION "$ENV{PACKAGE_VERSION}")
@@ -24,6 +25,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_C_FLAGS_DEBUG "-g -ggdb")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O3")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DLIBXML_STATIC")
 list(APPEND C_CXX_WARNING_FLAGS
     -Wall
     -W
@@ -164,6 +166,7 @@ set(CLIB_SOURCE_FILES # TODO: redistribute CLib files?
 add_library(fmi2-common OBJECT
     fmu/fmi2fmu.c
     fmu/fmi2variable.c
+    fmu/ncodec.c
     fmu/signal.c
     ${CLIB_SOURCE_FILES}
 )
@@ -176,8 +179,8 @@ target_include_directories(fmi2-common
 )
 target_link_libraries(fmi2-common
     PUBLIC
-    PRIVATE
         ab-codec
+    PRIVATE
         xml
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${WIN32}>:dl>

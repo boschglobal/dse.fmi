@@ -178,7 +178,7 @@ static int _run_fmu2_cosim(
                         int32_t frame_id = (i + (j * 10));
                         char    resp[128];
                         snprintf(
-                            resp, sizeof(resp), "Hello from Importer (%ld)", i);
+                            resp, sizeof(resp), "Hello from Importer (%zu)", i);
                         _write_ncodec_msg(&(desc->binary.val_tx_binary[i]),
                             &(desc->binary.val_rx_binary[i]),
                             desc->binary.rx_binary_info[i]->mimetype, frame_id,
@@ -303,7 +303,7 @@ static int _run_fmu3_cosim(
                         int32_t frame_id = (i + (j * 10));
                         char    resp[128];
                         snprintf(
-                            resp, sizeof(resp), "Hello from Importer (%ld)", i);
+                            resp, sizeof(resp), "Hello from Importer (%zu)", i);
                         _write_ncodec_msg(&(desc->binary.val_tx_binary[i]),
                             &(desc->binary.val_rx_binary[i]),
                             desc->binary.rx_binary_info[i]->mimetype, frame_id,

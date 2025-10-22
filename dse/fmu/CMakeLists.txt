@@ -25,6 +25,8 @@ target_include_directories(${FMU2_TARGET}
         ${DSE_CLIB_INCLUDE_DIR}
 )
 target_link_libraries(${FMU2_TARGET}
+    PUBLIC
+        ab-codec
     PRIVATE
         fmi2-common
 )
