@@ -141,10 +141,10 @@ static void __index_binary_variable(FmuInstanceData* fmu, FmuSignalVector* sv,
         node, "dse.standards.fmi-ls-binary-to-text", "encoding");
     if (encoding) {
         if (strcmp((char*)encoding, "ascii85") == 0) {
-            hashmap_set(
-                &fmu->variables.binary.encode_func, (char*)vr, dse_ascii85_encode);
-            hashmap_set(
-                &fmu->variables.binary.decode_func, (char*)vr, dse_ascii85_decode);
+            hashmap_set(&fmu->variables.binary.encode_func, (char*)vr,
+                dse_ascii85_encode);
+            hashmap_set(&fmu->variables.binary.decode_func, (char*)vr,
+                dse_ascii85_decode);
         }
         xmlFree(encoding);
     }

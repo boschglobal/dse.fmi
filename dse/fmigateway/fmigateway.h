@@ -52,6 +52,7 @@ typedef struct FmiGatewayEnvvar {
 typedef struct WindowsModel {
     /* process Information */
     const char*       exe;
+    const char*       args;
     /* Model information. */
     char*             name;
     double            step_size;

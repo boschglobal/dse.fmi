@@ -69,18 +69,18 @@ void test_fmu_variable_encoding(void** state)
     // vr=4, bar_1 (input)
     assert_non_null(hashmap_get(&fmu->variables.binary.encode_func, "4"));
     assert_non_null(hashmap_get(&fmu->variables.binary.decode_func, "4"));
-    assert_ptr_equal(
-        hashmap_get(&fmu->variables.binary.encode_func, "4"), dse_ascii85_encode);
-    assert_ptr_equal(
-        hashmap_get(&fmu->variables.binary.decode_func, "4"), dse_ascii85_decode);
+    assert_ptr_equal(hashmap_get(&fmu->variables.binary.encode_func, "4"),
+        dse_ascii85_encode);
+    assert_ptr_equal(hashmap_get(&fmu->variables.binary.decode_func, "4"),
+        dse_ascii85_decode);
 
     // vr=5, bar_2 (output)
     assert_non_null(hashmap_get(&fmu->variables.binary.encode_func, "5"));
     assert_non_null(hashmap_get(&fmu->variables.binary.decode_func, "5"));
-    assert_ptr_equal(
-        hashmap_get(&fmu->variables.binary.encode_func, "5"), dse_ascii85_encode);
-    assert_ptr_equal(
-        hashmap_get(&fmu->variables.binary.decode_func, "5"), dse_ascii85_decode);
+    assert_ptr_equal(hashmap_get(&fmu->variables.binary.encode_func, "5"),
+        dse_ascii85_encode);
+    assert_ptr_equal(hashmap_get(&fmu->variables.binary.decode_func, "5"),
+        dse_ascii85_decode);
 
 
     // Remove any codec objects.
@@ -155,17 +155,17 @@ void test_fmu_variable_codec(void** state)
     // vr=4, bar_1 (input)
     assert_non_null(hashmap_get(&fmu->variables.binary.encode_func, "4"));
     assert_non_null(hashmap_get(&fmu->variables.binary.decode_func, "4"));
-    assert_ptr_equal(
-        hashmap_get(&fmu->variables.binary.encode_func, "4"), dse_ascii85_encode);
-    assert_ptr_equal(
-        hashmap_get(&fmu->variables.binary.decode_func, "4"), dse_ascii85_decode);
+    assert_ptr_equal(hashmap_get(&fmu->variables.binary.encode_func, "4"),
+        dse_ascii85_encode);
+    assert_ptr_equal(hashmap_get(&fmu->variables.binary.decode_func, "4"),
+        dse_ascii85_decode);
     // vr=5, bar_2 (output)
     assert_non_null(hashmap_get(&fmu->variables.binary.encode_func, "5"));
     assert_non_null(hashmap_get(&fmu->variables.binary.decode_func, "5"));
-    assert_ptr_equal(
-        hashmap_get(&fmu->variables.binary.encode_func, "5"), dse_ascii85_encode);
-    assert_ptr_equal(
-        hashmap_get(&fmu->variables.binary.decode_func, "5"), dse_ascii85_decode);
+    assert_ptr_equal(hashmap_get(&fmu->variables.binary.encode_func, "5"),
+        dse_ascii85_encode);
+    assert_ptr_equal(hashmap_get(&fmu->variables.binary.decode_func, "5"),
+        dse_ascii85_decode);
     // NCodec objects
     assert_non_null(sv->ncodec[0]);
     assert_non_null(sv->ncodec[1]);

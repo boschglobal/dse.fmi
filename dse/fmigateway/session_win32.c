@@ -118,7 +118,7 @@ static void _terminate_process(WindowsModel* w_model)
 
 
 /*
-_gracefully_termiante_process
+_gracefully_terminate_process
 =============================
 
 Gracefully terminate a windows process by sending a Ctrl C, Sigint
@@ -129,7 +129,7 @@ Parameters
 w_model (WindowsModel)
 : Model Descriptor containing parameter information.
 */
-static void _gracefully_termiante_process(WindowsModel* w_model)
+static void _gracefully_terminate_process(WindowsModel* w_model)
 {
     WindowsProcess* w_process = w_model->w_process;
     if (w_model->end_time != MODEL_MAX_TIME) return;
@@ -174,7 +174,10 @@ static void _start_redis(
     char* file_path =
         dse_path_cat(fmu->instance.resource_location, w_model->exe);
 
-    if (!CreateProcess(file_path, NULL, NULL, NULL, FALSE,
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "cmd /C %s --port %s", file_path, w_model->args);
+
+    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE,
             CREATE_NEW_CONSOLE | CREATE_NEW_PROCESS_GROUP, NULL, NULL,
             &(w_process->s_info), &(w_process->p_info))) {
         log_fatal("Could not start Redis-Server.exe");
@@ -430,7 +433,7 @@ void fmigateway_session_windows_end(FmuInstanceData* fmu)
     ModelGatewayDesc*  gw = fmi_gw->model;
 
     for (WindowsModel* m = session->w_models; m && m->name; m++) {
-        _gracefully_termiante_process(m);
+        _gracefully_terminate_process(m);
     }
 
     model_gw_sync(
@@ -447,10 +450,10 @@ void fmigateway_session_windows_end(FmuInstanceData* fmu)
 
     if (session->simbus) {
         if (_check_shutdown(session->simbus, 10) < 0) {
-            _gracefully_termiante_process(session->simbus);
+            _gracefully_terminate_process(session->simbus);
         }
     }
-    if (session->transport) _terminate_process(session->transport);
+    if (session->transport) _gracefully_terminate_process(session->transport);
 }
 
 

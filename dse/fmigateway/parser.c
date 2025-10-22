@@ -4,7 +4,6 @@
 
 #include <assert.h>
 #include <stdio.h>
-#include <string.h>
 #include <dse/testing.h>
 #include <dse/logger.h>
 #include <dse/clib/collections/hashlist.h>
@@ -201,8 +200,9 @@ static void _parse_script_envar(
                 if (dse_yaml_get_string(_env, "default", &_str)) {
                     _str = "";
                 };
-                hashmap_set_string(&fmu->variables.string.input,  // NOLINT
-                    envar->vref, (char*)_str);
+                hashmap_set_string(
+                    &fmu->variables.string.input, envar->vref, // NOLINT
+                    (char*)_str);
                 envar->default_value = strdup((char*)_str);
             } else if (strcmp(envar->type, "real") == 0) {
                 double value = 0.0;
@@ -440,10 +440,28 @@ static WindowsModel* _parse_redis(FmuInstanceData* fmu, YamlNode* root)
     UNUSED(fmu);
     YamlNode* n_env = dse_yaml_find_node(root, "spec/runtime/env");
     if (n_env == NULL) return NULL;
-
     WindowsModel* redis_instance = calloc(1, sizeof(WindowsModel));
-    redis_instance->name = strdup("transport");
 
+    /* Parse the Redis port number*/
+    redis_instance->args = "6379";
+    const char* redis_uri = NULL;
+    if (dse_yaml_get_string(root, "spec/connection/transport/redispubsub/uri",
+            &redis_uri) != 0) {
+        dse_yaml_get_string(
+            root, "spec/connection/transport/redis/uri", &redis_uri);
+    }
+    if (redis_uri) {
+        /* Parsing according to redis://host[:port]. */
+        const char* p = strpbrk(redis_uri, ":");
+        if (p) {
+            p = strpbrk(++p, ":");
+            if (p) redis_instance->args = ++p;
+        }
+    }
+    log_debug("using redis port: %s", redis_instance->args);
+
+    redis_instance->end_time = DEFAULT_END_TIME;
+    redis_instance->name = strdup("transport");
     redis_instance->exe = getenv(REDIS_EXE_PATH);
     if (redis_instance->exe == NULL) {
         if (dse_yaml_get_string(n_env, REDIS_EXE_PATH, &redis_instance->exe)) {
