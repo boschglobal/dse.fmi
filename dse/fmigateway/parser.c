@@ -200,9 +200,8 @@ static void _parse_script_envar(
                 if (dse_yaml_get_string(_env, "default", &_str)) {
                     _str = "";
                 };
-                hashmap_set_string(
-                    &fmu->variables.string.input, envar->vref, // NOLINT
-                    (char*)_str);
+                hashmap_set_string(&fmu->variables.string.input,  // NOLINT
+                    envar->vref, (char*)_str);
                 envar->default_value = strdup((char*)_str);
             } else if (strcmp(envar->type, "real") == 0) {
                 double value = 0.0;

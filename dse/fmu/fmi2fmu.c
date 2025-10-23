@@ -58,16 +58,17 @@ void fmu_log(FmuInstanceData* fmu, const int status, const char* category,
 }
 
 
-static void _log_binary_signal(FmuInstanceData* fmu, FmuSignalVectorIndex* idx)
+static void _log_binary_signal(
+    FmuInstanceData* fmu, FmuSignalVectorIndex* idx, const char* op)
 {
     if (idx == NULL || idx->sv->binary == NULL) return;
     uint32_t index = idx->vi;
 
     fmu_log(fmu, fmi2OK, "Debug",
-        "\n      - name       : %s"
+        "\n      - name       : %s (%s)"
         "\n        length     : %d"
         "\n        buffer len : %d",
-        idx->sv->signal[index], idx->sv->length[index],
+        idx->sv->signal[index], op, idx->sv->length[index],
         idx->sv->buffer_size[index]);
 
     uint8_t* buffer = idx->sv->binary[index];
@@ -319,7 +320,7 @@ fmi2Status fmi2GetString(fmi2Component c, const fmi2ValueReference vr[],
         if (data == NULL || data_len == 0) continue;
 
         /* Write the requested string, encode if configured. */
-        _log_binary_signal(fmu, idx);
+        _log_binary_signal(fmu, idx, "GetString");
         EncodeFunc ef = hashmap_get(&fmu->variables.binary.encode_func, vr_idx);
         if (ef) {
             value[i] = ef((char*)data, data_len);
@@ -447,7 +448,7 @@ fmi2Status fmi2SetString(fmi2Component c, const fmi2ValueReference vr[],
         /* Append the binary string to the Binary Signal. */
         dse_buffer_append(&idx->sv->binary[idx->vi], &idx->sv->length[idx->vi],
             &idx->sv->buffer_size[idx->vi], (void*)data, data_len);
-        _log_binary_signal(fmu, idx);
+        _log_binary_signal(fmu, idx, "SetString");
 
         /* Release the decode string/memory. Caller owns value[]. */
         if (data != value[i]) free(data);

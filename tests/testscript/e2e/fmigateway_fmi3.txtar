@@ -20,7 +20,7 @@ exec cp -R $EXAMPLE/model $SIM/model
 exec sh -e $WORK/test.sh
 
 stdout 'Importer: FMU Dir: /sim/fmu'
-stdout 'Importer: Loading FMU: binaries/x86_64-linux/fmi3gateway.so'
+stdout 'Importer: Loading FMU: binaries/x86_64-linux/libfmi3gateway.so'
 stdout 'FMU Model instantiated'
 stdout 'Resource location: resources'
 stdout 'Setting up the Simbus connection...'
@@ -36,15 +36,9 @@ stdout 'length     : 584'
 stdout 'buffer len : 584'
 
 stdout 'Importer: Calling fmi3DoStep\(\): model_time=0.004500, step_size=0.000500'
-stdout 'Model: RX\[20\] Hello from Importer \(0\)'
-stdout 'Model: RX\[93\] Hello from Importer \(3\)'
-stdout 'Importer received binary msg: Hello World! from node_id=1'
+stdout 'Model: RX\[132\] Hello from Importer \(10\)'
+stdout 'Importer: network message \(RX\): Hello World! from node_id=1'
 
-stdout 'Importer:   \[1002\] 9'
-stdout 'Importer:   \[3\] F8u:'
-stdout 'Importer:   \[5\] F8u:'
-stdout 'Importer:   \[7\] F8u:'
-stdout 'Importer:   \[9\] F8u:'
 
 -- test.sh --
 SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"

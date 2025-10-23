@@ -17,7 +17,7 @@ project(${MODULE}
 # =================
 add_executable(${MODULE_LC}
     importer.c
-    ncodec.c
+    signal_bus.c
     xml.c
     ${CLIB_SOURCE_FILES}
 )

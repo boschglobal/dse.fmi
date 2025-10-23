@@ -40,7 +40,7 @@ center footer Dynamic Simulation Environment
 
 typedef struct BinaryData {
     char* start;
-    char* mimetype;
+    char* mime_type;
     char* type;
 } BinaryData;
 
@@ -81,12 +81,16 @@ typedef struct modelDescription {
 DLL_PRIVATE modelDescription* parse_model_desc(
     const char* docname, const char* platform);
 
-/* importer NCodec Interface */
-DLL_PUBLIC void importer_codec_write(uint32_t frame_id, uint8_t frame_type,
-    const uint8_t* message_buffer, size_t message_len, uint8_t** out_buffer,
-    size_t* out_length, const char* mime_type);
-DLL_PUBLIC void importer_ncodec_read(
-    const char* mime_type, uint8_t* data, size_t len);
-DLL_PUBLIC void importer_ncodec_stat(const char* mime_type, char** value);
+/* signal_bus.c */
+char* network_mime_type_value(const char* mime_type, const char* key);
+void  network_inject_frame(const char* name, const char* mime_type, int32_t id,
+     uint8_t* data, size_t len);
+void  network_push(
+     const char* name, const char* mime_type, const uint8_t* buffer, size_t len);
+void network_pull(
+    const char* name, const char* mime_type, uint8_t** buffer, size_t* len);
+void network_truncate(void);
+void network_close(void);
+
 
 #endif  // DSE_IMPORTER_IMPORTER_H_

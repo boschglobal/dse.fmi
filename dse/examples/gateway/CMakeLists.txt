@@ -35,6 +35,7 @@ install(TARGETS ${GW_TARGET}
 
 # Example - FMI2 Gateway FMU
 # ==========================
+set(FMI2_GW fmi2gateway)
 install(
     TARGETS
         ${FMI2_GW}
@@ -61,6 +62,7 @@ install(
 
 # Example - FMI3 Gateway FMU
 # ==========================
+set(FMI3_GW fmi3gateway)
 install(
     TARGETS
         ${FMI3_GW}

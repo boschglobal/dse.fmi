@@ -3,7 +3,7 @@ env NAME=network
 env IMPORTER=dse/build/_out/importer/fmuImporter
 env FMU_DIR=dse/build/_out/examples/fmu/network/fmi2
 
-# TEST: FMU 2 Linear
+# TEST: FMU 2 Network
 exec sh -e $WORK/test.sh
 
 stdout 'Importer: Loading FMU: binaries/linux64/fmu2network.so'
@@ -23,8 +23,7 @@ docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
     -e FMU_DIR=$FMU_DIR \
     -e NCODEC_TRACE_PDU_23=* \
     $SIMER \
-        bash -c "ls -R; \
-            /repo/$IMPORTER $FMU_DIR"
+        bash -c "/repo/$IMPORTER $FMU_DIR"
 
 
 # TODO: run with valgrind.

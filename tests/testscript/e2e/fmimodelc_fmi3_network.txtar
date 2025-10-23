@@ -43,5 +43,4 @@ docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
     -e FMU_DIR=$FMU_DIR \
     -e SIMBUS_LOGLEVEL=4 \
     $SIMER \
-        bash -c "ls -R; \
-            /repo/$IMPORTER $FMU_DIR"
+        bash -c "/repo/$IMPORTER $FMU_DIR"

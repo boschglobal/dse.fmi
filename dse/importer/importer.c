@@ -62,12 +62,13 @@ typedef void (*fmi3FreeInstance)();
 #define MODEL_XML_FILE "modelDescription.xml"
 
 
-#define OPT_LIST       "hs:X:P:"
+#define OPT_LIST       "hs:X:P:B"
 static struct option long_options[] = {
     { "help", no_argument, NULL, 'h' },
     { "step_size", optional_argument, NULL, 's' },
     { "steps", optional_argument, NULL, 'X' },
     { "platform", optional_argument, NULL, 'P' },
+    { "signal_bus", no_argument, NULL, 'B' },
 };
 
 static inline void print_usage()
@@ -78,6 +79,7 @@ static inline void print_usage()
     printf("      [-s, --step_size]\n");
     printf("      [-X, --steps]\n");
     printf("      [-P, --platform] (defaults to linux-amd64)\n");
+    printf("      [-B, --signal_bus] (defaults to linux-amd64)\n");
 }
 
 static void _log(const char* format, ...)
@@ -89,28 +91,6 @@ static void _log(const char* format, ...)
     va_end(args);
     printf("\n");
     fflush(stdout);
-}
-
-
-static void _write_ncodec_msg(char** val_tx_binary, char** val_rx_binary,
-    char* mimetype, uint32_t frame_id, char* response)
-{
-    size_t data_len = strlen(*val_tx_binary);
-    char*  ncodec_tx = dse_ascii85_decode(*val_tx_binary, &data_len);
-    importer_ncodec_read(mimetype, (uint8_t*)ncodec_tx, data_len);
-
-    uint8_t* ncodec_rx = NULL;
-    size_t   ncodec_rx_len = 0;
-    importer_codec_write(frame_id, 2, (uint8_t*)response, strlen(response),
-        &ncodec_rx, &ncodec_rx_len, mimetype);
-
-    *val_rx_binary = dse_ascii85_encode((char*)ncodec_rx, ncodec_rx_len);
-
-    /* Cleanup. */
-    free(ncodec_tx);
-    free(ncodec_rx);
-    free(*val_tx_binary);
-    *val_tx_binary = NULL;
 }
 
 
@@ -168,28 +148,51 @@ static int _run_fmu2_cosim(
     fmi2DoStep do_step = dlsym(handle, "fmi2DoStep");
     if (do_step == NULL) return EINVAL;
 
-    for (unsigned int j = 0; j < steps; j++) {
-        /* Loopback the binary data. */
-        for (size_t i = 0; i < desc->binary.tx_count; i++) {
-            if (desc->binary.val_tx_binary[i]) {
-                if (desc->binary.tx_binary_info) {
-                    if (strcmp(desc->binary.tx_binary_info[i]->type, "frame") ==
-                        0) {
-                        int32_t frame_id = (i + (j * 10));
-                        char    resp[128];
-                        snprintf(
-                            resp, sizeof(resp), "Hello from Importer (%zu)", i);
-                        _write_ncodec_msg(&(desc->binary.val_tx_binary[i]),
-                            &(desc->binary.val_rx_binary[i]),
-                            desc->binary.rx_binary_info[i]->mimetype, frame_id,
-                            resp);
-                        continue;
-                    }
-                }
+    for (size_t step = 0; step < steps; step++) {
+        network_truncate();
 
-                desc->binary.val_rx_binary[i] = desc->binary.val_tx_binary[i];
-                desc->binary.val_tx_binary[i] = NULL;
-            }
+        /* Loopback the binary data. */
+        /* From FMU perspective: TX -> Bus (-> Rx). */
+        for (size_t i = 0; i < desc->binary.tx_count; i++) {
+            if (desc->binary.tx_binary_info == NULL) continue;
+            if (desc->binary.tx_binary_info[i] == NULL) continue;
+            if (desc->binary.tx_binary_info[i]->mime_type == NULL) continue;
+            if (desc->binary.val_tx_binary[i] == NULL) continue;
+            size_t data_len = strlen(desc->binary.val_tx_binary[i]);
+            char*  ncodec_tx =
+                dse_ascii85_decode(desc->binary.val_tx_binary[i], &data_len);
+            free(desc->binary.val_tx_binary[i]);
+            desc->binary.val_tx_binary[i] = NULL;
+
+            network_push(
+                "one_network",  // TODO: Currently only one network signal.
+                desc->binary.tx_binary_info[i]->mime_type, (uint8_t*)ncodec_tx,
+                data_len);
+            free(ncodec_tx);
+        }
+        /* Inject a CAN Frame. */
+        if (desc->binary.tx_binary_info && desc->binary.tx_binary_info[0] &&
+            desc->binary.tx_binary_info[0]->mime_type &&
+            strcmp(desc->binary.tx_binary_info[0]->type, "frame") == 0) {
+            char msg[128];
+            snprintf(msg, sizeof(msg), "Hello from Importer (%zu)", step + 1);
+            network_inject_frame("one_network",
+                desc->binary.tx_binary_info[0]->mime_type, (42 + step * 10),
+                (uint8_t*)msg, strlen(msg) + 1);
+        }
+        /* From FMU perspective: (TX ->) Bus -> Rx. */
+        for (size_t i = 0; i < desc->binary.rx_count; i++) {
+            if (desc->binary.rx_binary_info == NULL) continue;
+            if (desc->binary.rx_binary_info[i]->mime_type == NULL) continue;
+
+            size_t data_len = 0;
+            char*  ncodec_rx = NULL;
+            network_pull("one_network",
+                desc->binary.rx_binary_info[i]->mime_type,
+                (uint8_t**)&ncodec_rx, &data_len);
+            desc->binary.val_rx_binary[i] =
+                dse_ascii85_encode(ncodec_rx, data_len);
+            free(ncodec_rx);
         }
 
         set_string(fmu, desc->binary.vr_rx_binary, desc->binary.rx_count,
@@ -227,6 +230,8 @@ static int _run_fmu2_cosim(
         /* Increment model time. */
         model_time += step_size;
     }
+    network_close();
+
     _log("Scalar Variables:");
     for (size_t i = 0; i < desc->real.tx_count; i++) {
         _log("  [%d] %lf", desc->real.vr_tx_real[i], desc->real.val_tx_real[i]);
@@ -293,27 +298,52 @@ static int _run_fmu3_cosim(
     fmi3DoStep do_step = dlsym(handle, "fmi3DoStep");
     if (do_step == NULL) return EINVAL;
 
-    for (unsigned int j = 0; j < steps; j++) {
+    for (size_t step = 0; step < steps; step++) {
+        network_truncate();
+
         /* Loopback the binary data. */
+        /* From FMU perspective: TX -> Bus (-> Rx). */
         for (size_t i = 0; i < desc->binary.tx_count; i++) {
-            if (desc->binary.val_tx_binary[i]) {
-                if (desc->binary.tx_binary_info) {
-                    if (strcmp(desc->binary.tx_binary_info[i]->type, "frame") ==
-                        0) {
-                        int32_t frame_id = (i + (j * 10));
-                        char    resp[128];
-                        snprintf(
-                            resp, sizeof(resp), "Hello from Importer (%zu)", i);
-                        _write_ncodec_msg(&(desc->binary.val_tx_binary[i]),
-                            &(desc->binary.val_rx_binary[i]),
-                            desc->binary.rx_binary_info[i]->mimetype, frame_id,
-                            resp);
-                        continue;
-                    }
-                }
-                desc->binary.val_rx_binary[i] = desc->binary.val_tx_binary[i];
-                desc->binary.val_tx_binary[i] = NULL;
-            }
+            if (desc->binary.tx_binary_info == NULL) continue;
+            if (desc->binary.tx_binary_info[i] == NULL) continue;
+            if (desc->binary.tx_binary_info[i]->mime_type == NULL) continue;
+            if (desc->binary.val_tx_binary[i] == NULL) continue;
+
+            size_t data_len = strlen(desc->binary.val_tx_binary[i]);
+            char*  ncodec_tx =
+                dse_ascii85_decode(desc->binary.val_tx_binary[i], &data_len);
+            free(desc->binary.val_tx_binary[i]);
+            desc->binary.val_tx_binary[i] = NULL;
+
+            network_push(
+                "one_network",  // TODO: Currently only one network signal.
+                desc->binary.tx_binary_info[i]->mime_type, (uint8_t*)ncodec_tx,
+                data_len);
+            free(ncodec_tx);
+        }
+        /* Inject a CAN Frame. */
+        if (desc->binary.tx_binary_info && desc->binary.tx_binary_info[0] &&
+            desc->binary.tx_binary_info[0]->mime_type &&
+            strcmp(desc->binary.tx_binary_info[0]->type, "frame") == 0) {
+            char msg[128];
+            snprintf(msg, sizeof(msg), "Hello from Importer (%zu)", step + 1);
+            network_inject_frame("one_network",
+                desc->binary.tx_binary_info[0]->mime_type, (42 + step * 10),
+                (uint8_t*)msg, strlen(msg) + 1);
+        }
+        /* From FMU perspective: (TX ->) Bus -> Rx. */
+        for (size_t i = 0; i < desc->binary.rx_count; i++) {
+            if (desc->binary.rx_binary_info == NULL) continue;
+            if (desc->binary.rx_binary_info[i]->mime_type == NULL) continue;
+
+            size_t data_len = 0;
+            char*  ncodec_rx = NULL;
+            network_pull("one_network",
+                desc->binary.rx_binary_info[i]->mime_type,
+                (uint8_t**)&ncodec_rx, &data_len);
+            desc->binary.val_rx_binary[i] =
+                dse_ascii85_encode(ncodec_rx, data_len);
+            free(ncodec_rx);
         }
 
         set_binary(fmu, desc->binary.vr_rx_binary, desc->binary.rx_count,
@@ -353,6 +383,8 @@ static int _run_fmu3_cosim(
         /* Increment model time. */
         model_time += step_size;
     }
+    network_close();
+
     _log("Scalar Variables:");
     for (size_t i = 0; i < desc->real.tx_count; i++) {
         _log("  [%d] %lf", desc->real.vr_tx_real[i], desc->real.val_tx_real[i]);
@@ -375,7 +407,8 @@ static int _run_fmu3_cosim(
 
 
 static inline void _parse_arguments(int argc, char** argv, double* step_size,
-    unsigned int* steps, const char** fmu_path, const char** platform)
+    unsigned int* steps, const char** fmu_path, const char** platform,
+    bool* signal_bus)
 {
     extern int   optind, optopt;
     extern char* optarg;
@@ -407,6 +440,9 @@ static inline void _parse_arguments(int argc, char** argv, double* step_size,
         case 'P':
             *platform = optarg;
             break;
+        case 'B':
+            *signal_bus = atoi(optarg);
+            break;
         default:
             exit(1);
         }
@@ -418,18 +454,22 @@ static inline void _parse_arguments(int argc, char** argv, double* step_size,
     }
 }
 
+extern bool signal_bus_enabled;
+
 int main(int argc, char** argv)
 {
     double       step_size = 0.0005;
     unsigned int steps = 10;
     const char*  fmu_path = NULL;
     const char*  platform = "linux-amd64";
-    static char  _cwd[PATH_MAX];
+
+    static char _cwd[PATH_MAX];
 
 
     /* Parse arguments
      * =============== */
-    _parse_arguments(argc, argv, &step_size, &steps, &fmu_path, &platform);
+    _parse_arguments(argc, argv, &step_size, &steps, &fmu_path, &platform,
+        &signal_bus_enabled);
     getcwd(_cwd, PATH_MAX);
     if (fmu_path == NULL) {
         fmu_path = _cwd;
@@ -489,7 +529,7 @@ int main(int argc, char** argv)
             desc->binary.val_tx_binary[i] = NULL;
         }
         if (desc->binary.tx_binary_info[i]) {
-            free(desc->binary.tx_binary_info[i]->mimetype);
+            free(desc->binary.tx_binary_info[i]->mime_type);
             free(desc->binary.tx_binary_info[i]->start);
             free(desc->binary.tx_binary_info[i]->type);
             free(desc->binary.tx_binary_info[i]);
@@ -501,7 +541,7 @@ int main(int argc, char** argv)
             desc->binary.val_rx_binary[i] = NULL;
         }
         if (desc->binary.rx_binary_info[i]) {
-            free(desc->binary.rx_binary_info[i]->mimetype);
+            free(desc->binary.rx_binary_info[i]->mime_type);
             free(desc->binary.rx_binary_info[i]->start);
             free(desc->binary.rx_binary_info[i]->type);
             free(desc->binary.rx_binary_info[i]);

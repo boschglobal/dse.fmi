@@ -18,8 +18,7 @@ docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
     -e IMPORTER=$IMPORTER \
     -e FMU_DIR=$FMU_DIR \
     $SIMER \
-        bash -c "ls -R; \
-            /repo/$IMPORTER $FMU_DIR"
+        bash -c "/repo/$IMPORTER $FMU_DIR"
 
 
 # TODO: run with valgrind.

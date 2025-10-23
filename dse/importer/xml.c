@@ -189,8 +189,8 @@ static void _parse_fmi2_string(xmlNode* variable, xmlNode* child, xmlChar* vr,
     xmlChar* mime_type = _parse_fmi2_tool_anno(
         variable, "dse.standards.fmi-ls-binary-codec", "mimetype");
     if (mime_type) {
-        data->mimetype = strdup((char*)mime_type);
-        importer_ncodec_stat((char*)mime_type, &data->type);
+        data->mime_type = strdup((char*)mime_type);
+        data->type = network_mime_type_value((char*)mime_type, "type");
     }
     xmlFree(mime_type);
 
@@ -285,8 +285,8 @@ static inline void _parse_fmi3_binary(xmlNodePtr child, xmlChar* vr,
     xmlChar* mime_type = _parse_fmi3_tool_anno(
         child, "dse.standards.fmi-ls-binary-codec", "Mimetype");
     if (mime_type) {
-        data->mimetype = strdup((char*)mime_type);
-        importer_ncodec_stat((char*)mime_type, &data->type);
+        data->mime_type = strdup((char*)mime_type);
+        data->type = network_mime_type_value((char*)mime_type, "type");
     }
     xmlFree(mime_type);
 

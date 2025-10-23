@@ -153,7 +153,7 @@ do-test_testscript-e2e:
 #   Additional logging: add '-v' to Testscript command (e.g. $(TESTSCRIPT_IMAGE) -v \).
 #   Retain work folder: add '-work' to Testscript command (e.g. $(TESTSCRIPT_IMAGE) -work \).
 ifeq ($(PACKAGE_ARCH), linux-amd64)
-	@-docker kill simer
+	@-docker kill simer 2>/dev/null ; true
 	@set -eu; for t in $(TESTSCRIPT_E2E_FILES) ;\
 	do \
 		export ENTRYWORKDIR=$$(mktemp -d) ;\
