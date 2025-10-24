@@ -24,15 +24,8 @@ stdout 'buffer len : 472'
 
 stdout 'Importer: Calling fmi3DoStep\(\): model_time=0.004500, step_size=0.000500'
 stdout 'Call model_runtime_step\(\) ...'
-stdout 'Model: RX\[000a\] Hello from Importer \(0\)'
-stdout 'Model: RX\[0053\] Hello from Importer \(3\)'
-stdout 'Importer received binary msg: Hello World! from node_id=2'
-
-stdout 'Importer:   \[1\] 10'
-stdout 'Importer:   \[3\] F8u:'
-stdout 'Importer:   \[5\] F8u:'
-stdout 'Importer:   \[7\] F8u:'
-stdout 'Importer:   \[9\] F8u:'
+stdout 'Model: RX\[0084\] Hello from Importer \(10\)'
+stdout 'Importer: network message \(RX\): Hello World! from node_id=2'
 
 
 -- test.sh --
