@@ -40,7 +40,6 @@ static NetworkSignal* _get_network_signal(
     NetworkSignal* ns =
         vector_find(&ns_v, &(NetworkSignal){ .name = name }, 0, NULL);
     if (ns == NULL) {
-        log_error("create NC: %s   %p", name, mime_type);
         if (mime_type == NULL) return NULL;
         NCodecInstance* nc = ncodec_create(mime_type);
         if (nc) nc->stream = ncodec_buffer_stream_create(1024);

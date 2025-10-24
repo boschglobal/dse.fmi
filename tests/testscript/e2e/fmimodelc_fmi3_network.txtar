@@ -17,11 +17,6 @@ stdout 'ModelCFmu:   Scalar: input=0, output=1'
 stdout 'ModelCFmu:   Binary: rx=4, tx=4'
 stdout 'ModelCFmu:   Encoding: enc=8, dec=8'
 
-stdout 'name       : can'
-stdout 'length     : 472'
-stdout 'buffer len : 472'
-! stdout 'buffer len : 590'
-
 stdout 'Importer: Calling fmi3DoStep\(\): model_time=0.004500, step_size=0.000500'
 stdout 'Call model_runtime_step\(\) ...'
 stdout 'Model: RX\[0084\] Hello from Importer \(10\)'
