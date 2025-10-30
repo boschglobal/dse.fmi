@@ -48,7 +48,7 @@ docker run --name gateway -i --rm -v $ENTRYWORKDIR/$SIM:/sim \
     --net="host" \
     --entrypoint="" $SIMER \
     bash -c "cd fmu; valgrind -q --leak-check=yes --error-exitcode=808 \
-    ../bin/fmuImporter --step_size=0.0005 --steps=10" &
+    ../bin/fmuImporter --verbose --step_size=0.0005 --steps=10" &
 
 docker run --name simer -i --rm -v $ENTRYWORKDIR/$SIM:/sim \
     --env SIMBUS_LOGLEVEL=4 \

@@ -44,7 +44,7 @@ FmuInstanceData* fmu_create(FmuInstanceData* fmu)
     /* Create the Model Runtime object. */
     fmu_log(fmu, 0, "Debug", "Create the Model Runtime object");
     *m = (RuntimeModelDesc){
-            .runtime = {
+        .runtime = {
             /* Logging/Information parameters (Importer only). */
             .runtime_model = fmu->instance.name,
             .model_name = fmu->instance.name,
@@ -52,8 +52,12 @@ FmuInstanceData* fmu_create(FmuInstanceData* fmu)
             .sim_path = dse_path_cat(fmu->instance.resource_location, "sim"),
             .simulation_yaml = "data/simulation.yaml",
             .end_time = END_TIME,
-            .log_level = 5,
+            .log_level = 5, // Adjust log level via env:SIMBUS_LOGLEVEL.
+            /* VTable callbacks (Importer provided). */
+            .vtable = {
+                .set_env = fmimodelc_set_model_env,
             },
+        },
     };
     m->model.sim = calloc(1, sizeof(SimulationSpec));
     fmu_log(fmu, 0, "Debug", "Call model_runtime_create() ...");

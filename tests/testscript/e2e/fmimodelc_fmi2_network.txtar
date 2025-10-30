@@ -13,6 +13,9 @@ stdout 'Runtime: Model: fmu'
 stdout 'Loading dynamic model: resources/sim/lib/libfmimodelctarget.so'
 stdout 'Configure Channel: scalar_vector'
 stdout 'Configure Channel: network_vector'
+stdout 'ModelCFmu: Runtime Environment Variables:'
+stdout 'ModelCFmu:   set envar: name=TARGET_INST__MSG, value=Bar'
+stdout 'ModelCFmu:   set envar: name=MSG, value=Foo'
 stdout 'ModelCFmu:   Scalar: input=0, output=1'
 stdout 'ModelCFmu:   Binary: rx=4, tx=4'
 stdout 'ModelCFmu:   Encoding: enc=8, dec=8'
@@ -21,6 +24,8 @@ stdout 'Importer: Calling fmi2DoStep\(\): model_time=0.004500, step_size=0.00050
 stdout 'Call model_runtime_step\(\) ...'
 stdout 'Model: RX\[0084\] Hello from Importer \(10\)'
 stdout 'Importer: network message \(RX\): Hello World! from node_id=2'
+stdout 'ENVAR:MSG=Foo'
+stdout 'ENVAR:TARGET_INST__MSG=Bar'
 
 
 -- test.sh --
@@ -31,4 +36,4 @@ docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
     -e FMU_DIR=$FMU_DIR \
     -e SIMBUS_LOGLEVEL=4 \
     $SIMER \
-        bash -c "/repo/$IMPORTER $FMU_DIR"
+        bash -c "/repo/$IMPORTER --verbose $FMU_DIR"

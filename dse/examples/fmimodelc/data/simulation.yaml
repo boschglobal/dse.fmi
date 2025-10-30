@@ -12,9 +12,15 @@ metadata:
       - data/simulation.yaml
       - data/model.yaml
 spec:
+  runtime:
+    env:
+      MSG: Foo
   models:
     - name: target_inst
       uid: 42
+      runtime:
+        env:
+          MSG: Bar
       model:
         name: Target
       channels:

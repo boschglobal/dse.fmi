@@ -22,6 +22,7 @@
 
 
 uint8_t __log_level__ = LOG_ERROR; /* LOG_ERROR LOG_INFO LOG_DEBUG LOG_TRACE */
+uint8_t __verbose__ = 0;
 
 
 /**
@@ -62,13 +63,14 @@ typedef void (*fmi3FreeInstance)();
 #define MODEL_XML_FILE "modelDescription.xml"
 
 
-#define OPT_LIST       "hs:X:P:B"
+#define OPT_LIST       "hs:X:P:Bv"
 static struct option long_options[] = {
     { "help", no_argument, NULL, 'h' },
     { "step_size", optional_argument, NULL, 's' },
     { "steps", optional_argument, NULL, 'X' },
     { "platform", optional_argument, NULL, 'P' },
     { "signal_bus", no_argument, NULL, 'B' },
+    { "verbose", no_argument, NULL, 'v' },
 };
 
 static inline void print_usage()
@@ -79,7 +81,8 @@ static inline void print_usage()
     printf("      [-s, --step_size]\n");
     printf("      [-X, --steps]\n");
     printf("      [-P, --platform] (defaults to linux-amd64)\n");
-    printf("      [-B, --signal_bus] (defaults to linux-amd64)\n");
+    printf("      [-B, --signal_bus]\n");
+    printf("      [-v, --verbose]\n");
 }
 
 static void _log(const char* format, ...)
@@ -93,6 +96,32 @@ static void _log(const char* format, ...)
     fflush(stdout);
 }
 
+
+static void _fmu2_log(fmi2ComponentEnvironment componentEnvironment,
+    fmi2String instanceName, fmi2Status status, fmi2String category,
+    fmi2String message, ...)
+{
+    UNUSED(componentEnvironment);
+    UNUSED(instanceName);
+
+    static const char* statusString[] = { "OK", "Warning", "Discard", "Error",
+        "Fatal", "Pending" };
+    switch (status) {
+    case 0:
+    case 1:
+    case 2:
+    case 5:
+        if (__verbose__) {
+            printf(
+                "Fmu: [%s:%s] %s\n", category, statusString[status], message);
+            fflush(stdout);
+        }
+        break;
+    default:
+        printf("Fmu: [%s:%s] %s\n", category, statusString[status], message);
+        fflush(stdout);
+    }
+}
 
 static int _run_fmu2_cosim(
     modelDescription* desc, void* handle, double step_size, unsigned int steps)
@@ -114,8 +143,11 @@ static int _run_fmu2_cosim(
     if (instantiate == NULL) {
         return EINVAL;
     }
+    fmi2CallbackFunctions functions = {
+        .logger = _fmu2_log,
+    };
     fmu = instantiate(
-        "fmu", fmi2CoSimulation, "guid", "resources", NULL, true, true);
+        "fmu", fmi2CoSimulation, "guid", "resources", &functions, true, true);
     if (fmu == NULL) return EINVAL;
 
     /* fmi2ExitInitializationMode */
@@ -207,8 +239,10 @@ static int _run_fmu2_cosim(
         set_real(fmu, desc->real.vr_rx_real, desc->real.rx_count,
             desc->real.val_rx_real);
 
-        _log("Calling fmi2DoStep(): model_time=%f, step_size=%f", model_time,
-            step_size);
+        if (__verbose__) {
+            _log("Calling fmi2DoStep(): model_time=%f, step_size=%f",
+                model_time, step_size);
+        }
         int rc = do_step(fmu, model_time, step_size);
         if (rc != 0) {
             _log("step() returned error code: %d", rc);
@@ -232,14 +266,17 @@ static int _run_fmu2_cosim(
     }
     network_close();
 
-    _log("Scalar Variables:");
-    for (size_t i = 0; i < desc->real.tx_count; i++) {
-        _log("  [%d] %lf", desc->real.vr_tx_real[i], desc->real.val_tx_real[i]);
-    }
-    _log("String Variables:");
-    for (size_t i = 0; i < desc->binary.tx_count; i++) {
-        _log("  [%d] %s", desc->binary.vr_tx_binary[i],
-            desc->binary.val_tx_binary[i]);
+    if (desc->real.tx_count <= 50 || __verbose__) {
+        _log("Scalar Variables:");
+        for (size_t i = 0; i < desc->real.tx_count; i++) {
+            _log("  [%d] %lf", desc->real.vr_tx_real[i],
+                desc->real.val_tx_real[i]);
+        }
+        _log("String Variables:");
+        for (size_t i = 0; i < desc->binary.tx_count; i++) {
+            _log("  [%d] %s", desc->binary.vr_tx_binary[i],
+                desc->binary.val_tx_binary[i]);
+        }
     }
 
 
@@ -253,6 +290,29 @@ static int _run_fmu2_cosim(
 }
 
 
+static void _fmu3_log(fmi3InstanceEnvironment instanceEnvironment,
+    fmi3Status status, fmi3String category, fmi3String message)
+{
+    UNUSED(instanceEnvironment);
+
+    static const char* statusString[] = { "OK", "Warning", "Discard", "Error",
+        "Fatal" };
+    switch (status) {
+    case 0:
+    case 1:
+    case 2:
+        if (__verbose__) {
+            printf(
+                "Fmu: [%s:%s] %s\n", category, statusString[status], message);
+            fflush(stdout);
+        }
+        break;
+    default:
+        printf("Fmu: [%s:%s] %s\n", category, statusString[status], message);
+        fflush(stdout);
+    }
+}
+
 static int _run_fmu3_cosim(
     modelDescription* desc, void* handle, double step_size, unsigned int steps)
 {
@@ -265,7 +325,7 @@ static int _run_fmu3_cosim(
         dlsym(handle, "fmi3InstantiateCoSimulation");
     if (instantiate == NULL) return EINVAL;
     fmu = instantiate("fmu", "guid", "resources", false, true, false, false,
-        NULL, 0, NULL, NULL, NULL);
+        NULL, 0, NULL, &_fmu3_log, NULL);
     if (fmu == NULL) return EINVAL;
 
     /* fmi3ExitInitializationMode */
@@ -359,8 +419,10 @@ static int _run_fmu3_cosim(
         set_float64(fmu, desc->real.vr_rx_real, desc->real.rx_count,
             desc->real.val_rx_real, desc->real.rx_count);
 
-        _log("Calling fmi3DoStep(): model_time=%f, step_size=%f", model_time,
-            step_size);
+        if (__verbose__) {
+            _log("Calling fmi3DoStep(): model_time=%f, step_size=%f",
+                model_time, step_size);
+        }
         int rc = do_step(fmu, model_time, step_size);
         if (rc != 0) {
             _log("step() returned error code: %d", rc);
@@ -385,14 +447,17 @@ static int _run_fmu3_cosim(
     }
     network_close();
 
-    _log("Scalar Variables:");
-    for (size_t i = 0; i < desc->real.tx_count; i++) {
-        _log("  [%d] %lf", desc->real.vr_tx_real[i], desc->real.val_tx_real[i]);
-    }
-    _log("String Variables:");
-    for (size_t i = 0; i < desc->binary.tx_count; i++) {
-        _log("  [%d] %s", desc->binary.vr_tx_binary[i],
-            desc->binary.val_tx_binary[i]);
+    if (desc->real.tx_count <= 50 || __verbose__) {
+        _log("Scalar Variables:");
+        for (size_t i = 0; i < desc->real.tx_count; i++) {
+            _log("  [%d] %lf", desc->real.vr_tx_real[i],
+                desc->real.val_tx_real[i]);
+        }
+        _log("String Variables:");
+        for (size_t i = 0; i < desc->binary.tx_count; i++) {
+            _log("  [%d] %s", desc->binary.vr_tx_binary[i],
+                desc->binary.val_tx_binary[i]);
+        }
     }
 
 
@@ -432,16 +497,19 @@ static inline void _parse_arguments(int argc, char** argv, double* step_size,
         case 'h':
             break;
         case 's':
-            *step_size = atof(optarg);
+            if (optarg) *step_size = atof(optarg);
             break;
         case 'X':
-            *steps = atoi(optarg);
+            if (optarg) *steps = atoi(optarg);
             break;
         case 'P':
             *platform = optarg;
             break;
         case 'B':
-            *signal_bus = atoi(optarg);
+            *signal_bus = 1;
+            break;
+        case 'v':
+            __verbose__ = 1;
             break;
         default:
             exit(1);

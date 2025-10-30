@@ -11,6 +11,8 @@ project(test_fmimodelc)
 
 add_library(fmimodelc_runtime OBJECT
     ${REPO_DIR}/dse/fmimodelc/runtime.c
+    $<$<BOOL:${WIN32}>:${REPO_DIR}/dse/fmimodelc/env_win32.c>
+    $<$<BOOL:${UNIX}>:${REPO_DIR}/dse/fmimodelc/env_unix.c>
     ${DSE_CLIB_SOURCE_DIR}/util/ascii85.c
 )
 target_include_directories(fmimodelc_runtime

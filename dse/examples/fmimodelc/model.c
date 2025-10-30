@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <errno.h>
@@ -61,6 +62,10 @@ ModelDesc* model_create(ModelDesc* model)
         }
     }
     if (m->node_id == NULL) log_fatal("NCodec node_id not configured!");
+
+    /* Enquire about envars. */
+    log_notice("ENVAR:MSG=%s", getenv("MSG"));
+    log_notice("ENVAR:TARGET_INST__MSG=%s", getenv("TARGET_INST__MSG"));
 
     /* Return the extended object. */
     return (ModelDesc*)m;

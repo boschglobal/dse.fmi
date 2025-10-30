@@ -57,5 +57,10 @@ DLL_PRIVATE void fmimodelc_index_binary_signals(
     RuntimeModelDesc* m, HashMap* rx, HashMap* tx);
 DLL_PRIVATE void fmimodelc_index_text_encoding(
     RuntimeModelDesc* m, HashMap* encode_func, HashMap* decode_func);
+DLL_PRIVATE void fmimodelc_set_model_env(RuntimeModelDesc* m);
+
+/* env.c */
+DLL_PRIVATE int fmimodelc_setenv(const char* name, const char* value);
+
 
 #endif  // DSE_FMIMODELC_FMIMODELC_H_

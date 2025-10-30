@@ -23,7 +23,7 @@ docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
     -e FMU_DIR=$FMU_DIR \
     -e NCODEC_TRACE_PDU_23=* \
     $SIMER \
-        bash -c "/repo/$IMPORTER $FMU_DIR"
+        bash -c "/repo/$IMPORTER --verbose $FMU_DIR"
 
 
 # TODO: run with valgrind.

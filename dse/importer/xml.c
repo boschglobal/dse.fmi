@@ -167,7 +167,9 @@ static inline void _parse_fmi2_scalar(xmlNodePtr child, xmlChar* vr,
 {
     if (xmlStrcmp(child->name, (xmlChar*)"Real")) return;
 
-    double _start = atof((char*)start);
+    double _start = 0.0;
+    if (start != NULL) _start = atof((char*)start);
+
     if (xmlStrcmp(causality, (xmlChar*)"input") == 0) {
         hashmap_set_double(vr_rx_real, (char*)vr, _start);
     } else if (xmlStrcmp(causality, (xmlChar*)"output") == 0) {
@@ -183,8 +185,7 @@ static void _parse_fmi2_string(xmlNode* variable, xmlNode* child, xmlChar* vr,
     if (xmlStrcmp(child->name, (xmlChar*)"String")) return;
 
     BinaryData* data = calloc(1, sizeof(BinaryData));
-
-    data->start = strdup((char*)start);
+    if (start != NULL) data->start = strdup((char*)start);
 
     xmlChar* mime_type = _parse_fmi2_tool_anno(
         variable, "dse.standards.fmi-ls-binary-codec", "mimetype");
@@ -228,7 +229,6 @@ void _parse_fmi2_model_desc(HashMap* vr_rx_real, HashMap* vr_tx_real,
             if (child->type != XML_ELEMENT_NODE) continue;
 
             start = xmlGetProp(child, (xmlChar*)"start");
-
             _parse_fmi2_scalar(
                 child, vr, causality, start, vr_rx_real, vr_tx_real);
             _parse_fmi2_string(scalarVariable, child, vr, causality, start,

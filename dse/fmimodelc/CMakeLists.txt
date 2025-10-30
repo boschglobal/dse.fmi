@@ -20,6 +20,8 @@ set(FMIMODELC_FILES
     fmimodelc.c
     runtime.c
     signal.c
+    $<$<BOOL:${WIN32}>:env_win32.c>
+    $<$<BOOL:${UNIX}>:env_unix.c>
     ${DSE_CLIB_SOURCE_DIR}/clib/util/ascii85.c
 )
 

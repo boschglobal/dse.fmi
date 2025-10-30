@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <ctype.h>
 #include <dse/fmimodelc/fmimodelc.h>
 #include <dse/fmu/fmu.h>
 #include <dse/modelc/runtime.h>
@@ -266,4 +267,69 @@ void fmimodelc_index_text_encoding(
     }
     _log("  Encoding: enc=%lu, dec=%lu", encode_func->used_nodes,
         decode_func->used_nodes);
+}
+
+
+static int envar_iterator(void* value, void* key)
+{
+    _log(
+        "  set envar: name=%s, value=%s", (const char*)key, (const char*)value);
+    fmimodelc_setenv((const char*)key, (const char*)value);
+    return 0;
+}
+
+void fmimodelc_set_model_env(RuntimeModelDesc* m)
+{
+    HashMap envars;
+    hashmap_init(&envars);
+    YamlNode* env_node = NULL;
+
+    /* Envars from : stack/spec/runtime/env */
+    env_node = dse_yaml_find_node(m->model.sim->spec, "spec/runtime/env");
+    if (env_node && hashmap_number_keys(env_node->mapping)) {
+        char**   name = hashmap_keys(&env_node->mapping);
+        uint32_t count = hashmap_number_keys(env_node->mapping);
+        for (size_t i = 0; i < count; i++) {
+            YamlNode* value = hashmap_get(&env_node->mapping, name[i]);
+            if (value->scalar) {
+                hashmap_set(&envars, name[i], value->scalar);
+            }
+        }
+        for (uint32_t _ = 0; _ < count; _++)
+            free(name[_]);
+        free(name);
+    }
+
+    /* Envars from : mi/runtime/env (prefix with model name). */
+    for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
+         mi++) {
+        env_node = dse_yaml_find_node(mi->spec, "runtime/env");
+        if (env_node && hashmap_number_keys(env_node->mapping)) {
+            char**   name = hashmap_keys(&env_node->mapping);
+            uint32_t count = hashmap_number_keys(env_node->mapping);
+            for (size_t i = 0; i < count; i++) {
+                YamlNode* value = hashmap_get(&env_node->mapping, name[i]);
+                if (value->scalar) {
+                    if (strcmp(mi->name, "simbus") == 0) {
+                        hashmap_set(&envars, name[i], value->scalar);
+                    } else {
+                        /* Prefix with the model name. */
+                        char buffer[100];
+                        snprintf(buffer, sizeof(buffer), "%s__%s", mi->name,
+                            name[i]);
+                        for (int i = 0; buffer[i]; i++)
+                            buffer[i] = toupper(buffer[i]);
+                        hashmap_set(&envars, buffer, value->scalar);
+                    }
+                }
+            }
+            for (uint32_t _ = 0; _ < count; _++)
+                free(name[_]);
+            free(name);
+        }
+    }
+
+    _log("Runtime Environment Variables: ");
+    hashmap_iterator(&envars, envar_iterator, true, NULL);
+    hashmap_destroy(&envars);
 }
