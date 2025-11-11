@@ -31,6 +31,17 @@ type Annotations struct {
 	Tool []Tool `xml:"Tool"`
 }
 
+type VendorAnnotations struct {
+	Tool []VendorTool `xml:"Tool"`
+}
+
+type VendorTool struct {
+	Name       string `xml:"name,attr"`
+	Annotation struct {
+		InnerXML string `xml:",innerxml"`
+	} `xml:"annotation"`
+}
+
 type Tool struct {
 	Name       string       `xml:"name,attr"`
 	Annotation []Annotation `xml:"Annotation,omitempty"`
@@ -119,7 +130,8 @@ type ModelDescription struct {
 		StopTime  string `xml:"stopTime,attr"`
 		StepSize  string `xml:"stepSize,attr"`
 	} `xml:"DefaultExperiment"`
-	ModelVariables struct {
+	VendorAnnotations *VendorAnnotations `xml:"VendorAnnotations,omitempty"`
+	ModelVariables    struct {
 		Text           string           `xml:",chardata"`
 		ScalarVariable []ScalarVariable `xml:"ScalarVariable"`
 	} `xml:"ModelVariables"`
@@ -375,7 +387,45 @@ func SetGeneralFmuXmlFields(fmiConfig fmi.FmiConfig, fmuXml *ModelDescription) e
 	fmuXml.CoSimulation.ModelIdentifier = fmiConfig.ModelIdentifier // This is the packaged SO/DLL file.
 	fmuXml.CoSimulation.CanHandleVariableCommunicationStepSize = "true"
 	fmuXml.CoSimulation.CanInterpolateInputs = "true"
+
+	// Add VendorAnnotations if provided.
+	fmuXml.VendorAnnotations = buildAnnotations(fmiConfig.Annotations)
+
 	return nil
+}
+
+// Helper function to build vendor annotations from map
+func buildAnnotations(annotationsMap map[string]string) *VendorAnnotations {
+	if len(annotationsMap) == 0 {
+		return nil
+	}
+	var xmlContent strings.Builder
+	for key, value := range annotationsMap {
+		// Escape XML special characters
+		escapedKey := escapeXML(key)
+		escapedValue := escapeXML(value)
+		xmlContent.WriteString(fmt.Sprintf("\n\t\t\t\t<%s>%s</%s>", escapedKey, escapedValue, escapedKey))
+	}
+	xmlContent.WriteString("\n\t\t\t")
+
+	tool := VendorTool{
+		Name: "dse.fmi.config",
+	}
+	tool.Annotation.InnerXML = xmlContent.String()
+
+	return &VendorAnnotations{
+		Tool: []VendorTool{tool},
+	}
+}
+
+// Helper function to escape XML special characters
+func escapeXML(s string) string {
+	s = strings.ReplaceAll(s, "&", "&amp;")
+	s = strings.ReplaceAll(s, "<", "&lt;")
+	s = strings.ReplaceAll(s, ">", "&gt;")
+	s = strings.ReplaceAll(s, "\"", "&quot;")
+	s = strings.ReplaceAll(s, "'", "&apos;")
+	return s
 }
 
 func VariablesFromSignalgroups(

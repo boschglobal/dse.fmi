@@ -5,6 +5,7 @@
 package generate
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -31,13 +32,16 @@ type GenFmiGatewayCommand struct {
 	fs          *flag.FlagSet
 
 	// CLI arguments
-	logLevel     int
-	signalGroups string
-	uuid         string
-	version      string
-	fmiVersion   string
-	outdir       string
-	stack        string
+	logLevel        int
+	signalGroups    string
+	uuid            string
+	version         string
+	fmiVersion      string
+	outdir          string
+	stack           string
+	name            string
+	modelIdentifier string
+	annotation      string
 
 	// Model parameters
 	startTime float64
@@ -69,6 +73,9 @@ func NewFmiGatewayCommand(name string) *GenFmiGatewayCommand {
 	c.fs.StringVar(&c.uuid, "uuid", "", "UUID to assign to the FMU, set to '' to generate a new UUID")
 	c.fs.StringVar(&c.version, "version", "0.0.1", "Version to assign to the FMU")
 	c.fs.StringVar(&c.fmiVersion, "fmiVersion", "2", "Modelica FMI Version")
+	c.fs.StringVar(&c.name, "name", "", "Name of the FMU")
+	c.fs.StringVar(&c.modelIdentifier, "modelidentifier", "", "ModelIdentifier field in the FMU modelDescription.xml")
+	c.fs.StringVar(&c.annotation, "annotations", "{}", "annotations in dictionary format")
 
 	// Supports unit testing.
 	c.fs.StringVar(&c.libRootPath, "libroot", "/usr/local", "System lib root path (where lib & lib32 directory are found)")
@@ -261,6 +268,13 @@ func (c *GenFmiGatewayCommand) buildFmi3XmlSignals(
 	return channels, nil
 }
 
+func getModelIdentifier(custom, defaultValue string) string {
+	if custom != "" {
+		return custom
+	}
+	return defaultValue
+}
+
 func (c *GenFmiGatewayCommand) createFmuXml(envars *[]schemaKind.SignalGroupSpec) (interface{}, []string, error) {
 	index := index.NewYamlFileIndex()
 	_, docs, err := handler.ParseFile(filepath.Join(c.outdir, "fmu.yaml"))
@@ -274,9 +288,12 @@ func (c *GenFmiGatewayCommand) createFmuXml(envars *[]schemaKind.SignalGroupSpec
 		}
 		index.DocMap[doc.Kind] = append(index.DocMap[doc.Kind], doc)
 	}
-
+	annotations, err := parseAnnotations(c.annotation)
+	if err != nil {
+		return nil, nil, err
+	}
 	fmiConfig := fmi.FmiConfig{
-		Name:           "Gateway",
+		Name:           c.name,
 		UUID:           c.uuid,
 		Version:        c.version,
 		Description:    "Gateway to connect to the DSE Simbus",
@@ -284,12 +301,13 @@ func (c *GenFmiGatewayCommand) createFmuXml(envars *[]schemaKind.SignalGroupSpec
 		StopTime:       c.endTime,
 		StepSize:       c.stepSize,
 		GenerationTool: "DSE FMI - ModelC FMU",
+		Annotations:    annotations,
 	}
 	switch c.fmiVersion {
 	case "2":
 		fmuXml := fmi2.ModelDescription{}
 		fmiConfig.FmiVersion = "2"
-		fmiConfig.ModelIdentifier = "libfmi2gateway"
+		fmiConfig.ModelIdentifier = getModelIdentifier(c.modelIdentifier, "libfmi2gateway")
 		if err := fmi2.SetGeneralFmuXmlFields(fmiConfig, &fmuXml); err != nil {
 			return nil, nil, err
 		}
@@ -303,7 +321,7 @@ func (c *GenFmiGatewayCommand) createFmuXml(envars *[]schemaKind.SignalGroupSpec
 	case "3":
 		fmuXml := fmi3.ModelDescription{}
 		fmiConfig.FmiVersion = "3"
-		fmiConfig.ModelIdentifier = "libfmi3gateway"
+		fmiConfig.ModelIdentifier = getModelIdentifier(c.modelIdentifier, "libfmi3gateway")
 		if err := fmi3.SetGeneralFmuXmlFields(fmiConfig, &fmuXml); err != nil {
 			return nil, nil, err
 		}
@@ -440,4 +458,17 @@ func (c *GenFmiGatewayCommand) generateModel(channelMap []string) error {
 	}
 
 	return nil
+}
+
+func parseAnnotations(annotationStr string) (map[string]string, error) {
+	if annotationStr == "" || annotationStr == "{}" {
+		return map[string]string{}, nil
+	}
+
+	var annotations map[string]string
+	if err := json.Unmarshal([]byte(annotationStr), &annotations); err != nil {
+		return nil, fmt.Errorf("failed to parse annotations: %w", err)
+	}
+
+	return annotations, nil
 }

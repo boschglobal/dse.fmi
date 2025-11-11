@@ -116,7 +116,7 @@ tasks:
           SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
           VERSION: '{{.VERSION}}'
           UUID: '{{.UUID}}'
-          FMIVERSION: '{{.FMIVERSION}}'
+          FMI_VERSION: '{{.FMI_VERSION}}'
           OUT_DIR: '{{.OUT_DIR}}'
     requires:
       vars: [FMU_NAME, SIGNAL_GROUPS]
@@ -144,7 +144,7 @@ tasks:
         UUID:
           required: false
           hint: UUID of the generated FMU.
-        FMIVERSION:
+        FMI_VERSION:
           required: false
           hint: FMI version of the generated FMU (i.e. 2 or 3).
         OUT_DIR:
@@ -166,8 +166,11 @@ tasks:
           OUT_DIR: '{{.OUT_DIR}}'
           SESSION: '{{.SESSION}}'
           VERSION: '{{.VERSION}}'
-          FMIVERSION: '{{.FMIVERSION}}'
+          FMI_VERSION: '{{.FMI_VERSION}}'
           UUID: '{{.UUID}}'
+          FMU_NAME: '{{.FMU_NAME | default "Gateway"}}'
+          MODEL_IDENTIFIER: '{{.MODEL_IDENTIFIER}}'
+          ANNOTATIONS: '{{.ANNOTATIONS}}'
     requires:
       vars: [SIGNAL_GROUPS]
     metadata:
@@ -185,12 +188,22 @@ tasks:
         VERSION:
           required: false
           hint: Version of the generated FMU.
-        FMIVERSION:
+        FMI_VERSION:
           required: false
           hint: FMI version of the generated FMU (i.e. 2 or 3).
         UUID:
           required: false
           hint: UUID of the generated FMU.
+        FMU_NAME:
+          required: false
+          hint: ModelName field in the FMU modelDescription.xml.
+          default: Gateway
+        MODEL_IDENTIFIER:
+          required: false
+          hint: MODEL_IDENTIFIER field in the FMU modelDescription.xml.
+        ANNOTATIONS:
+          required: false
+          hint: extra arbitary information as annotations in dictionary format.
 
   gen-mcl:
     internal: true
@@ -243,7 +256,7 @@ tasks:
       SIGNAL_GROUPS: "{{if .SIGNAL_GROUPS}}--signalgroups '{{.SIGNAL_GROUPS}}'{{else}}{{end}}"
       VERSION: "{{if .VERSION}}--version '{{.VERSION}}'{{else}}{{end}}"
       UUID: "{{if .UUID}}--uuid '{{.UUID}}'{{else}}{{end}}"
-      FMIVERSION: "{{if .FMIVERSION}}--fmiVersion '{{.FMIVERSION}}'{{else}}{{end}}"
+      FMI_VERSION: "{{if .FMI_VERSION}}--fmiVersion '{{.FMI_VERSION}}'{{else}}{{end}}"
       OUT_DIR: "{{if .OUT_DIR}}--outdir '{{.OUT_DIR}}'{{else}}{{end}}"
     cmds:
       - mkdir -p {{.ENTRYDIR}}/../fmu
@@ -260,7 +273,7 @@ tasks:
             {{.SIGNAL_GROUPS}}
             {{.VERSION}}
             {{.UUID}}
-            {{.FMIVERSION}}
+            {{.FMI_VERSION}}
     requires:
       vars: [FMU_NAME]
 
@@ -297,8 +310,13 @@ tasks:
       OUT_DIR: '{{.OUT_DIR | default "out"}}'
       SESSION: "{{if .SESSION}}--session '{{.SESSION}}'{{else}}{{end}}"
       VERSION: "{{if .VERSION}}--version '{{.VERSION}}'{{else}}{{end}}"
-      FMI_VERSION: "{{if .FMIVERSION}}--fmiVersion '{{.FMIVERSION}}'{{else}}{{end}}"
+      FMI_VERSION: "{{if .FMI_VERSION}}--fmiVersion '{{.FMI_VERSION}}'{{else}}{{end}}"
       UUID: "{{if .UUID}}--uuid '{{.UUID}}'{{else}}{{end}}"
+      FMU_NAME: "{{if .FMU_NAME}}--name '{{.FMU_NAME}}'{{else}}{{end}}"
+      MODEL_IDENTIFIER: "{{if .MODEL_IDENTIFIER}}--modelidentifier '{{.MODEL_IDENTIFIER}}'{{else}}{{end}}"
+      ANNOTATIONS: '{{if .ANNOTATIONS}}--annotations {{squote .ANNOTATIONS}}{{else}}{{end}}'
+      # FIXME work around for Taskfile issue.
+      FMI_TAG: '{{.FMI_TAG | default "latest"}}'
     cmds:
       - docker run --rm
           --user {{.USER}}:{{.GROUP}}
@@ -311,6 +329,9 @@ tasks:
             {{.VERSION}}
             {{.FMI_VERSION}}
             {{.UUID}}
+            {{.FMU_NAME}}
+            {{.MODEL_IDENTIFIER}}
+            {{.ANNOTATIONS}}
     requires:
       vars: [SIGNAL_GROUPS]
 

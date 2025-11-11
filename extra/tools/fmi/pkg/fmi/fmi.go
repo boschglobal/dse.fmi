@@ -15,4 +15,5 @@ type FmiConfig struct {
 	StepSize        float64
 	ModelIdentifier string
 	GenerationTool  string
+	Annotations     map[string]string
 }

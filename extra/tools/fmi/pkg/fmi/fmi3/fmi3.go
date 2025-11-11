@@ -185,6 +185,7 @@ type ModelDescription struct {
 	DefaultExperiment        DefaultExperiment `xml:"DefaultExperiment"`
 	ModelVariables           ModelVariables    `xml:"ModelVariables"`
 	ModelStructure           ModelStructure    `xml:"ModelStructure"`
+	Annotations              *Annotations      `xml:"Annotations,omitempty"`
 }
 
 // XML Detect & Imports
@@ -427,7 +428,30 @@ func SetGeneralFmuXmlFields(fmiConfig fmi.FmiConfig, fmuXml *ModelDescription) e
 
 	// Model Information.
 	fmuXml.CoSimulation.ModelIdentifier = fmiConfig.ModelIdentifier // This is the packaged SO/DLL file.
+
+	// Add Annotations if provided.
+	fmuXml.Annotations = buildAnnotations(fmiConfig.Annotations)
+
 	return nil
+}
+
+// Helper function to build annotations from map
+func buildAnnotations(annotationsMap map[string]string) *Annotations {
+	if len(annotationsMap) == 0 {
+		return nil
+	}
+
+	annotations := []Annotation{}
+	for key, value := range annotationsMap {
+		annotations = append(annotations, Annotation{
+			Type: key,
+			Text: value,
+		})
+	}
+
+	return &Annotations{
+		Annotation: annotations,
+	}
 }
 
 func VariablesFromSignalgroups(
