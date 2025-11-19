@@ -98,7 +98,7 @@ static xmlChar* _parse_fmi3_tool_anno(
         for (int i = 0; i < obj->nodesetval->nodeNr; i++) {
             xmlNode* a_node = obj->nodesetval->nodeTab[i];
             for (xmlNode* cur_node = a_node->children; cur_node;
-                 cur_node = cur_node->next) {
+                cur_node = cur_node->next) {
                 if (cur_node->type == XML_ELEMENT_NODE &&
                     cur_node->name != NULL) {
                     if (strcmp((const char*)cur_node->name, name) == 0) {
@@ -225,7 +225,7 @@ void _parse_fmi2_model_desc(HashMap* vr_rx_real, HashMap* vr_tx_real,
         if (vr == NULL || causality == NULL) goto next;
 
         for (xmlNodePtr child = scalarVariable->children; child;
-             child = child->next) {
+            child = child->next) {
             if (child->type != XML_ELEMENT_NODE) continue;
 
             start = xmlGetProp(child, (xmlChar*)"start");
@@ -310,7 +310,7 @@ static inline void _parse_fmi3_model_desc(HashMap* vr_rx_real,
     for (int i = 0; i < xml_sv_obj->nodesetval->nodeNr; i++) {
         xmlNodePtr model_variables = xml_sv_obj->nodesetval->nodeTab[i];
         for (xmlNodePtr child = model_variables->children; child;
-             child = child->next) {
+            child = child->next) {
             if (child->type != XML_ELEMENT_NODE) continue;
 
             xmlChar* vr = xmlGetProp(child, (xmlChar*)"valueReference");

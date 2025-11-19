@@ -393,8 +393,8 @@ static int _parse_gateway(FmuInstanceData* fmu, YamlNode* doc)
         fmi_gw->settings.log_level = DEFAULT_LOG_LEVEL;
     }
     if (dse_yaml_get_string(gateway_node, "annotations/log_location",
-            &(fmi_gw->settings.log_location))) {
-        fmi_gw->settings.log_location = fmu->instance.resource_location;
+            &(session->log_location))) {
+        session->log_location = fmu->instance.resource_location;
     }
 
     session->init_cmd = getenv(GATEWAY_INIT_CMD);
@@ -421,7 +421,7 @@ static WindowsModel* _parse_simbus(FmuInstanceData* fmu, YamlNode* root)
     const char* value[] = { "simbus" };
     /* Model Instance: locate in stack. */
     YamlNode*   simbus_node = dse_yaml_find_node_in_seq(
-          root, "spec/models", selector, value, ARRAY_SIZE(selector));
+        root, "spec/models", selector, value, ARRAY_SIZE(selector));
     if (simbus_node == NULL) {
         fmu_log(fmu, 0, "Notice", "Simbus not running on windows.");
         return NULL;
@@ -473,6 +473,37 @@ static WindowsModel* _parse_redis(FmuInstanceData* fmu, YamlNode* root)
 }
 
 
+static void _get_stack_annotations(FmuInstanceData* fmu, YamlNode* doc)
+{
+    if (doc == NULL || fmu == NULL) return;
+    FmiGateway*        fmi_gw = fmu->data;
+    FmiGatewaySession* session = fmi_gw->settings.session;
+
+    // Get the annotations node
+    YamlNode* ann_node = dse_yaml_find_node(doc, "metadata/annotations");
+    if (ann_node == NULL) return;
+
+    ann_node->__inter__ = dse_yaml_interpolate_env;
+    dse_yaml_get_uint(
+        ann_node, "show_models", (unsigned int*)&session->visibility.models);
+    dse_yaml_get_uint(
+        ann_node, "show_simbus", (unsigned int*)&session->visibility.simbus);
+    dse_yaml_get_uint(
+        ann_node, "show_redis", (unsigned int*)&session->visibility.transport);
+    dse_yaml_get_uint(
+        ann_node, "create_logfiles", (unsigned int*)&session->logging);
+
+    bool start_redis = true;
+    dse_yaml_get_uint(doc, "start_redis", (unsigned int*)&start_redis);
+    if (start_redis) {
+        session->transport = _parse_redis(fmu, doc);
+        fmu_log(fmu, 0, "Debug", "Redis will be started by the gateway");
+        return;
+    }
+    fmu_log(fmu, 0, "Debug", "Redis will NOT be started by the gateway");
+}
+
+
 static int _gateway_stack(ModelInstanceSpec* mi, SchemaObject* o)
 {
     UNUSED(mi);
@@ -484,21 +515,7 @@ static int _gateway_stack(ModelInstanceSpec* mi, SchemaObject* o)
     FmiGatewaySession* session = fmi_gw->settings.session;
 
     /* Visibility options. */
-    dse_yaml_get_bool(o->doc, "metadata/annotations/redis_show",
-        &session->visibility.transport);
-    dse_yaml_get_bool(o->doc, "metadata/annotations/simbus_show",
-        &session->visibility.simbus);
-    dse_yaml_get_bool(o->doc, "metadata/annotations/models_show",
-        &session->visibility.models);
-
-    bool start_redis = true;
-    dse_yaml_get_bool(o->doc, "metadata/annotations/start_redis", &start_redis);
-    if (start_redis) {
-        session->transport = _parse_redis(fmu, o->doc);
-        fmu_log(fmu, 0, "Debug", "Redis will be started by the gateway");
-    } else {
-        fmu_log(fmu, 0, "Debug", "Redis will NOT be started by the gateway");
-    }
+    _get_stack_annotations(fmu, o->doc);
 
     session->simbus = _parse_simbus(fmu, o->doc);
 

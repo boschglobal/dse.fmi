@@ -41,11 +41,12 @@ by the gateway. The stack follows the following [schema](https://github.com/bosc
 |metadata|object|true|none|
 |» name|string|true|This field is required to be named "gateway"|
 |» annotation|object|false|none|
-|»» redis_show|boolean|false|Set to true if the redis process should be shown as terminal window|
-|»» simbus_show|boolean|false|Set to true if the simbus process should be shown as terminal window|
-|»» models_show|boolean|false|Set to true if the model processes should be shown as terminal windows|
+|»» start_redis|boolean|true|Set to false with no redis instance should be started on windows, can be controlled via environment variable|
+|»» create_logfiles|boolean|false|Set to true to create Logfiles of the started models, can be controlled via environment variable|
+|»» show_redis|boolean|false|Set to true if the redis process should be shown as terminal window, can be controlled via environment variable|
+|»» show_simbus|boolean|false|Set to true if the simbus process should be shown as terminal window, can be controlled via environment variable|
+|»» show_models|boolean|false|Set to true if the model processes should be shown as terminal windows, can be controlled via environment variable|
 |»» model_stack|string|false|Name of the Stack.yaml containing the model descriptions. Required for session handling|
-|»» start_redis|string|true|Set to false with no redis instance should be started on windows|
 
 ```text
 ---

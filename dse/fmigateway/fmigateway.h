@@ -83,6 +83,8 @@ typedef struct FmiGatewaySession {
     const char*       shutdown_cmd;
     FmiGatewayEnvvar* envar;
     /* Additional information. */
+    bool              logging;
+    const char*       log_location;
     double            last_step;
 } FmiGatewaySession;
 
@@ -94,7 +96,6 @@ typedef struct FmiGateway {
         double             step_size;
         double             end_time;
         int                log_level;
-        const char*        log_location;
         FmiGatewaySession* session;
     } settings;
     bool binary_signals_reset;

@@ -182,7 +182,7 @@ static int _model_match_handler(ModelInstanceSpec* mi, SchemaObject* o)
     const char* selectors[] = { "os", "arch" };
     const char* values[] = { PLATFORM_OS, PLATFORM_ARCH };
     YamlNode*   n = dse_yaml_find_node_in_seq(
-          m->m_doc, "spec/runtime/mcl", selectors, values, ARRAY_SIZE(selectors));
+        m->m_doc, "spec/runtime/mcl", selectors, values, ARRAY_SIZE(selectors));
     dse_yaml_get_string(n, "path", &m->path);
 
     /* Logging. */

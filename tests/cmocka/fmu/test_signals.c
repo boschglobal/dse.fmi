@@ -172,7 +172,7 @@ void test_fmu_var_table(void** state)
     *var_1 = 42;
     *var_2 = 24;
     for (FmuVarTableMarshalItem* mi = fmu->var_table.marshal_list;
-         mi && mi->variable; mi++) {
+        mi && mi->variable; mi++) {
         *mi->variable = *mi->signal;
     }
     assert_double_equal(v->var_1, 42, 0);
@@ -182,7 +182,7 @@ void test_fmu_var_table(void** state)
     v->var_1 = 24;
     v->var_2 = 42;
     for (FmuVarTableMarshalItem* mi = fmu->var_table.marshal_list;
-         mi && mi->variable; mi++) {
+        mi && mi->variable; mi++) {
         *mi->signal = *mi->variable;
     }
     assert_double_equal(v->var_1, 24, 0);

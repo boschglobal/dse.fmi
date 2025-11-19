@@ -3,9 +3,11 @@ kind: Stack
 metadata:
   name: gateway
   annotations:
-    redis_show: true
-    simbus_show: true
-    models_show: true
+    start_redis: ${START_REDIS:-true}
+    create_logfiles: ${LOGFILES:-true}
+    show_redis: ${SHOW_REDIS:-true}
+    show_simbus: ${SHOW_SIMBUS:-true}
+    show_models: ${SHOW_MODELS:-true}
     model_stack: stack_models_parser.yaml
 spec:
   connection:

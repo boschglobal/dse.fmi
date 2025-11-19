@@ -90,8 +90,8 @@ void test_index__binary(void** state)
     m = model_runtime_create(m);
 
     /* Locate the SimBus network SV. */
-    SimbusVectorIndex index =
-        simbus_vector_lookup(m->model.sim, "network", "can");
+    SimbusVectorIndex index = {};
+    index = simbus_vector_lookup(m->model.sim, "network", "can");
     assert_non_null(index.sbv);
 
     /* Index the network signals. */
@@ -111,7 +111,11 @@ void test_index__binary(void** state)
         SimbusVectorIndex* var = NULL;
         var = hashmap_get(&rx, rx_vref[i]);
         assert_non_null(var);
-        assert_memory_equal(var, &index, sizeof(SimbusVectorIndex));
+        assert_ptr_equal(var->sbv, index.sbv);
+        assert_int_equal(var->vi, index.vi);
+        assert_ptr_equal(var->direct_index.map, index.direct_index.map);
+        assert_int_equal(var->direct_index.offset, index.direct_index.offset);
+        assert_int_equal(var->direct_index.size, index.direct_index.size);
     }
 
     /* Check the TX index. */
@@ -126,7 +130,11 @@ void test_index__binary(void** state)
         SimbusVectorIndex* var = NULL;
         var = hashmap_get(&tx, tx_vref[i]);
         assert_non_null(var);
-        assert_memory_equal(var, &index, sizeof(SimbusVectorIndex));
+        assert_ptr_equal(var->sbv, index.sbv);
+        assert_int_equal(var->vi, index.vi);
+        assert_ptr_equal(var->direct_index.map, index.direct_index.map);
+        assert_int_equal(var->direct_index.offset, index.direct_index.offset);
+        assert_int_equal(var->direct_index.size, index.direct_index.size);
     }
 
     /* Cleanup. */

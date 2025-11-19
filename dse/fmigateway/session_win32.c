@@ -14,8 +14,9 @@
 #include <dse/fmigateway/fmigateway.h>
 
 
-#define MODEL_MAX_TIME 60 * 60 * 10  // 10 minutes
+#define MODEL_MAX_TIME 60 * 60 * 10  // 10 hours.
 #define UNUSED(x)      ((void)x)
+#define MAX_CMD_LENGTH 2048
 
 
 typedef struct WindowsProcess {
@@ -43,7 +44,7 @@ string
 */
 static char* _build_cmd(WindowsModel* w_model, const char* path)
 {
-    char   cmd[2048];
+    char   cmd[MAX_CMD_LENGTH];
     size_t max_len = sizeof cmd;
     int    offset =
         snprintf(cmd, max_len, "cmd /C cd %s && %s", path, w_model->exe);
@@ -92,28 +93,6 @@ static HANDLE _create_file(char* name)
         FILE_ATTRIBUTE_NORMAL,  // normal file
         NULL                    // attribute template
     );
-}
-
-
-/*
-_terminate_process
-==================
-
-Terminate a windows process.
-
-Parameters
-----------
-w_model (WindowsModel)
-: Model Descriptor containing parameter information.
-*/
-static void _terminate_process(WindowsModel* w_model)
-{
-    WindowsProcess* w_process = w_model->w_process;
-
-    TerminateProcess(w_process->p_info.hProcess, 0);
-    CloseHandle(w_process->p_info.hProcess);
-    CloseHandle(w_process->p_info.hThread);
-    free(w_process);
 }
 
 
@@ -268,11 +247,11 @@ static void _start_model(FmuInstanceData* fmu, WindowsModel* m)
     WindowsProcess* w_process = m->w_process;
     char*           cmd = _build_cmd(m, fmu->instance.resource_location);
     HANDLE          _log;
-    if (m->log_level >= 0) {
+    if (fmi_gw->settings.session->logging) {
         /* Create logfile for modelC models. */
         char log[PATH_MAX];
         snprintf(log, sizeof(log), "%s/%s_log.txt",
-            fmi_gw->settings.log_location, m->name);
+            fmi_gw->settings.session->log_location, m->name);
         _log = _create_file(log);
         if (_log) {
             w_process->s_info.hStdInput = NULL;

@@ -2,44 +2,6 @@
 title: FMI ModelC FMU API Reference
 linkTitle: ModelC FMU
 ---
-## fmi2GetReal
-
-
-Get values for the provided list of value references.
-
-### Parameters
-
-c (fmi2Component*)
-: An FmuInstanceData object representing an instance of this FMU.
-
-vr (fmi2ValueReference[])
-: List of value references to retrieve.
-
-nvr (int)
-: The number of value references to retrieve.
-
-value (fmi2Real[])
-: Storage for the retrieved values.
-
-### Returns
-
-fmi2OK (fmi2Status)
-: The requested variables are retrieved (where available).
-
-
-
-## fmu_signals_remove
-
-
-This method frees the allocated binary signal indexes.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-
-
 ## FMI ModelC FMU
 
 
@@ -77,6 +39,79 @@ Default logging function in case the FMU caller does not provide any logger.
 
 
 
+## fmi2ExitInitializationMode
+
+
+Initialise the Model Runtime (of the ModelC library) and in the process
+establish the simulation that this ModelC FMU is wrapping/operating.
+
+This function will generate indexes to map between FMI Variables and ModelC
+Signals; both scaler signals (double) and binary signals (string/binary).
+
+### Parameters
+
+c (fmi2Component*)
+: An FmuInstanceData object representing an instance of this FMU.
+
+### Returns
+
+fmi2OK (fmi2Status)
+: The simulation that this FMU represents is ready to be operated.
+
+
+
+## fmi2GetReal
+
+
+Get values for the provided list of value references.
+
+### Parameters
+
+c (fmi2Component*)
+: An FmuInstanceData object representing an instance of this FMU.
+
+vr (fmi2ValueReference[])
+: List of value references to retrieve.
+
+nvr (int)
+: The number of value references to retrieve.
+
+value (fmi2Real[])
+: Storage for the retrieved values.
+
+### Returns
+
+fmi2OK (fmi2Status)
+: The requested variables are retrieved (where available).
+
+
+
+## fmi2GetString
+
+
+Get values for the provided list of value references.
+
+### Parameters
+
+c (fmi2Component*)
+: An FmuInstanceData object representing an instance of this FMU.
+
+vr (fmi2ValueReference[])
+: List of value references to retrieve.
+
+nvr (int)
+: The number of value references to retrieve.
+
+value (fmi2String[])
+: Storage for the retrieved values.
+
+### Returns
+
+fmi2OK (fmi2Status)
+: The requested variables are retrieved (where available).
+
+
+
 ## fmi2SetReal
 
 
@@ -100,44 +135,6 @@ value (fmi2Real[])
 
 fmi2OK (fmi2Status)
 : The requested variables have been set (where available).
-
-
-
-## fmi2Instantiate
-
-
-Create an instance of this FMU, allocate/initialise a FmuInstanceData
-object which should be used for subsequent calls to FMI methods (as parameter
-`fmi2Component c`).
-
-> Note: This implementation __does not__ use memory related callbacks provided
-  by the Importer (e.g. `malloc()` or `free()`).
-
-### Returns
-
-fmi2Component (pointer)
-: An FmuInstanceData object which represents this FMU instance.
-
-
-
-## fmi2ExitInitializationMode
-
-
-Initialise the Model Runtime (of the ModelC library) and in the process
-establish the simulation that this ModelC FMU is wrapping/operating.
-
-This function will generate indexes to map between FMI Variables and ModelC
-Signals; both scaler signals (double) and binary signals (string/binary).
-
-### Parameters
-
-c (fmi2Component*)
-: An FmuInstanceData object representing an instance of this FMU.
-
-### Returns
-
-fmi2OK (fmi2Status)
-: The simulation that this FMU represents is ready to be operated.
 
 
 
@@ -169,6 +166,35 @@ value (fmi2String[])
 
 fmi2OK (fmi2Status)
 : The requested variables have been set (where available).
+
+
+
+## fmu_signals_reset
+
+
+> Required by FMU.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+
+
+## fmi2Instantiate
+
+
+Create an instance of this FMU, allocate/initialise a FmuInstanceData
+object which should be used for subsequent calls to FMI methods (as parameter
+`fmi2Component c`).
+
+> Note: This implementation __does not__ use memory related callbacks provided
+  by the Importer (e.g. `malloc()` or `free()`).
+
+### Returns
+
+fmi2Component (pointer)
+: An FmuInstanceData object which represents this FMU instance.
 
 
 
@@ -206,56 +232,6 @@ fmi2Error (fmi2Status)
 
 
 
-## fmu_signals_setup
-
-
-Placeholder to signal the FMU to not use the default signal allocation.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-
-
-## fmu_load_signal_handlers
-
-
-This method assigns the signal handler function to a vtable.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-
-
-## fmi2GetString
-
-
-Get values for the provided list of value references.
-
-### Parameters
-
-c (fmi2Component*)
-: An FmuInstanceData object representing an instance of this FMU.
-
-vr (fmi2ValueReference[])
-: List of value references to retrieve.
-
-nvr (int)
-: The number of value references to retrieve.
-
-value (fmi2String[])
-: Storage for the retrieved values.
-
-### Returns
-
-fmi2OK (fmi2Status)
-: The requested variables are retrieved (where available).
-
-
-
 ## fmi2FreeInstance
 
 
@@ -268,10 +244,34 @@ c (fmi2Component*)
 
 
 
-## fmu_signals_reset
+## fmu_signals_setup
 
 
-> Required by FMU.
+Placeholder to signal the FMU to not use the default signal allocation.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+
+
+## fmu_signals_remove
+
+
+This method frees the allocated binary signal indexes.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+
+
+## fmu_load_signal_handlers
+
+
+This method assigns the signal handler function to a vtable.
 
 ### Parameters
 

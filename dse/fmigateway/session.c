@@ -35,7 +35,7 @@ static void _set_envar(FmuInstanceData* fmu)
     FmiGateway* fmi_gw = fmu->data;
 
     for (FmiGatewayEnvvar* e = fmi_gw->settings.session->envar; e && e->name;
-         e++) {
+        e++) {
         const char* env_value = getenv(e->name);
 
         /* Set the ENV in order of priority: ENV, FMU, default. */
@@ -103,8 +103,10 @@ int fmigateway_session_configure(FmuInstanceData* fmu)
     if (session == NULL) return 0;
 
     if (session->init_cmd) {
-        int rc = _run_cmd(fmu, session->init_cmd);
-        if (rc) return rc;
+        if (strlen(session->init_cmd) > 0) {
+            int rc = _run_cmd(fmu, session->init_cmd);
+            if (rc) return rc;
+        }
     }
 
     if (strcmp(PLATFORM_OS, "windows") == 0) {
@@ -139,8 +141,10 @@ int fmigateway_session_end(FmuInstanceData* fmu)
     }
 
     if (session->shutdown_cmd) {
-        int rc = _run_cmd(fmu, session->shutdown_cmd);
-        if (rc) return rc;
+        if (strlen(session->shutdown_cmd) > 0) {
+            int rc = _run_cmd(fmu, session->shutdown_cmd);
+            if (rc) return rc;
+        }
     }
 
     return 0;

@@ -503,7 +503,7 @@ fmi2Status fmi2DoStep(fmi2Component c, fmi2Real currentCommunicationPoint,
     if (fmu->variables.vtable.reset) fmu->variables.vtable.reset(fmu);
     /* Marshal Signal Vectors to the VarTable. */
     for (FmuVarTableMarshalItem* mi = fmu->var_table.marshal_list;
-         mi && mi->variable; mi++) {
+        mi && mi->variable; mi++) {
         *mi->variable = *mi->signal;
     }
 
@@ -513,7 +513,7 @@ fmi2Status fmi2DoStep(fmi2Component c, fmi2Real currentCommunicationPoint,
 
     /* Marshal the VarTable to the Signal Vectors. */
     for (FmuVarTableMarshalItem* mi = fmu->var_table.marshal_list;
-         mi && mi->variable; mi++) {
+        mi && mi->variable; mi++) {
         *mi->signal = *mi->variable;
     }
     /* Reset the binary signal reset mechanism. */

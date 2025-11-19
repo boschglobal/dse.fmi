@@ -83,7 +83,7 @@ size_t fmu_variable_count(xmlDoc* doc, bool is_binary)
     for (int i = 0; i < obj->nodesetval->nodeNr; i++) {
         xmlNodePtr scalarVariable = obj->nodesetval->nodeTab[i];
         for (xmlNodePtr child = scalarVariable->children; child;
-             child = child->next) {
+            child = child->next) {
             if (child->type != XML_ELEMENT_NODE) continue;
             if (is_binary) {
                 if (__is_binary_var(child)) {
@@ -182,7 +182,7 @@ void fmu_variable_index(
 
         /* Search for a supported variable type. */
         for (xmlNodePtr child = scalarVariable->children; child;
-             child = child->next) {
+            child = child->next) {
             if (child->type != XML_ELEMENT_NODE) continue;
             if (is_binary) {
                 if (!__is_binary_var(child)) goto next;

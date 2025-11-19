@@ -164,7 +164,7 @@ typedef struct FmiGatewayEnvvar {
 ```c
 typedef struct FmiGatewaySession {
     const char* model_stack;
-    int* model_stack_file;
+    int* model_stack_files;
     WindowsModel* w_models;
     WindowsModel* simbus;
     WindowsModel* transport;
@@ -185,13 +185,16 @@ typedef struct FmiGatewaySession {
 ```c
 typedef struct WindowsModel {
     const char* exe;
-    const char* name;
+    const char* args;
+    char* name;
     double step_size;
     double end_time;
     int log_level;
     char* yaml;
     double current_step;
     double timeout;
+    int stacked;
+    FmiGatewayEnvvar* envar;
     void* w_process;
 }
 ```

@@ -2,6 +2,70 @@
 title: FMU API Reference
 linkTitle: FMU
 ---
+## fmi2GetString
+
+
+Get values for the provided list of value references.
+
+### Parameters
+
+c (fmi2Component*)
+: An FmuInstanceData object representing an instance of this FMU.
+
+vr (fmi2ValueReference[])
+: List of value references to retrieve.
+
+nvr (int)
+: The number of value references to retrieve.
+
+value (fmi2String[])
+: Storage for the retrieved values.
+
+### Returns
+
+fmi2OK (fmi2Status)
+: The requested variables are retrieved (where available).
+
+
+
+## fmi2SetReal
+
+
+Set values for the provided list of value references and values.
+
+### Parameters
+
+c (fmi2Component*)
+: An FmuInstanceData object representing an instance of this FMU.
+
+vr (fmi2ValueReference[])
+: List of value references to set.
+
+nvr (int)
+: The number of value references to set.
+
+value (fmi2Real[])
+: Storage for the values to be set.
+
+### Returns
+
+fmi2OK (fmi2Status)
+: The requested variables have been set (where available).
+
+
+
+## fmi2FreeInstance
+
+
+Free memory and resources related to the provided FMU instance.
+
+### Parameters
+
+c (fmi2Component*)
+: An FmuInstanceData object representing an instance of this FMU.
+
+
+
 ## FMU API
 
 
@@ -105,82 +169,6 @@ counter.
 
 {{< readfile file="../examples/fmu/fmu.c" code="true" lang="c" >}}
 
-
-
-
-## default_log
-
-
-Default logging function in case the FMU caller does not provide any logger.
-
-
-
-## fmi2GetString
-
-
-Get values for the provided list of value references.
-
-### Parameters
-
-c (fmi2Component*)
-: An FmuInstanceData object representing an instance of this FMU.
-
-vr (fmi2ValueReference[])
-: List of value references to retrieve.
-
-nvr (int)
-: The number of value references to retrieve.
-
-value (fmi2String[])
-: Storage for the retrieved values.
-
-### Returns
-
-fmi2OK (fmi2Status)
-: The requested variables are retrieved (where available).
-
-
-
-## fmi2SetReal
-
-
-Set values for the provided list of value references and values.
-
-### Parameters
-
-c (fmi2Component*)
-: An FmuInstanceData object representing an instance of this FMU.
-
-vr (fmi2ValueReference[])
-: List of value references to set.
-
-nvr (int)
-: The number of value references to set.
-
-value (fmi2Real[])
-: Storage for the values to be set.
-
-### Returns
-
-fmi2OK (fmi2Status)
-: The requested variables have been set (where available).
-
-
-
-## fmi2Instantiate
-
-
-Create an instance of this FMU, allocate/initialise a FmuInstanceData
-object which should be used for subsequent calls to FMI methods (as parameter
-`fmi2Component c`).
-
-> Note: This implementation __does not__ use memory related callbacks provided
-  by the Importer (e.g. `malloc()` or `free()`).
-
-### Returns
-
-fmi2Component (pointer)
-: An FmuInstanceData object which represents this FMU instance.
 
 
 
@@ -296,15 +284,27 @@ fmi2Error (fmi2Status)
 
 
 
-## fmi2FreeInstance
+## default_log
 
 
-Free memory and resources related to the provided FMU instance.
+Default logging function in case the FMU caller does not provide any logger.
 
-### Parameters
 
-c (fmi2Component*)
-: An FmuInstanceData object representing an instance of this FMU.
+
+## fmi2Instantiate
+
+
+Create an instance of this FMU, allocate/initialise a FmuInstanceData
+object which should be used for subsequent calls to FMI methods (as parameter
+`fmi2Component c`).
+
+> Note: This implementation __does not__ use memory related callbacks provided
+  by the Importer (e.g. `malloc()` or `free()`).
+
+### Returns
+
+fmi2Component (pointer)
+: An FmuInstanceData object which represents this FMU instance.
 
 
 

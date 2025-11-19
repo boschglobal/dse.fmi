@@ -62,7 +62,7 @@ int test_fmigateway__parser_teardown(void** state)
             free(session->transport);
 
             for (WindowsModel* model = session->w_models; model && model->name;
-                 model++) {
+                model++) {
                 free(model->envar);
                 free(model->yaml);
                 free(model->name);
@@ -110,14 +110,15 @@ void test_fmigateway__parser_gw_stack_default(void** state)
     assert_false(fmi_gw->settings.session->visibility.models);
     assert_false(fmi_gw->settings.session->visibility.simbus);
     assert_false(fmi_gw->settings.session->visibility.transport);
+    assert_false(fmi_gw->settings.session->logging);
 
     /* Test Gateway parsing. */
     assert_non_null(fmi_gw->settings.doc_list);
     assert_double_equal(fmi_gw->settings.end_time, 36000.0, 0.0);
     assert_double_equal(fmi_gw->settings.step_size, 0.0005, 0.0);
     assert_int_equal(fmi_gw->settings.log_level, 6);
-    assert_string_equal(
-        fmi_gw->settings.log_location, fmu->instance.resource_location);
+    assert_string_equal(fmi_gw->settings.session->log_location,
+        fmu->instance.resource_location);
 
     /* Test script parsing. */
     assert_null(fmi_gw->settings.session->init_cmd);
@@ -166,13 +167,14 @@ void test_fmigateway__parser_gw_stack(void** state)
     assert_true(fmi_gw->settings.session->visibility.models);
     assert_true(fmi_gw->settings.session->visibility.simbus);
     assert_true(fmi_gw->settings.session->visibility.transport);
+    assert_true(fmi_gw->settings.session->logging);
 
     /* Test Gateway parsing. */
     assert_non_null(fmi_gw->settings.doc_list);
     assert_double_equal(fmi_gw->settings.end_time, 0.02, 0.0);
     assert_double_equal(fmi_gw->settings.step_size, 0.005, 0.0);
     assert_int_equal(fmi_gw->settings.log_level, 4);
-    assert_string_equal(fmi_gw->settings.log_location, "./here");
+    assert_string_equal(fmi_gw->settings.session->log_location, "./here");
     assert_string_equal(fmi_gw->settings.session->envar[0].name, "envar0");
     assert_string_equal(fmi_gw->settings.session->envar[1].name, "envar1");
     assert_string_equal(fmi_gw->settings.session->envar[2].name, "envar2");
@@ -221,8 +223,8 @@ void test_fmigateway__parser_model_stack(void** state)
             .exe = "different.exe",
             .yaml = (char*)"stack.yaml model.yaml signalgroup.yaml",
             .envar = (FmiGatewayEnvvar[3]){ { .name = "NCODEC_TRACE_1",
-                                                .default_value = "*" },
-                { .name = "NCODEC_TRACE_2", .default_value = "0x42" } },
+                                                .default_value = (char*)"*" },
+                { .name = "NCODEC_TRACE_2", .default_value = (char*)"0x42" } },
         },
         {
             /* Model with default values. */

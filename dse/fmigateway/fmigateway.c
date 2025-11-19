@@ -224,7 +224,7 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
         dse_yaml_destroy_doc_list(session->model_stack_files);
         /* Cleanup ModelC models. */
         for (WindowsModel* model = session->w_models; model && model->name;
-             model++) {
+            model++) {
             free(model->envar);
             free(model->yaml);
             free(model->name);

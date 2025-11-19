@@ -189,7 +189,7 @@ void fmu_register_var_table(FmuInstanceData* fmu, void* table)
     fmu->var_table.marshal_list = hashlist_ntl(
         &fmu->var_table.var_list, sizeof(FmuVarTableMarshalItem), true);
     for (FmuVarTableMarshalItem* mi = fmu->var_table.marshal_list;
-         mi && mi->signal; mi++) {
+        mi && mi->signal; mi++) {
         /* Correct the variable pointer offset, to vt base. */
         mi->variable = (double*)(table + (size_t)mi->variable);
     }

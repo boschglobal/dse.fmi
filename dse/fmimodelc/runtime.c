@@ -60,7 +60,7 @@ static ChannelSpec* _model_build_channel_spec(
     const char* selectors[] = { "name" };
     const char* values[] = { channel_name };
     YamlNode*   c_node = dse_yaml_find_node_in_seq(
-          model_instance->spec, "channels", selectors, values, 1);
+        model_instance->spec, "channels", selectors, values, 1);
     if (c_node) {
         _log(" channel found by name");
     } else {
@@ -128,7 +128,7 @@ void fmimodelc_index_scalar_signals(
     RuntimeModelDesc* m, HashMap* input, HashMap* output)
 {
     for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
-         mi++) {
+        mi++) {
         for (SignalVector* sv = mi->model_desc->sv; sv && sv->name; sv++) {
             if (sv->is_binary == true) continue;
 
@@ -165,7 +165,7 @@ void fmimodelc_index_binary_signals(
     RuntimeModelDesc* m, HashMap* rx, HashMap* tx)
 {
     for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
-         mi++) {
+        mi++) {
         for (SignalVector* sv = mi->model_desc->sv; sv && sv->name; sv++) {
             if (sv->is_binary == false) continue;
 
@@ -232,7 +232,7 @@ void fmimodelc_index_text_encoding(
     // dse.standards.fmi-ls-binary-to-text.encoding: ascii85
 
     for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
-         mi++) {
+        mi++) {
         for (SignalVector* sv = mi->model_desc->sv; sv && sv->name; sv++) {
             if (sv->is_binary == false) continue;
 
@@ -302,7 +302,7 @@ void fmimodelc_set_model_env(RuntimeModelDesc* m)
 
     /* Envars from : mi/runtime/env (prefix with model name). */
     for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
-         mi++) {
+        mi++) {
         env_node = dse_yaml_find_node(mi->spec, "runtime/env");
         if (env_node && hashmap_number_keys(env_node->mapping)) {
             char**   name = hashmap_keys(&env_node->mapping);
@@ -330,6 +330,6 @@ void fmimodelc_set_model_env(RuntimeModelDesc* m)
     }
 
     _log("Runtime Environment Variables: ");
-    hashmap_iterator(&envars, envar_iterator, true, NULL);
+    hashmap_kv_iterator(&envars, envar_iterator, true);
     hashmap_destroy(&envars);
 }
