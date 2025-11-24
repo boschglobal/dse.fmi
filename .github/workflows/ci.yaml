@@ -38,7 +38,7 @@ jobs:
       image: ghcr.io/boschglobal/dse-gcc-builder:latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Build package metadata
         id: package_meta
@@ -79,7 +79,7 @@ jobs:
           make package
           tar -czf sandbox_out.tar.gz -C . ${{ env.build_dir }}/_out
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: ${{ env.package_name }}-${{ matrix.package_arch }}-package
           path: |
@@ -87,7 +87,7 @@ jobs:
             ${{ env.build_dir }}/_dist/${{ env.package_name }}-${{ env.PACKAGE_VERSION }}-${{ matrix.package_arch }}.zip
           retention-days: 1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: ${{ env.package_name }}-${{ matrix.package_arch }}-sandbox
           path: |
@@ -102,12 +102,12 @@ jobs:
       volumes:
         - /var/run/docker.sock:/var/run/docker.sock
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Download artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: image_fmi
           path: /tmp
@@ -117,7 +117,7 @@ jobs:
           docker load --input /tmp/fmi.tar
           docker image ls -a
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: ${{ env.package_name }}-linux-amd64-sandbox
           path: .
@@ -144,7 +144,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Create Release from Tag
         env:
@@ -169,7 +169,7 @@ jobs:
           - windows-x86
           - windows-x64
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -188,7 +188,7 @@ jobs:
         run: |
           echo "PACKAGE_VERSION=${{ fromJSON(steps.package_meta.outputs.json).labels['org.opencontainers.image.version'] }}" >> $GITHUB_ENV
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: ${{ env.package_name }}-${{ matrix.package_arch }}-package
           path: ${{ env.build_dir }}/_dist
@@ -209,10 +209,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: Fmi-linux-amd64-sandbox
           path: .
@@ -238,7 +238,7 @@ jobs:
     needs: [build]
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -265,23 +265,23 @@ jobs:
         run: |
           echo "PACKAGE_VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}" >> $GITHUB_ENV
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: ${{ env.package_name }}-linux-amd64-sandbox
           path: sandbox/${{ env.package_name }}-linux-amd64-sandbox
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: ${{ env.package_name }}-linux-x86-sandbox
           path: sandbox/${{ env.package_name }}-linux-x86-sandbox
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: ${{ env.package_name }}-linux-i386-sandbox
           path: sandbox/${{ env.package_name }}-linux-i386-sandbox
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: ${{ env.package_name }}-windows-x86-sandbox
           path: sandbox/${{ env.package_name }}-windows-x86-sandbox
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: ${{ env.package_name }}-windows-x64-sandbox
           path: sandbox/${{ env.package_name }}-windows-x64-sandbox
@@ -322,7 +322,7 @@ jobs:
           outputs: type=docker,dest=/tmp/fmi.tar
 
       - name: Upload image artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: image_fmi
           path: /tmp/fmi.tar
@@ -345,7 +345,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: image_${{ matrix.container }}
           path: /tmp
