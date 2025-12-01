@@ -5,9 +5,9 @@ go 1.23.5
 toolchain go1.24.4
 
 require (
-	github.com/boschglobal/dse.clib/extra/go/file v1.0.35
+	github.com/boschglobal/dse.clib/extra/go/file v1.0.36
 	github.com/boschglobal/dse.schemas/code/go/dse v1.2.25
-	github.com/goccy/go-yaml v1.18.0
+	github.com/goccy/go-yaml v1.19.0
 	github.com/google/uuid v1.6.0
 	github.com/rogpeppe/go-internal v1.14.1
 	github.com/stretchr/testify v1.11.1
