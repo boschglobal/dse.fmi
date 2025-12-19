@@ -51,7 +51,7 @@ vars:
   ENTRYDIR: '{{if .SIM}}{{.ENTRYWORKDIR}}/{{.SIM}}{{else}}{{.PWD}}{{end}}'
   # Container image specification.
   FMI_IMAGE_TAG: '{{coalesce .IMAGE_TAG .TAG "latest"}}'
-  FMI_IMAGE: '{{.FMI_IMAGE | default "ghcr.io/boschglobal/dse-fmi:{{.FMI_IMAGE_TAG}}"}}'
+  FMI_IMAGE: '{{.FMI_IMAGE | default "ghcr.io/boschglobal/dse-fmi:latest"}}'
   USER:
     sh: id -u
   GROUP:
