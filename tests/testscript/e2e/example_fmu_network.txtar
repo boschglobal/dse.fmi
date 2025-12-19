@@ -16,13 +16,13 @@ stdout 'Importer:   \[3\] kPtS_#QOi'
 
 
 -- test.sh --
-SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
+SIMER_IMAGE="${SIMER_IMAGE:-ghcr.io/boschglobal/dse-simer:latest}"
 docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
     -v $ENTRYHOSTDIR:/repo \
     -e IMPORTER=$IMPORTER \
     -e FMU_DIR=$FMU_DIR \
     -e NCODEC_TRACE_PDU_23=* \
-    $SIMER \
+    $SIMER_IMAGE \
         bash -c "/repo/$IMPORTER --verbose $FMU_DIR"
 
 

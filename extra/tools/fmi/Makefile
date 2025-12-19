@@ -26,8 +26,11 @@ $(CLI_TOOLS): $(SRC)
 
 .PHONY: test
 test:
-	go test ./...
-	go test ./cmd/... -tags test_e2e
+	go test ./... -v
+
+.PHONY: test_e2e
+test_e2e:
+	go test ./cmd/... -tags test_e2e -count=1
 
 .PHONY: format
 format:

@@ -87,17 +87,10 @@ Returns
 */
 int32_t fmu_init(FmuInstanceData* fmu)
 {
-    assert(fmu);
-    RuntimeModelDesc* m = fmu->data;
-    assert(m);
-
     fmu_log(fmu, 0, "Debug", "Build indexes");
-    fmimodelc_index_scalar_signals(
-        m, &fmu->variables.scalar.input, &fmu->variables.scalar.output);
-    fmimodelc_index_binary_signals(
-        m, &fmu->variables.binary.rx, &fmu->variables.binary.tx);
-    fmimodelc_index_text_encoding(m, &fmu->variables.binary.encode_func,
-        &fmu->variables.binary.decode_func);
+    fmimodelc_index_scalar_signals(fmu);
+    fmimodelc_index_binary_signals(fmu);
+    fmimodelc_index_text_encoding(fmu);
 
     return 0;
 }

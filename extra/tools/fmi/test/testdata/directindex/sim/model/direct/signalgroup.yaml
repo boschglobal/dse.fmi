@@ -1,0 +1,34 @@
+---
+kind: SignalGroup
+metadata:
+  name: in_vector
+  labels:
+    channel: in_vector
+spec:
+  signals:
+    - signal: in_a
+      annotations:
+        direction: input
+    - signal: in_b
+      annotations:
+        direction: input
+    - signal: in_c
+      annotations:
+        direction: input
+---
+kind: SignalGroup
+metadata:
+  name: out_vector
+  labels:
+    channel: out_vector
+spec:
+  signals:
+    - signal: out_a
+      annotations:
+        direction: output
+    - signal: out_b
+      annotations:
+        direction: output
+    - signal: out_c
+      annotations:
+        direction: output

@@ -1,0 +1,33 @@
+# Copyright 2025 Robert Bosch GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+kind: Stack
+metadata:
+  name: Target
+  annotations:
+    model_runtime__model_inst: direct
+    model_runtime__yaml_files:
+      - data/simulation.yaml
+      - data/direct_index.yaml
+      - model/direct/data/model.yaml
+spec:
+  models:
+    - name: direct
+      model:
+        name: dse.fmi.example.direct
+      uid: 42
+      runtime:
+        env:
+          OFFSET: 100
+          FACTOR: 4
+      channels:
+        - name: in
+          alias: in_vector
+          selectors:
+            model: direct
+        - name: out
+          alias: out_vector
+          selectors:
+            model: direct

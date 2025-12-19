@@ -27,7 +27,7 @@ exec touch $BUILD_DIR/package/windows-x86/fmimodelc/lib/libmodelc.dll
 env PACKAGE=$BUILD_DIR/package/linux-amd64/fmimodelc
 rm $WORK/out
 mkdir out
-exec fmi gen-fmu -sim sim -name $FMU_NAME -platform linux-amd64 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
+exec fmi gen-modelcfmu -sim sim -name $FMU_NAME -platform linux-amd64 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
 exec ls -R $WORK/out
 exists out/$FMU_NAME.fmu
 exists out/$FMU_NAME/binaries/linux64/fmi2modelcfmu.so
@@ -37,7 +37,7 @@ exists out/$FMU_NAME/binaries/linux64/libmodelc.so
 env PACKAGE=$BUILD_DIR/package/linux-x86/fmimodelc
 rm $WORK/out
 mkdir out
-exec fmi gen-fmu -sim sim -name $FMU_NAME -platform linux-x86 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
+exec fmi gen-modelcfmu -sim sim -name $FMU_NAME -platform linux-x86 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
 exec ls -R $WORK/out
 exists out/$FMU_NAME.fmu
 exists out/$FMU_NAME/binaries/linux32/fmi2modelcfmu.so
@@ -47,7 +47,7 @@ exists out/$FMU_NAME/binaries/linux32/libmodelc.so
 env PACKAGE=$BUILD_DIR/package/linux-amd64/fmimodelc
 rm $WORK/out
 mkdir out
-exec fmi gen-fmu -sim sim -name $FMU_NAME -platform linux-i386 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
+exec fmi gen-modelcfmu -sim sim -name $FMU_NAME -platform linux-i386 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
 exec ls -R $WORK/out
 exists out/$FMU_NAME.fmu
 exists out/$FMU_NAME/binaries/linux32/fmi2modelcfmu.so
@@ -57,7 +57,7 @@ exists out/$FMU_NAME/binaries/linux32/libmodelc.so
 env PACKAGE=$BUILD_DIR/package/windows-x64/fmimodelc
 rm $WORK/out
 mkdir out
-exec fmi gen-fmu -sim sim -name $FMU_NAME -platform windows-x64 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
+exec fmi gen-modelcfmu -sim sim -name $FMU_NAME -platform windows-x64 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
 exec ls -R $WORK/out
 exists out/$FMU_NAME.fmu
 exists out/$FMU_NAME/binaries/win64/fmi2modelcfmu.dll
@@ -67,7 +67,7 @@ exists out/$FMU_NAME/binaries/win64/libmodelc.dll
 env PACKAGE=$BUILD_DIR/package/windows-x64/fmimodelc
 rm $WORK/out
 mkdir out
-exec fmi gen-fmu -sim sim -name $FMU_NAME -platform windows-x86 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
+exec fmi gen-modelcfmu -sim sim -name $FMU_NAME -platform windows-x86 -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
 exec ls -R $WORK/out
 exists out/$FMU_NAME.fmu
 exists out/$FMU_NAME/binaries/win32/fmi2modelcfmu.dll

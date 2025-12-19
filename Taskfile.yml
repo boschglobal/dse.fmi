@@ -4,8 +4,10 @@ version: '3'
 metadata:
   package:
     download: '{{.REPO}}/releases/download/v{{.TAG}}/Fmi-{{.TAG}}-{{.PLATFORM_ARCH}}.zip'
+    file: 'dse/build/_dist/Fmi-{{coalesce .TAG .PACKAGE_VERSION "not-specified"}}-{{.PLATFORM_ARCH}}.zip'
   container:
     repository: ghcr.io/boschglobal/dse-fmi
+
   models:
     dse.fmi.mcl:
       name: fmimcl
@@ -14,8 +16,8 @@ metadata:
       mcl: true
       workflows:
         - generate-fmimcl
-        - generate-fmimodelc
-        - generate-fmigateway
+        - generate-modelcfmu
+        - generate-gatewayfmu
         - patch-signalgroup
       platforms:
         - linux-amd64
@@ -27,20 +29,48 @@ metadata:
         - alias: signal_channel
         - alias: network_channel
 
+    dse.fmi.example.direct:
+      name: direct
+      displayName: dse.fmi.example.direct
+      path: examples/direct
+      workflows:
+        - info
+      platforms:
+        - linux-amd64
+        - linux-x86
+        - linux-i386
+        - windows-x64
+        - windows-x86
+      channels:
+        - alias: in_vector
+        - alias: out_vector
+
 vars:
   # When running from E2E tests (i.e. Docker in Docker), the ENTRYDIR (for
   # Docker commands) must be set to the host relative path.
   ENTRYDIR: '{{if .SIM}}{{.ENTRYWORKDIR}}/{{.SIM}}{{else}}{{.PWD}}{{end}}'
   # Container image specification.
-  # TODO Taskfile issue, vars are evaluated when file parsed, so default option
-  # is set ... after which importing Taskfile vars will not apply as expected.
-  FMI_IMAGE: '{{.FMI_IMAGE | default "ghcr.io/boschglobal/dse-fmi:latest"}}'
+  FMI_IMAGE_TAG: '{{coalesce .IMAGE_TAG .TAG "latest"}}'
+  FMI_IMAGE: '{{.FMI_IMAGE | default "ghcr.io/boschglobal/dse-fmi:{{.FMI_IMAGE_TAG}}"}}'
   USER:
     sh: id -u
   GROUP:
     sh: id -g
 
+
 tasks:
+
+  info:
+    run: always
+    dir: '{{.USER_WORKING_DIR}}'
+    label: dse:fmi:info
+    cmds:
+      - echo ENTRYDIR={{.ENTRYDIR}}
+      - echo FMI_IMAGE={{.FMI_IMAGE}}
+      - echo PACKAGE_VERSION={{.PACKAGE_VERSION}}
+      - echo PLATFORM_ARCH={{.PLATFORM_ARCH}}
+      - echo REPO={{.REPO}}
+      - echo TAG={{coalesce .TAG .PACKAGE_VERSION "not-specified"}}
 
   generate-fmimcl:
     desc: Generate an FMI MCL from an existing FMU.
@@ -57,7 +87,7 @@ tasks:
       FMU_DIR: '{{.FMU_DIR}}'
     cmds:
       - env | sort
-      - task: gen-mcl
+      - task: gen-fmimcl
         vars:
           FMU_DIR: '{{.FMU_DIR}}'
           OUT_DIR: '{{.OUT_DIR}}'
@@ -96,19 +126,21 @@ tasks:
         - data/model.yaml
         - data/signalgroup.yaml
 
-  generate-fmimodelc:
+  generate-modelcfmu:
+    aliases: [generate-fmimodelc]
     desc: Generate a FMI ModelC FMU from an existing (DSE/ModelC) Simer simulation.
     run: always
     dir: '{{.USER_WORKING_DIR}}'
-    label: dse:fmi:generate-fmimodelc
+    label: dse:fmi:generate-modelcfmu
     vars: {}
     cmds:
       - task: gen-modelcfmu-annotations
         vars:
           SIM_DIR: '{{.SIM_DIR}}'
           RULESET: 'signal-direction'
+          INDEX: '{{.INDEX}}'
           SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
-      - task: gen-fmu
+      - task: gen-modelcfmu
         vars:
           SIM_DIR: '{{.SIM_DIR}}'
           FMU_NAME: '{{.FMU_NAME}}'
@@ -119,7 +151,7 @@ tasks:
           FMI_VERSION: '{{.FMI_VERSION}}'
           OUT_DIR: '{{.OUT_DIR}}'
     requires:
-      vars: [FMU_NAME, SIGNAL_GROUPS]
+      vars: [FMU_NAME]
     metadata:
       vars:
         SIM_DIR:
@@ -154,13 +186,14 @@ tasks:
             path, defaults to /out. Should not be a sub-path of the SIM folder.
           default: /out
 
-  generate-fmigateway:
+  generate-gatewayfmu:
+    aliases: [generate-fmigateway]
     desc: Generate a FMI Gateway FMU from existing Signal Groups.
     run: always
     dir: '{{.USER_WORKING_DIR}}'
-    label: dse:fmi:generate-fmigateway
+    label: dse:fmi:generate-gatewayfmu
     cmds:
-      - task: gen-gateway
+      - task: gen-gatewayfmu
         vars:
           SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
           OUT_DIR: '{{.OUT_DIR}}'
@@ -205,7 +238,7 @@ tasks:
           required: false
           hint: extra arbitary information as annotations in dictionary format.
 
-  gen-mcl:
+  gen-fmimcl:
     internal: true
     run: always
     dir: '{{.USER_WORKING_DIR}}'
@@ -220,7 +253,7 @@ tasks:
           --user {{.USER}}:{{.GROUP}}
           -v {{.ENTRYDIR}}:/sim
           {{.FMI_IMAGE}}
-          gen-mcl
+          gen-fmimcl
             --fmu {{.FMU_DIR}}
             --outdir {{.OUT_DIR}}
             --mcl {{.MCL_PATH}}
@@ -244,11 +277,12 @@ tasks:
     requires:
       vars: [INPUT, OUTPUT]
 
-  gen-fmu:
+  gen-modelcfmu:
+    aliases: [gen-fmu]
     internal: true
     run: always
     dir: '{{.USER_WORKING_DIR}}'
-    label: dse:fmi:gen-fmu
+    label: dse:fmi:gen-modelcfmu
     vars:
       SIM_DIR: "{{if .SIM_DIR}}--sim '{{.SIM_DIR}}'{{else}}{{end}}"
       # FMU_NAME: '{{.FMU_NAME}}'
@@ -259,13 +293,14 @@ tasks:
       FMI_VERSION: "{{if .FMI_VERSION}}--fmiVersion '{{.FMI_VERSION}}'{{else}}{{end}}"
       OUT_DIR: "{{if .OUT_DIR}}--outdir '{{.OUT_DIR}}'{{else}}{{end}}"
     cmds:
+      - echo "USING {{.FMI_IMAGE}} CMD {{.TASK}}"
       - mkdir -p {{.ENTRYDIR}}/../fmu
       - docker run --rm
           --user {{.USER}}:{{.GROUP}}
           -v {{.ENTRYDIR}}:/sim
           -v {{.ENTRYDIR}}/../fmu:/out
           {{.FMI_IMAGE}}
-          gen-fmu
+          gen-modelcfmu
             {{.SIM_DIR}}
             --name {{.FMU_NAME}}
             {{.OUT_DIR}}
@@ -287,7 +322,9 @@ tasks:
       SIGNAL_GROUPS: "{{if .SIGNAL_GROUPS}}--signalgroups '{{.SIGNAL_GROUPS}}'{{else}}{{end}}"
       RULEFILE: "{{if .RULEFILE}}--rule '{{.RULEFILE}}'{{else}}{{end}}"
       RULESET: "{{if .RULESET}}--ruleset '{{.RULESET}}'{{else}}{{end}}"
+      INDEX: "{{if .INDEX}}--index{{else}}{{end}}"
     cmds:
+      - echo "USING {{.FMI_IMAGE}} CMD {{.TASK}}"
       - docker run --rm
           --user {{.USER}}:{{.GROUP}}
           -v {{.ENTRYDIR}}:/sim
@@ -297,10 +334,11 @@ tasks:
             {{.SIGNAL_GROUPS}}
             {{.RULEFILE}}
             {{.RULESET}}
+            {{.INDEX}}
     requires:
       vars: []
 
-  gen-gateway:
+  gen-gatewayfmu:
     internal: true
     run: always
     dir: '{{.USER_WORKING_DIR}}'
@@ -315,14 +353,13 @@ tasks:
       FMU_NAME: "{{if .FMU_NAME}}--name '{{.FMU_NAME}}'{{else}}{{end}}"
       MODEL_IDENTIFIER: "{{if .MODEL_IDENTIFIER}}--modelidentifier '{{.MODEL_IDENTIFIER}}'{{else}}{{end}}"
       ANNOTATIONS: '{{if .ANNOTATIONS}}--annotations {{squote .ANNOTATIONS}}{{else}}{{end}}'
-      # FIXME work around for Taskfile issue.
-      FMI_TAG: '{{.FMI_TAG | default "latest"}}'
     cmds:
+      - echo "USING {{.FMI_IMAGE}} CMD {{.TASK}}"
       - docker run --rm
           --user {{.USER}}:{{.GROUP}}
           -v {{.ENTRYDIR}}:/sim
           {{.FMI_IMAGE}}
-          gen-gateway
+          gen-gatewayfmu
             --signalgroups {{.SIGNAL_GROUPS}}
             --outdir {{.OUT_DIR}}
             {{.SESSION}}
@@ -345,6 +382,7 @@ tasks:
       PATCH: '{{.PATCH}}'
       REMOVE_UNKNOWN: '{{if .REMOVE_UNKNOWN}}--remove-unknown{{else}}{{end}}'
     cmds:
+      - echo "USING {{.FMI_IMAGE}} CMD {{.TASK}}"
       - docker run --rm
           --user {{.USER}}:{{.GROUP}}
           -v {{.ENTRYDIR}}:/sim

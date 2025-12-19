@@ -12,12 +12,12 @@ stdout 'Importer:   \[1\] 10.000000'
 
 
 -- test.sh --
-SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
+SIMER_IMAGE="${SIMER_IMAGE:-ghcr.io/boschglobal/dse-simer:latest}"
 docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
     -v $ENTRYHOSTDIR:/repo \
     -e IMPORTER=$IMPORTER \
     -e FMU_DIR=$FMU_DIR \
-    $SIMER \
+    $SIMER_IMAGE \
         bash -c "/repo/$IMPORTER --verbose $FMU_DIR"
 
 

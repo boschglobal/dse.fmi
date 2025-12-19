@@ -44,7 +44,7 @@ Examples:
 	-ruleset signal-direction \
 	-log 4
 
-  fmi gen-fmu \
+  fmi gen-modelcfmu \
   	-input sim \
 	-model Target \
 	-name Test \

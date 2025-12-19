@@ -41,12 +41,12 @@ stdout 'Model: RX\[132\] Hello from Importer \(10\)'
 stdout 'Importer: network message \(RX\): Hello World! from node_id=1'
 
 -- test.sh --
-SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
+SIMER_IMAGE="${SIMER_IMAGE:-ghcr.io/boschglobal/dse-simer:latest}"
 
 docker run --name gateway -i --rm -v $ENTRYWORKDIR/$SIM:/sim \
     --env SIMBUS_LOGLEVEL=4 \
     --net="host" \
-    --entrypoint="" $SIMER \
+    --entrypoint="" $SIMER_IMAGE \
     bash -c "cd fmu; valgrind -q --leak-check=yes --error-exitcode=808 \
     ../bin/fmuImporter --verbose --step_size=0.0005 --steps=10" &
 
@@ -54,5 +54,5 @@ docker run --name simer -i --rm -v $ENTRYWORKDIR/$SIM:/sim \
     --env SIMBUS_LOGLEVEL=4 \
     --env target_inst:SIMBUS_LOGGER=4 \
     --net="host" \
-    $SIMER \
+    $SIMER_IMAGE \
     -stepsize 0.0005 -endtime 0.0050

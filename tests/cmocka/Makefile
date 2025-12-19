@@ -3,7 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 export MAKE_NPROC ?= $(shell nproc)
-GDB_CMD = valgrind -q --leak-check=full --track-origins=yes --error-exitcode=808
+
+# 41 = ASCII 'A'/65
+# 42 = ASCII 'B'/66
+ifeq ($(GDB_CMD),)
+GDB_CMD = valgrind -q --leak-check=yes --free-fill=42 --malloc-fill=41
+endif
 # GDB_CMD = gdb -q -ex='set confirm on' -ex=run -ex=quit
 
 default: build
@@ -24,13 +29,17 @@ build:
 	@find build/_out/ -type f -name '*' -exec ls -sh --color=auto {} \;
 
 run:
-	cd build/_out; $(GDB_CMD) bin/test_fmimcl
-	cd build/_out; $(GDB_CMD) bin/test_mstep
-	cd build/_out; $(GDB_CMD) bin/test_fmimodelc
-	cd build/_out; $(GDB_CMD) bin/test_fmu
-	cd build/_out; $(GDB_CMD) bin/test_fmi2fmu
-	cd build/_out; $(GDB_CMD) bin/test_fmi3fmu
-	cd build/_out; $(GDB_CMD) bin/test_fmigateway
+	@echo "[ GDB_CMD  ] $(GDB_CMD)"
+	@echo "[----------]"
+	@cd build/_out; $(GDB_CMD) bin/test_fmimcl
+	@cd build/_out; $(GDB_CMD) bin/test_mstep
+	@cd build/_out; $(GDB_CMD) bin/test_fmimodelc
+	@cd build/_out; $(GDB_CMD) bin/test_fmu
+	@cd build/_out; $(GDB_CMD) bin/test_fmi2fmu
+	@cd build/_out; $(GDB_CMD) bin/test_fmi3fmu
+	@cd build/_out; $(GDB_CMD) bin/test_fmigateway
+	@echo "[----------]"
+	@echo "[ GDB_CMD  ] $(GDB_CMD)"
 
 clean:
 	rm -rf build

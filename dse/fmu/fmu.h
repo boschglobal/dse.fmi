@@ -133,6 +133,12 @@ typedef struct FmuInstanceData FmuInstanceData;
 typedef char* (*EncodeFunc)(const char* source, size_t len);
 typedef char* (*DecodeFunc)(const char* source, size_t* len);
 
+/* FMI Direct Variable Access Interface. */
+typedef void*    fmi2ValueBypassMapTYPE;
+typedef uint32_t fmi2ValueBypassMapSizeTYPE;
+typedef void*    fmi3ValueBypassMapTYPE;
+typedef uint32_t fmi3ValueBypassMapSizeTYPE;
+
 /* FMU Interface. */
 typedef int32_t (*FmuCreateFunc)(FmuInstanceData* fmu);
 typedef int32_t (*FmuInitFunc)(FmuInstanceData* fmu);
@@ -262,6 +268,12 @@ typedef struct FmuInstanceData {
         /* NLT for var/signal mirroring. */
         FmuVarTableMarshalItem* marshal_list;
     } var_table;
+
+    /* FMU Direct Index. */
+    struct {
+        void*    map; /* Active when set. */
+        uint32_t size;
+    } direct_index;
 } FmuInstanceData;
 
 

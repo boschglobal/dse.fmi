@@ -1,0 +1,80 @@
+# Copyright 2025 Robert Bosch GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+kind: SignalGroup
+metadata:
+  name: in_vector
+  labels:
+    model: direct
+spec:
+  signals:
+    - signal: in_a
+      annotations:
+        direction: input
+    - signal: in_b
+      annotations:
+        direction: input
+    - signal: in_c
+      annotations:
+        direction: input
+    - signal: in_d
+      annotations:
+        direction: input
+    - signal: in_e
+      annotations:
+        direction: input
+    - signal: in_f
+      annotations:
+        direction: input
+    - signal: in_g
+      annotations:
+        direction: input
+    - signal: in_h
+      annotations:
+        direction: input
+    - signal: in_i
+      annotations:
+        direction: input
+    - signal: in_j
+      annotations:
+        direction: input
+---
+kind: SignalGroup
+metadata:
+  name: out_vector
+  labels:
+    model: direct
+spec:
+  signals:
+    - signal: out_a
+      annotations:
+        direction: output
+    - signal: out_b
+      annotations:
+        direction: output
+    - signal: out_c
+      annotations:
+        direction: output
+    - signal: out_d
+      annotations:
+        direction: output
+    - signal: out_e
+      annotations:
+        direction: output
+    - signal: out_f
+      annotations:
+        direction: output
+    - signal: out_g
+      annotations:
+        direction: output
+    - signal: out_h
+      annotations:
+        direction: output
+    - signal: out_i
+      annotations:
+        direction: output
+    - signal: out_j
+      annotations:
+        direction: output

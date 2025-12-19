@@ -1,0 +1,91 @@
+skip 'in development'
+
+env IMPORTER=dse/build/_out/importer/fmuImporter
+env FMU_DIR=out/fmu
+
+
+# SETUP: Construct working folder layout
+exec cp -r . $WORKDIR
+cd $WORKDIR
+
+# TEST: Build the Simulation and ModelC FMU
+env
+exec ls -al
+exec sh -e build.sh
+exists out/fmu/direct.fmu
+
+# TEST: Operate the ModelC FMU
+env
+exec ls -l out/fmu
+exec ls -l out/fmu/direct
+exec ls -R -l out/fmu/direct/binaries
+exec ls -R -l out/fmu/direct/resources/sim
+exec sh -e test.sh
+stdout 'Importer: FMU Dir: /out/fmu'
+stdout 'Importer: Loading FMU: binaries/linux64/libfmi2modelcfmu.so'
+
+# Operate from the WORKDIR (allocated by caller, i.e. docker command).
+# cd $WORKDIR
+# cp $WORK/simulation.dse
+
+
+
+-- simulation.dse --
+simulation
+channel in
+channel out
+
+uses
+dse.fmi file:///repo
+
+model direct dse.fmi.example.direct
+    channel in in_vector
+    channel out out_vector
+    envar OFFSET 100
+    envar FACTOR 4
+
+workflow generate-modelcfmu
+    var FMU_NAME direct
+    var FMI_VERSION 2
+    var INDEX direct
+
+
+
+-- build.sh --
+SIMULATION_DSE="${SIMULATION_DSE:-simulation.dse}"
+BUILDER_IMAGE="${BUILDER_IMAGE:-ghcr.io/boschglobal/dse-builder:latest}"
+FMI_IMAGE="${FMI_IMAGE:-ghcr.io/boschglobal/dse-fmi:latest}"
+
+env
+pwd
+echo "==========================="
+
+docker run --name builder -i --rm \
+    --user "$(id -u):$(id -g)" \
+    -v $ENTRYWORKDIR:/workdir \
+    -v $ENTRYHOSTDIR:/repo \
+    -e AR_USER -e AR_TOKEN -e GHE_USER -e GHE_TOKEN -e GHE_PAT \
+    -e http_proxy -e https_proxy -e no_proxy \
+    $BUILDER_IMAGE "$SIMULATION_DSE"
+echo "==========================="
+echo "==========================="
+cat simulation.yaml
+echo "==========================="
+echo "==========================="
+cat Taskfile.yml
+echo "==========================="
+echo "==========================="
+
+task -y -v
+
+
+-- test.sh --
+SIMER_IMAGE="${SIMER_IMAGE:-ghcr.io/boschglobal/dse-simer:latest}"
+docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
+    -v $ENTRYHOSTDIR:/repo \
+    -v $ENTRYWORKDIR:/workdir \
+    -e IMPORTER=$IMPORTER \
+    -e FMU_DIR=$FMU_DIR \
+    -e SIMBUS_LOGLEVEL=4 \
+    $SIMER_IMAGE \
+        bash -c "/repo/$IMPORTER --verbose /workdir/$FMU_DIR"

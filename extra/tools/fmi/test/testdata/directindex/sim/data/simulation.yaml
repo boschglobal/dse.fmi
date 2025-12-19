@@ -1,0 +1,23 @@
+---
+kind: Stack
+metadata:
+  name: Target
+spec:
+  models:
+    - channels:
+        - alias: in_vector
+          name: in
+          selectors:
+            channel: in_vector
+        - alias: out_vector
+          name: out
+          # selectors:  # Use selector on Model.
+          #  channel: out_vector
+      model:
+        name: Direct
+      name: direct
+      runtime:
+        env:
+          FACTOR: "4"
+          OFFSET: "100"
+      uid: 42

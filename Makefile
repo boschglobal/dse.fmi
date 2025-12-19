@@ -17,7 +17,7 @@ export DSE_MODELC_URL ?= $(DSE_MODELC_REPO)/archive/refs/tags/v$(DSE_MODELC_VERS
 export DSE_MODELC_LIB_URL ?= $(DSE_MODELC_REPO)/releases/download/v$(DSE_MODELC_VERSION)/ModelC-$(DSE_MODELC_VERSION)-$(PACKAGE_ARCH).zip
 
 DSE_NCODEC_REPO ?= https://github.com/boschglobal/dse.ncodec
-DSE_NCODEC_VERSION ?= 1.2.0
+DSE_NCODEC_VERSION ?= 1.2.1
 export DSE_NCODEC_URL ?= $(DSE_NCODEC_REPO)/archive/refs/tags/v$(DSE_NCODEC_VERSION).zip
 
 
@@ -169,9 +169,10 @@ ifeq ($(PACKAGE_ARCH), linux-amd64)
 				-e ENTRYWORKDIR=$${ENTRYWORKDIR} \
 				-e REPODIR=/repo \
 				-e WORKDIR=/workdir \
-				-e SIMER=$(SIMER_IMAGE) \
+				-e SIMER_IMAGE=$(SIMER_IMAGE) \
 				-e FMI_IMAGE=$(FMI_IMAGE) \
-				-e FMI_TAG=$(FMI_TAG) \
+				-e BUILDER_IMAGE=$(BUILDER_IMAGE) \
+				-e PACKAGE_VERSION=$(PACKAGE_VERSION) \
 				$$t ;\
 	done;
 endif

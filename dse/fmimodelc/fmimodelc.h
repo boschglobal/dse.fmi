@@ -9,6 +9,7 @@
 #include <dse/clib/collections/hashmap.h>
 #include <dse/modelc/adapter/simbus/simbus.h>
 #include <dse/modelc/runtime.h>
+#include <dse/fmu/fmu.h>
 
 
 #ifndef DLL_PUBLIC
@@ -51,12 +52,9 @@ center footer Dynamic Simulation Environment
 
 
 /* runtime.c */
-DLL_PRIVATE void fmimodelc_index_scalar_signals(
-    RuntimeModelDesc* m, HashMap* input, HashMap* output);
-DLL_PRIVATE void fmimodelc_index_binary_signals(
-    RuntimeModelDesc* m, HashMap* rx, HashMap* tx);
-DLL_PRIVATE void fmimodelc_index_text_encoding(
-    RuntimeModelDesc* m, HashMap* encode_func, HashMap* decode_func);
+DLL_PRIVATE void fmimodelc_index_scalar_signals(FmuInstanceData* fmu);
+DLL_PRIVATE void fmimodelc_index_binary_signals(FmuInstanceData* fmu);
+DLL_PRIVATE void fmimodelc_index_text_encoding(FmuInstanceData* fmu);
 DLL_PRIVATE void fmimodelc_set_model_env(RuntimeModelDesc* m);
 
 /* env.c */

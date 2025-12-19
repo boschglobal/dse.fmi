@@ -13,7 +13,7 @@ exec ls -R $WORK
 
 # Generate the FMI ModelC FMU
 env
-exec fmi gen-fmu -sim sim -name $FMU_NAME -uuid $UUID -version $VERSION -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
+exec fmi gen-modelcfmu -sim sim -name $FMU_NAME -uuid $UUID -version $VERSION -outdir out -libroot $BUILD_DIR -fmiPackage $PACKAGE
 exec ls -R $WORK/out
 exists out/$FMU_NAME.fmu
 

@@ -26,9 +26,9 @@ stdout 'Measurement File: /sim/measurement.mf4'
 
 
 -- test.sh --
-SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
+SIMER_IMAGE="${SIMER_IMAGE:-ghcr.io/boschglobal/dse-simer:latest}"
 docker run --name simer -i --rm -v $ENTRYWORKDIR/$SIM:/sim \
-    $SIMER -valgrind $NAME -logger 2 \
+    $SIMER_IMAGE -valgrind $NAME -logger 2 \
         -env simbus:SIMBUS_LOGLEVEL=5 \
         -env extended_inst:SIMBUS_LOGLEVEL=5 \
         -env $NAME:SIMBUS_LOGLEVEL=4 \

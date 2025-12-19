@@ -10,8 +10,8 @@ import (
 	"log/slog"
 	"slices"
 
+	"github.com/boschglobal/dse.clib/extra/go/command/log"
 	"github.com/boschglobal/dse.fmi/extra/tools/fmi/pkg/fmi/fmi2"
-	"github.com/boschglobal/dse.fmi/extra/tools/fmi/pkg/log"
 	"github.com/boschglobal/dse.schemas/code/go/dse/kind"
 )
 

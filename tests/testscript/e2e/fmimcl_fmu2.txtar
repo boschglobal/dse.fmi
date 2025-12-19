@@ -110,9 +110,9 @@ task -t /$REPODIR/Taskfile.yml generate-fmimcl \
     OUT_DIR=model/fmi2fmu/data
 
 -- test.sh --
-SIMER="${SIMER:-ghcr.io/boschglobal/dse-simer:latest}"
+SIMER_IMAGE="${SIMER_IMAGE:-ghcr.io/boschglobal/dse-simer:latest}"
 docker run --name simer -i --rm -v $ENTRYWORKDIR/$SIM:/sim \
-    $SIMER -valgrind $NAME \
+    $SIMER_IMAGE -valgrind $NAME \
         -env simbus:SIMBUS_LOGLEVEL=2 \
         -env input_inst:SIMBUS_LOGLEVEL=3 \
         -env $NAME:SIMBUS_LOGLEVEL=4 \

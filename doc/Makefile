@@ -2,10 +2,25 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+SHELL := /bin/bash
+
 ###############
 ## Docker Images.
-DSE_CDOCGEN_IMAGE ?= dse-cdocgen:latest
-DSE_PLANTUML_IMAGE ?= dse-plantuml:latest
+DSE_CDOCGEN_IMAGE ?= ghcr.io/boschglobal/dse-cdocgen:latest
+DSE_PLANTUML_IMAGE ?= ghcr.io/boschglobal/dse-plantuml:latest
+DSE_TESTSCRIPT_IMAGE ?= ghcr.io/boschglobal/dse-testscript:latest
+
+TXTAR_CMD := docker run -it --rm \
+	--user $$(id -u):$$(id -g) \
+	--volume $$(pwd):/repo \
+	--entrypoint /usr/local/bin/txtar \
+	${DSE_TESTSCRIPT_IMAGE}
+
+TASK_CMD := docker run -it --rm \
+	--user $$(id -u):$$(id -g) \
+	--volume $$(pwd):/repo \
+	--entrypoint /usr/local/bin/task \
+	${DSE_TESTSCRIPT_IMAGE}
 
 
 ###############
@@ -61,6 +76,20 @@ examples:
 	cd ..;mkdir -p doc/content/apis/fmi/examples/fmu
 	cd ..;cp dse/examples/fmu/counter/counter.c doc/content/apis/fmi/examples/fmu/fmu.c
 
+.PHONY: workflow
+workflow:
+	cd ..;$(TXTAR_CMD) \
+		--archive tests/testscript/e2e/direct_index.txtar \
+		--file simulation.dse \
+		--dest doc/content/docs/user/workflows/modelcfmu/script.md
+	cd ..;$(TASK_CMD) \
+		--summary \
+		--color=true \
+		generate-modelcfmu \
+			| sed $$'s/\033\[[0-9;]*m//g' \
+			> doc/content/docs/user/workflows/modelcfmu/task.md
+#		--template workflow.task.md.template \
+
 .PHONY: index
 index:
 	@cd ..; mkdir -p $$(dirname $(DOC_OUTPUT_index))
@@ -85,4 +114,4 @@ $(DOC_C_MODULES):
 			-tpng  $$(basename $(DOC_OUTPUT_$@))
 
 .PHONY: generate
-generate: index examples $(DOC_C_MODULES)
+generate: index examples workflow $(DOC_C_MODULES)

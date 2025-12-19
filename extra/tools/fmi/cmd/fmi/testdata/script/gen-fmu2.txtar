@@ -11,7 +11,7 @@ exec ls -R $WORK
 
 # Generate the FMI ModelC FMU
 env
-exec fmi gen-fmu -sim sim -name $FMU_NAME -outdir out -libroot $ -fmiPackage $PACKAGE
+exec fmi gen-modelcfmu -sim sim -name $FMU_NAME -outdir out -libroot $ -fmiPackage $PACKAGE
 exec ls -R $WORK/out
 exists out/$FMU_NAME.fmu
 

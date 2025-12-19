@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <assert.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -124,9 +125,47 @@ static const char** _signal_annotation_list(ModelInstanceSpec* mi,
 }
 
 
-void fmimodelc_index_scalar_signals(
-    RuntimeModelDesc* m, HashMap* input, HashMap* output)
+void fmimodelc_index_scalar_signals(FmuInstanceData* fmu)
 {
+    assert(fmu);
+    RuntimeModelDesc* m = fmu->data;
+    assert(m);
+
+    SimpleSet vector_names;
+    set_init(&vector_names);
+    for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
+         mi++) {
+        for (SignalVector* sv = mi->model_desc->sv; sv && sv->name; sv++) {
+            if (sv->is_binary == true) continue;
+            set_add(&vector_names, sv->name);
+        }
+    }
+    size_t vname_count = 0;
+    char** vname = set_to_array(&vector_names, &vname_count);
+    for (size_t i = 0; i < vname_count; i++) {
+        /* Locate the SimBus vector. */
+        SimbusVectorIndex index =
+            simbus_vector_lookup(m->model.sim, vname[0], NULL);
+        if (index.sbv && index.direct_index.map != NULL) {
+            /* Install the bypass map. */
+            fmu->direct_index.map = index.direct_index.map;
+            fmu->direct_index.size = (uint32_t)index.direct_index.size;
+            _log("  Scalar: bypass map configured: map=%p, size=%u",
+                fmu->direct_index.map, fmu->direct_index.size);
+            break; /* Map is the same for all channels, stop search. */
+        }
+    }
+    for (size_t i = 0; i < vname_count; i++)
+        free(vname[i]);
+    free(vname);
+    set_destroy(&vector_names);
+
+    /* Direct indexing has been configured? */
+    if (fmu->direct_index.map != NULL) {
+        return;
+    }
+
+    /* Hashmap based indexing. */
     for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
         mi++) {
         for (SignalVector* sv = mi->model_desc->sv; sv && sv->name; sv++) {
@@ -149,21 +188,25 @@ void fmimodelc_index_scalar_signals(
                 const char* causality =
                     signal_annotation(sv, i, "fmi_variable_causality", NULL);
                 if (strcmp(causality, "output") == 0) {
-                    hashmap_set(output, vref, scalar);
+                    hashmap_set(&fmu->variables.scalar.output, vref, scalar);
                 } else if (strcmp(causality, "input") == 0) {
-                    hashmap_set(input, vref, scalar);
+                    hashmap_set(&fmu->variables.scalar.input, vref, scalar);
                 }
             }
         }
     }
-    _log("  Scalar: input=%lu, output=%lu", input->used_nodes,
-        output->used_nodes);
+    _log("  Scalar: input=%lu, output=%lu",
+        hashmap_number_keys(fmu->variables.scalar.input),
+        hashmap_number_keys(fmu->variables.scalar.output));
 }
 
 
-void fmimodelc_index_binary_signals(
-    RuntimeModelDesc* m, HashMap* rx, HashMap* tx)
+void fmimodelc_index_binary_signals(FmuInstanceData* fmu)
 {
+    assert(fmu);
+    RuntimeModelDesc* m = fmu->data;
+    assert(m);
+
     for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
         mi++) {
         for (SignalVector* sv = mi->model_desc->sv; sv && sv->name; sv++) {
@@ -190,10 +233,11 @@ void fmimodelc_index_binary_signals(
                         if (idx.sbv == NULL) continue;
 
                         /* Complete the index entry. */
+                        // TODO: should this object be duplicate of idx?
                         SimbusVectorIndex* _ =
                             calloc(1, sizeof(SimbusVectorIndex));
                         *_ = idx;
-                        hashmap_set_alt(rx, rx_vref, _);
+                        hashmap_set_alt(&fmu->variables.binary.rx, rx_vref, _);
                     }
                     free(rx_list);
                 }
@@ -212,23 +256,28 @@ void fmimodelc_index_binary_signals(
                         if (idx.sbv == NULL) continue;
 
                         /* Complete the index entry. */
+                        // TODO: should this object be duplicate of idx?
                         SimbusVectorIndex* _ =
                             calloc(1, sizeof(SimbusVectorIndex));
                         *_ = idx;
-                        hashmap_set_alt(tx, tx_vref, _);
+                        hashmap_set_alt(&fmu->variables.binary.tx, tx_vref, _);
                     }
                     free(tx_list);
                 }
             }
         }
     }
-    _log("  Binary: rx=%lu, tx=%lu", rx->used_nodes, tx->used_nodes);
+    _log("  Binary: rx=%lu, tx=%lu", hashmap_number_keys(fmu->variables.binary.rx),
+        hashmap_number_keys(fmu->variables.binary.tx));
 }
 
 
-void fmimodelc_index_text_encoding(
-    RuntimeModelDesc* m, HashMap* encode_func, HashMap* decode_func)
+void fmimodelc_index_text_encoding(FmuInstanceData* fmu)
 {
+    assert(fmu);
+    RuntimeModelDesc* m = fmu->data;
+    assert(m);
+
     // dse.standards.fmi-ls-binary-to-text.encoding: ascii85
 
     for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
@@ -257,16 +306,19 @@ void fmimodelc_index_text_encoding(
                         const char* vref = vref_list[j];
 
                         /* Encoding. */
-                        hashmap_set(encode_func, vref, dse_ascii85_encode);
-                        hashmap_set(decode_func, vref, dse_ascii85_decode);
+                        hashmap_set(&fmu->variables.binary.encode_func, vref,
+                            dse_ascii85_encode);
+                        hashmap_set(&fmu->variables.binary.decode_func, vref,
+                            dse_ascii85_decode);
                     }
                     free(vref_list);
                 }
             }
         }
     }
-    _log("  Encoding: enc=%lu, dec=%lu", encode_func->used_nodes,
-        decode_func->used_nodes);
+    _log("  Encoding: enc=%lu, dec=%lu",
+        hashmap_number_keys(fmu->variables.binary.encode_func),
+        hashmap_number_keys(fmu->variables.binary.decode_func));
 }
 
 

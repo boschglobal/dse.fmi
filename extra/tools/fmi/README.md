@@ -13,8 +13,7 @@ Containerised DSE FMI toolset.
 
 ```bash
 # Using a local build `dse-fmi` container.
-$ export FMI_IMAGE=fmi
-$ export FMI_TAG=test
+$ export FMI_IMAGE=fmi:test
 
 # List the toolchains available:
 $ task -l
@@ -30,7 +29,7 @@ $ task generate-fmimodelc \
     SIM=extra/tools/fmi/build/stage/examples/fmimodelc/sim \
     FMU_NAME=fubar \
     VERSION=1.0.0
-Running FMI Toolset command: gen-fmu
+Running FMI Toolset command: gen-modelcfmu
 Options:
   libroot        : /usr/local
   log            : 4
@@ -94,9 +93,9 @@ Options:
   libroot        : /usr/local
   log            : 4
   outdir         : out
-  session        : 
+  session        :
   signalgroups   : extra/tools/fmi/test/testdata/fmigateway/SG1.yaml,extra/tools/fmi/test/testdata/fmigateway/SG2.yaml
-  uuid           : 
+  uuid           :
   version        : 0.0.1
 Adding SignalGroup Model_1 to out/fmu.yaml
 Adding SignalGroup Model_2 to out/fmu.yaml
@@ -114,18 +113,24 @@ fmu.yaml  modelDescription.xml  model.yaml
 ```bash
 # Clear the Fmi Tool build folder.
 $ rm -rvf extra/tools/fmi/build/stage
-
-# Build x32 targets (optional).
 $ make cleanall
+
+# Build x32 targets (optional, REQUIRED for test_e2e).
 $ PACKAGE_ARCH=linux-x86 make build fmi
+$ make cleanall
 $ PACKAGE_ARCH=linux-i386 make build fmi
+$ make cleanall
 
 # Build x64 targets.
-$ make cleanall
 $ make build fmi
 
 # Build the DSE FMI Toolset container (from repo root).
 $ make tools
+
+# Run Go Tests
+$ cd extra/tools/fmi
+$ make test
+$ make test_e2e
 ```
 
 

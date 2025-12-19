@@ -120,7 +120,7 @@ $ task generate-fmimodelc \
     SIM=extra/tools/fmi/build/stage/examples/fmimodelc/sim \
     FMU_NAME=fubar \
     VERSION=1.0.0
-Running FMI Toolset command: gen-fmu
+Running FMI Toolset command: gen-modelcfmu
 Scanning simulation (extra/tools/fmi/build/stage/examples/fmimodelc/sim) ...
 Build the FMU file layout (out/fubar) ...
 Create FMU Model Description (out/fubar/modelDescription.xml) ...
@@ -239,8 +239,7 @@ a copy of the `sim` folder.
 ```bash
 # Setup for running E2E tests.
 $ make build fmi tools
-$ export FMI_IMAGE=fmi
-$ export FMI_TAG=test
+$ export FMI_IMAGE=fmi:test
 
 # Clear out previous Testscript artefacts.
 $ sudo rm -rf /tmp/tmp.*
@@ -300,8 +299,7 @@ make build simer tools
 cd ../dse.fmi
 make build fmi tools
 export SIMER_IMAGE=simer:test
-export FMI_IMAGE=fmi
-export FMI_TAG=test
+export FMI_IMAGE=fmi:test
 make test_e2e
 ```
 

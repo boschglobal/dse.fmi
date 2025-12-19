@@ -16,13 +16,17 @@ import (
 var (
 	cmds = []CommandRunner{
 		NewHelpCommand("help"),
-		generate.NewFmiModelcCommand("gen-fmu"),
-		generate.NewFmiMclCommand("gen-mcl"),
-		generate.NewGenSignalGroupCommand("gen-signalgroup"),
-		generate.NewGenFmuAnnotationCommand("gen-annotations"),
+		// ModelC FMU
+		generate.NewModelCFmuCommand("gen-modelcfmu"),
 		generate.NewGenModelCFmuAnnotationCommand("gen-modelcfmu-annotations"),
-		generate.NewFmiGatewayCommand("gen-gateway"),
+		// FMI MCL
+		generate.NewFmiMclCommand("gen-fmimcl"),
+		generate.NewGenSignalGroupCommand("gen-signalgroup"),
+		// Gateway FMU
+		generate.NewFmiGatewayCommand("gen-gatewayfmu"),
+		// Common
 		patch.NewPatchSignalGroupCommand("patch-signalgroup"),
+		generate.NewGenFmuAnnotationCommand("gen-annotations"),
 	}
 )
 

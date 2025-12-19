@@ -1,0 +1,21 @@
+# Copyright 2025 Robert Bosch GmbH
+#
+# SPDX-License-Identifier: Apache-2.0
+
+---
+kind: Model
+metadata:
+  name: dse.fmi.example.direct
+spec:
+  runtime:
+    dynlib:
+      - os: linux
+        arch: amd64
+        path: lib/libdirect.so
+  channels:
+    - alias: in_vector
+      selectors:
+        channel: in_vector
+    - alias: out_vector
+      selectors:
+        channel: out_vector

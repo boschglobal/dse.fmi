@@ -2,28 +2,6 @@
 title: FMI Gateway FMU API Reference
 linkTitle: Gateway FMU
 ---
-## fmu_init
-
-
-In this method the required yaml files are parsed and the session is configured,
-if required. The gateway is set up and connected to the simbus. After a
-sucessfull connection has been established, the fmu variables are indexed to
-their corresponding simbus signals.
-
-> Required by FMU.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-### Returns
-
-0 (int32_t)
-: The FMU was created correctly.
-
-
-
 ## fmu_step
 
 
@@ -128,6 +106,28 @@ errno <> 0 (indirect)
 
 
 
+## fmu_init
+
+
+In this method the required yaml files are parsed and the session is configured,
+if required. The gateway is set up and connected to the simbus. After a
+sucessfull connection has been established, the fmu variables are indexed to
+their corresponding simbus signals.
+
+> Required by FMU.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+### Returns
+
+0 (int32_t)
+: The FMU was created correctly.
+
+
+
 ## Typedefs
 
 ### FmiGateway
@@ -141,7 +141,6 @@ typedef struct FmiGateway {
         double step_size;
         double end_time;
         int log_level;
-        const char* log_location;
         FmiGatewaySession* session;
     } settings;
     int binary_signals_reset;
@@ -176,6 +175,8 @@ typedef struct FmiGatewaySession {
     const char* init_cmd;
     const char* shutdown_cmd;
     FmiGatewayEnvvar* envar;
+    int logging;
+    const char* log_location;
     double last_step;
 }
 ```

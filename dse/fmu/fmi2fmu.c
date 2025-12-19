@@ -215,7 +215,6 @@ fmi2Status fmi2ExitInitializationMode(fmi2Component c)
     FmuInstanceData* fmu = (FmuInstanceData*)c;
 
     int32_t rc = fmu_init(fmu);
-
     return (rc == 0 ? fmi2OK : fmi2Error);
 }
 
@@ -251,6 +250,19 @@ fmi2Status fmi2GetReal(fmi2Component c, const fmi2ValueReference vr[],
     assert(c);
     FmuInstanceData* fmu = (FmuInstanceData*)c;
 
+    if (fmu->direct_index.map) {
+        /* Direct Indexing via FMI 2 Value Bypass Map: vr == offset address. */
+        for (size_t i = 0; i < nvr; i++) {
+            if (vr[i] > fmu->direct_index.size) {
+                fmu_log(fmu, fmi2Error, "Error", "Invalid direct index");
+                continue;
+            }
+            value[i] = *(double*)(fmu->direct_index.map + vr[i]);
+        }
+        return fmi2OK;
+    }
+
+    /* Hashmap based indexing. */
     for (size_t i = 0; i < nvr; i++) {
         static char vr_idx[VREF_KEY_LEN];
         snprintf(vr_idx, VREF_KEY_LEN, "%i", vr[i]);
@@ -370,6 +382,19 @@ fmi2Status fmi2SetReal(fmi2Component c, const fmi2ValueReference vr[],
     assert(c);
     FmuInstanceData* fmu = (FmuInstanceData*)c;
 
+    if (fmu->direct_index.map) {
+        /* Direct Indexing via FMI 2 Value Bypass Map: vr == offset address. */
+        for (size_t i = 0; i < nvr; i++) {
+            if (vr[i] > fmu->direct_index.size) {
+                fmu_log(fmu, fmi2Error, "Error", "Invalid direct index");
+                continue;
+            }
+            *(double*)(fmu->direct_index.map + vr[i]) = value[i];
+        }
+        return fmi2OK;
+    }
+
+    /* Hashmap based indexing. */
     for (size_t i = 0; i < nvr; i++) {
         static char vr_idx[VREF_KEY_LEN];
         snprintf(vr_idx, VREF_KEY_LEN, "%i", vr[i]);

@@ -2,36 +2,6 @@
 title: FMI ModelC FMU API Reference
 linkTitle: ModelC FMU
 ---
-## FMI ModelC FMU
-
-
-The FMI ModelC FMU is and FMU which is capable of loading and running a
-DSE Simulation (e.g. a ModelC Simulation Stack). All capabilites of the ModelC
-Runtime are supported, including the exchange of binary signals (e.g. CAN) and
-realisation of bus topologies (e.g. multi-node CAN Networks).
-
-
-### Component Diagram
-
-<div hidden>
-
-```
-@startuml fmimodelc-component
-
-title FMI ModelC FMU
-
-center footer Dynamic Simulation Environment
-
-@enduml
-```
-
-</div>
-
-![](fmimodelc-component.png)
-
-
-
-
 ## default_log
 
 
@@ -57,32 +27,6 @@ c (fmi2Component*)
 
 fmi2OK (fmi2Status)
 : The simulation that this FMU represents is ready to be operated.
-
-
-
-## fmi2GetReal
-
-
-Get values for the provided list of value references.
-
-### Parameters
-
-c (fmi2Component*)
-: An FmuInstanceData object representing an instance of this FMU.
-
-vr (fmi2ValueReference[])
-: List of value references to retrieve.
-
-nvr (int)
-: The number of value references to retrieve.
-
-value (fmi2Real[])
-: Storage for the retrieved values.
-
-### Returns
-
-fmi2OK (fmi2Status)
-: The requested variables are retrieved (where available).
 
 
 
@@ -181,6 +125,60 @@ fmu (FmuInstanceData*)
 
 
 
+## fmu_signals_remove
+
+
+This method frees the allocated binary signal indexes.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+
+
+## fmu_load_signal_handlers
+
+
+This method assigns the signal handler function to a vtable.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+
+
+## FMI ModelC FMU
+
+
+The FMI ModelC FMU is and FMU which is capable of loading and running a
+DSE Simulation (e.g. a ModelC Simulation Stack). All capabilites of the ModelC
+Runtime are supported, including the exchange of binary signals (e.g. CAN) and
+realisation of bus topologies (e.g. multi-node CAN Networks).
+
+
+### Component Diagram
+
+<div hidden>
+
+```
+@startuml fmimodelc-component
+
+title FMI ModelC FMU
+
+center footer Dynamic Simulation Environment
+
+@enduml
+```
+
+</div>
+
+![](fmimodelc-component.png)
+
+
+
+
 ## fmi2Instantiate
 
 
@@ -195,6 +193,32 @@ object which should be used for subsequent calls to FMI methods (as parameter
 
 fmi2Component (pointer)
 : An FmuInstanceData object which represents this FMU instance.
+
+
+
+## fmi2GetReal
+
+
+Get values for the provided list of value references.
+
+### Parameters
+
+c (fmi2Component*)
+: An FmuInstanceData object representing an instance of this FMU.
+
+vr (fmi2ValueReference[])
+: List of value references to retrieve.
+
+nvr (int)
+: The number of value references to retrieve.
+
+value (fmi2Real[])
+: Storage for the retrieved values.
+
+### Returns
+
+fmi2OK (fmi2Status)
+: The requested variables are retrieved (where available).
 
 
 
@@ -248,30 +272,6 @@ c (fmi2Component*)
 
 
 Placeholder to signal the FMU to not use the default signal allocation.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-
-
-## fmu_signals_remove
-
-
-This method frees the allocated binary signal indexes.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-
-
-## fmu_load_signal_handlers
-
-
-This method assigns the signal handler function to a vtable.
 
 ### Parameters
 
