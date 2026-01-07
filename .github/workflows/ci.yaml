@@ -268,8 +268,8 @@ jobs:
         with:
           images: |
             name=${{ env.REGISTRY }}/${{ env.IMAGE_BASE_NAME }}-fmi,enable=${{ startsWith(github.ref, 'refs/tags/') }}
-            name=${{ matrix.name }},enable=${{ !startsWith(github.ref, 'refs/tags/') }}
-            name=${{ matrix.name }},enable=true
+            name=fmi,enable=${{ !startsWith(github.ref, 'refs/tags/') }}
+            name=fmi,enable=true
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
