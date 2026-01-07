@@ -328,7 +328,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          push: true
+          push: false
           context: extra/tools/fmi
           file: ./extra/tools/fmi/build/package/Dockerfile
           build-args: |
