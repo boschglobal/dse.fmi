@@ -32,7 +32,7 @@ metadata:
     dse.fmi.example.direct:
       name: direct
       displayName: dse.fmi.example.direct
-      path: examples/direct
+      path: examples/direct/sim/model/direct
       workflows:
         - info
       platforms:
@@ -144,6 +144,7 @@ tasks:
           SIM_DIR: '{{.SIM_DIR}}'
           FMU_NAME: '{{.FMU_NAME}}'
           PLATFORM: '{{coalesce .PLATFORM .PLATFORM_ARCH}}'
+          INDEX: '{{.INDEX}}'
           SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
           VERSION: '{{.VERSION}}'
           UUID: '{{.UUID}}'

@@ -51,15 +51,28 @@ $ make build fmi tools
 $ export FMI_IMAGE=fmi:test
 $ export SIMER_IMAGE=simer:test
 
-# Run the workflows.
+# Setup some paths.
 $ export REPO_DIR=$(pwd)
 $ export DIRECT_SIM_DIR=$(pwd)/dse/build/_out/examples/direct/sim
-$ (cd $DIRECT_SIM_DIR; task --taskfile $REPO_DIR/Taskfile.yml generate-modelcfmu SIM=. FMU_NAME=direct SIGNAL_GROUPS=in_vector,out_vector)
+$ export MODEL_PATH=model/direct
+
+# Patch the model lib locations.
+$ find $DIRECT_SIM_DIR/$MODEL_PATH/data -type f -name model.yaml -print0 | xargs -r -0 yq -i 'with(.spec.runtime.dynlib[]; .path |= sub(".*/(.*$)", "'"$MODEL_PATH"'/lib/${1}"))'
+
+
+# Run the workflows.
+$ (cd $DIRECT_SIM_DIR; task --taskfile $REPO_DIR/Taskfile.yml generate-modelcfmu SIM=. FMU_NAME=direct SIGNAL_GROUPS=in_vector,out_vector INDEX=true)
 
 # Run the simulation using the FMU Importer.
 $ export IMPORTER=dse/build/_out/importer/fmuImporter
 $ export FMU_DIR=dse/build/_out/examples/direct/fmu/direct
 $ $IMPORTER --verbose --steps=10 $FMU_DIR
+
+# Enable debug
+$ export SIMBUS_LOGLEVEL=1
+
+# Run with GDB
+$ gdb -q -ex='set confirm on' -ex=run -ex=quit --args $IMPORTER --verbose --steps=10 $FMU_DIR
 ```
 
 > __INFO:__ The above operation is reflected an [E2E Test][e2e_test].

@@ -8,11 +8,11 @@
 export PACKAGE_ARCH ?= linux-amd64
 
 DSE_CLIB_REPO ?= https://github.com/boschglobal/dse.clib
-DSE_CLIB_VERSION ?= 1.0.44
+DSE_CLIB_VERSION ?= 1.0.47
 export DSE_CLIB_URL ?= $(DSE_CLIB_REPO)/archive/refs/tags/v$(DSE_CLIB_VERSION).zip
 
 DSE_MODELC_REPO ?= https://github.com/boschglobal/dse.modelc
-DSE_MODELC_VERSION ?= 2.2.20
+DSE_MODELC_VERSION ?= 2.2.23
 export DSE_MODELC_URL ?= $(DSE_MODELC_REPO)/archive/refs/tags/v$(DSE_MODELC_VERSION).zip
 export DSE_MODELC_LIB_URL ?= $(DSE_MODELC_REPO)/releases/download/v$(DSE_MODELC_VERSION)/ModelC-$(DSE_MODELC_VERSION)-$(PACKAGE_ARCH).zip
 
@@ -152,6 +152,8 @@ do-test_testscript-e2e:
 # Test debug;
 #   Additional logging: add '-v' to Testscript command (e.g. $(TESTSCRIPT_IMAGE) -v \).
 #   Retain work folder: add '-work' to Testscript command (e.g. $(TESTSCRIPT_IMAGE) -work \).
+#   Use the local container: $ export FMI_IMAGE=fmi:test
+#   Build local packages: $ make package
 ifeq ($(PACKAGE_ARCH), linux-amd64)
 	@-docker kill simer 2>/dev/null ; true
 	@set -eu; for t in $(TESTSCRIPT_E2E_FILES) ;\
@@ -164,7 +166,7 @@ ifeq ($(PACKAGE_ARCH), linux-amd64)
 			-v /var/run/docker.sock:/var/run/docker.sock \
 			-v $(HOST_DOCKER_WORKSPACE):/repo \
 			-v $${ENTRYWORKDIR}:/workdir \
-			$(TESTSCRIPT_IMAGE) \
+			$(TESTSCRIPT_IMAGE) -work \
 				-e ENTRYHOSTDIR=$(HOST_DOCKER_WORKSPACE) \
 				-e ENTRYWORKDIR=$${ENTRYWORKDIR} \
 				-e REPODIR=/repo \

@@ -14,8 +14,4 @@ spec:
         path: lib/libdirect.so
   channels:
     - alias: in_vector
-      selectors:
-        channel: in_vector
     - alias: out_vector
-      selectors:
-        channel: out_vector

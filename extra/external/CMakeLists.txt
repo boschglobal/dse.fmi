@@ -180,6 +180,25 @@ ExternalProject_Add(msgpackc
     INSTALL_COMMAND     ""
 )
 
+# Lua
+# ---
+if(UNIX)
+ExternalProject_Add(lua
+    URL                 ${ExternalProject__LUA__URL}
+    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/lua"
+    BINARY_DIR          "$ENV{EXTERNAL_BUILD_DIR}/lua"
+    PATCH_COMMAND       ${CMAKE_COMMAND} -E copy
+                        ${CMAKE_CURRENT_SOURCE_DIR}/lua_makefile
+                        <SOURCE_DIR>/makefile
+    CONFIGURE_COMMAND   ""
+    BUILD_COMMAND       make
+                        CMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+                        CC=${CMAKE_C_COMPILER}
+    INSTALL_COMMAND     ""
+)
+endif()
+
+
 # OSS Target
 # ==========
 add_custom_target(oss)

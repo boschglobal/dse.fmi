@@ -41,7 +41,10 @@ target_link_libraries(fmigateway_runtime
 
 add_library(modelcgateway_runtime OBJECT
     ${DSE_MODELC_SOURCE_DIR}/model/gateway.c
+    ${DSE_MODELC_SOURCE_DIR}/model/lua.c
+    ${DSE_MODELC_SOURCE_DIR}/model/luamodel.c
     ${DSE_MODELC_SOURCE_DIR}/model/model.c
+    ${DSE_MODELC_SOURCE_DIR}/model/mcl.c
     ${DSE_MODELC_SOURCE_DIR}/model/ncodec.c
     ${DSE_MODELC_SOURCE_DIR}/model/schema.c
     ${DSE_MODELC_SOURCE_DIR}/model/signal.c
@@ -74,6 +77,9 @@ target_compile_definitions(modelcgateway_runtime
         MODELC_VERSION="${DSE_MODELC_VERSION}"
 )
 target_link_libraries(modelcgateway_runtime
+    PUBLIC
+        lua
+        m
     PRIVATE
         cmocka
         yaml

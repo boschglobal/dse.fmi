@@ -134,7 +134,7 @@ void fmimodelc_index_scalar_signals(FmuInstanceData* fmu)
     SimpleSet vector_names;
     set_init(&vector_names);
     for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
-         mi++) {
+        mi++) {
         for (SignalVector* sv = mi->model_desc->sv; sv && sv->name; sv++) {
             if (sv->is_binary == true) continue;
             set_add(&vector_names, sv->name);
@@ -267,7 +267,8 @@ void fmimodelc_index_binary_signals(FmuInstanceData* fmu)
             }
         }
     }
-    _log("  Binary: rx=%lu, tx=%lu", hashmap_number_keys(fmu->variables.binary.rx),
+    _log("  Binary: rx=%lu, tx=%lu",
+        hashmap_number_keys(fmu->variables.binary.rx),
         hashmap_number_keys(fmu->variables.binary.tx));
 }
 

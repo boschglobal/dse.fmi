@@ -9,3 +9,4 @@ set(ExternalProject__DLFCNWIN32__URL    https://github.com/dlfcn-win32/dlfcn-win
 set(ExternalProject__XML2__URL          https://github.com/GNOME/libxml2/archive/refs/tags/v2.13.5.zip)
 set(ExternalProject__YAML__URL          https://github.com/yaml/libyaml/archive/0.2.5.tar.gz)
 set(ExternalProject__MSGPACK__URL       https://github.com/msgpack/msgpack-c/archive/refs/tags/cpp-3.3.0.tar.gz)
+set(ExternalProject__LUA__URL         https://github.com/lua/lua/archive/refs/tags/v5.4.8.tar.gz)

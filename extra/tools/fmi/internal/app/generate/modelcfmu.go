@@ -50,6 +50,8 @@ type GenModelCFmuCommand struct {
 	modelIdentifier string
 }
 
+const directIndexFile = "direct_index.yaml"
+
 func NewModelCFmuCommand(name string) *GenModelCFmuCommand {
 	c := &GenModelCFmuCommand{commandName: name, fs: flag.NewFlagSet(name, flag.ExitOnError)}
 	c.fs.StringVar(&c.simpath, "sim", "/sim", "Path to simulation (Simer layout)")
@@ -395,6 +397,7 @@ func (c *GenModelCFmuAnnotationCommand) runAnnotateStack() error {
 	for file, _ := range c.index.FileMap {
 		if f, err := filepath.Rel(c.simpath, file); err == nil {
 			yamlFiles = append(yamlFiles, f)
+			fmt.Fprintf(flag.CommandLine.Output(), "Model Runtime YAML File: %s -> %s\n", file, f)
 		}
 	}
 	stackDoc.Metadata.Annotations["model_runtime__yaml_files"] = yamlFiles
@@ -506,8 +509,8 @@ func lookupSimBusChannelName(index *index.YamlFileIndex, sgDoc *kind.KindDoc) (s
 
 func (c *GenModelCFmuAnnotationCommand) runGenerateDirectIndex() error {
 	c.directIndex = NewDirectIndex()
-	indexFile := filepath.Join(c.simpath, "data", "direct_index.yaml")
-	slog.Info(fmt.Sprintf("Generating Direct Index: %v", indexFile))
+	indexFile := filepath.Join(c.simpath, "data", directIndexFile)
+	fmt.Fprintf(flag.CommandLine.Output(), "Generating Direct Index: %s\n", indexFile)
 
 	filter := []string{}
 	if len(c.signalGroups) > 0 {
@@ -541,6 +544,9 @@ func (c *GenModelCFmuAnnotationCommand) runGenerateDirectIndex() error {
 	if err := c.directIndex.writeSignalGroup(indexFile); err != nil {
 		slog.Error("Error writing direct index", "err", err)
 	}
+
+	// Add to index.
+	c.index.Add(indexFile)
 
 	return nil
 }

@@ -27,7 +27,9 @@ spec:
           alias: in_vector
           selectors:
             model: direct
+            channel: in_vector
         - name: out
           alias: out_vector
           selectors:
             model: direct
+            channel: out_vector

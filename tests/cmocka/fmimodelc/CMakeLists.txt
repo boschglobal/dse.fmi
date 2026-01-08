@@ -31,6 +31,8 @@ target_compile_definitions(fmimodelc_runtime
 target_link_libraries(fmimodelc_runtime
     PRIVATE
         cmocka
+        lua
+        m
 )
 
 
@@ -62,6 +64,7 @@ target_link_libraries(test_fmimodelc
         yaml
         cmocka
         dl
+        lua
         m
 )
 install(TARGETS test_fmimodelc)

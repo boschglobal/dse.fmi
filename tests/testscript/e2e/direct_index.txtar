@@ -1,7 +1,6 @@
-skip 'in development'
 
 env IMPORTER=dse/build/_out/importer/fmuImporter
-env FMU_DIR=out/fmu
+env FMU_DIR=out/fmu/direct
 
 
 # SETUP: Construct working folder layout
@@ -21,8 +20,17 @@ exec ls -l out/fmu/direct
 exec ls -R -l out/fmu/direct/binaries
 exec ls -R -l out/fmu/direct/resources/sim
 exec sh -e test.sh
-stdout 'Importer: FMU Dir: /out/fmu'
-stdout 'Importer: Loading FMU: binaries/linux64/libfmi2modelcfmu.so'
+stdout 'Importer: FMU Dir: /workdir/out/fmu/direct'
+stdout 'Importer: Loading FMU: binaries/linux64/fmi2modelcfmu.so'
+stdout 'Runtime: CWD: /workdir/out/fmu/direct'
+stdout 'Load YAML File: resources/sim/data/direct_index.yaml'
+stdout 'Model Name: dse.fmi.example.direct'
+stdout 'ModelCFmu:   set envar: name=DIRECT__OFFSET, value=100'
+stdout 'ModelCFmu:   set envar: name=DIRECT__FACTOR, value=4'
+stdout 'Loading dynamic model: resources/sim/model/direct/lib/libdirect.so'
+stdout 'Importer: Calling fmi2DoStep(): model_time=0.004500, step_size=0.000500'
+stdout 'Importer:   [256] 0.000000'
+stdout 'Importer: Simulation return value: 0'
 
 # Operate from the WORKDIR (allocated by caller, i.e. docker command).
 # cd $WORKDIR
@@ -48,7 +56,6 @@ workflow generate-modelcfmu
     var FMU_NAME direct
     var FMI_VERSION 2
     var INDEX direct
-
 
 
 -- build.sh --
@@ -81,6 +88,19 @@ task -y -v
 
 -- test.sh --
 SIMER_IMAGE="${SIMER_IMAGE:-ghcr.io/boschglobal/dse-simer:latest}"
+
+echo "-- parameters ------"
+echo "pwd=$(pwd)"
+echo SIMER_IMAGE=$SIMER_IMAGE
+echo ENTRYHOSTDIR=$ENTRYHOSTDIR
+echo ENTRYWORKDIR=$ENTRYWORKDIR
+echo IMPORTER=$IMPORTER
+echo FMU_DIR=$FMU_DIR
+echo "ls /workdir/$FMU_DIR"
+ls /workdir/$FMU_DIR
+ls -R /workdir/$FMU_DIR/resources/sim
+echo "--------------------"
+
 docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
     -v $ENTRYHOSTDIR:/repo \
     -v $ENTRYWORKDIR:/workdir \

@@ -440,6 +440,11 @@ func VariablesFromSignalgroups(
 			if len(filter) > 0 && !slices.Contains(filter, doc.Metadata.Name) {
 				continue
 			}
+			if _, ok := (doc.Metadata.Labels)["index"]; ok {
+				// Don't add 'index' SignalGroups.
+				continue
+			}
+
 			fmt.Fprintf(flag.CommandLine.Output(), "Adding SignalGroup: %s (%s)\n", doc.Metadata.Name, doc.File)
 			signalGroupSpec := doc.Spec.(*schema_kind.SignalGroupSpec)
 			if doc.Metadata.Annotations["vector_type"] == "binary" {

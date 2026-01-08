@@ -16,10 +16,12 @@ add_library(modelc_runtime OBJECT
 target_include_directories(modelc_runtime
     PUBLIC
         ${DSE_MODELC_INCLUDE_DIR}
+        ${DSE_MODELC_SOURCE_INCLUDE_DIR}
         ${YAML_SOURCE_DIR}/include
 )
 target_link_libraries(modelc_runtime
     PRIVATE
+        lua
         xml
         m
 )
@@ -41,6 +43,8 @@ target_compile_definitions(modelc_mock
 target_link_libraries(modelc_mock
     PRIVATE
         cmocka
+        lua
+        m
 )
 
 add_library(fmimcl_runtime OBJECT
@@ -66,6 +70,7 @@ target_compile_definitions(fmimcl_runtime
 target_link_libraries(fmimcl_runtime
     PRIVATE
         cmocka
+        lua
 )
 
 
