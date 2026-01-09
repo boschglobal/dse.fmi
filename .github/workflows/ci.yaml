@@ -117,26 +117,31 @@ jobs:
         run: |
           echo "PACKAGE_VERSION=${{ fromJSON(steps.package_meta.outputs.json).labels['org.opencontainers.image.version'] }}" >> $GITHUB_ENV
 
-      - name: Download artifact
+      - name: Download container image
         uses: actions/download-artifact@v5
         with:
           name: image_fmi
           path: /tmp
-
       - name: Load images
         run: |
           docker load --input /tmp/fmi.tar
           docker image ls -a
 
-      - name: Download build artifacts
+      - name: Download sandbox
         uses: actions/download-artifact@v5
         with:
           name: ${{ env.package_name }}-linux-amd64-sandbox
           path: .
-      - name: Sandbox
+      - name: Restore sandbox
         run: |
           tar xzf sandbox_out.tar.gz
           find ${{ env.build_dir }}/_out -type f -name '*' -exec ls -sh --color=auto {} \;
+
+      - name: Download package
+        uses: actions/download-artifact@v5
+        with:
+          name: ${{ env.package_name }}-${{ matrix.package_arch }}-package
+          path: ${{ env.build_dir }}/_dist
 
       - name: Set environment
         run: |
