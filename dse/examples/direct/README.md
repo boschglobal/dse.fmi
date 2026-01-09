@@ -42,9 +42,13 @@ examples/direct
 
 > __HINT:__ Workflows are partly operated by environment variables. Careful selection of variable names is necessary to avoid conflict with those used by the workflows.
 
+
+### Direct testing of the Example
+
 ```bash
 # Build the example.
 $ make
+$ make package
 
 # Optionally build workflows and setup to use local images.
 $ make build fmi tools
@@ -75,7 +79,35 @@ $ export SIMBUS_LOGLEVEL=1
 $ gdb -q -ex='set confirm on' -ex=run -ex=quit --args $IMPORTER --verbose --steps=10 $FMU_DIR
 ```
 
-> __INFO:__ The above operation is reflected an [E2E Test][e2e_test].
+
+
+### Testing of the E2E Test
+
+> __INFO:__ The following operation is reflected an [E2E Test][e2e_test].
+
+
+```bash
+# Build the example.
+$ make
+$ make package
+
+# Build workflows and setup to use local images.
+$ make build fmi tools
+$ export FMI_IMAGE=fmi:test
+$ export SIMER_IMAGE=simer:test  # (optional, for when issues in dse.modelc need testing too)
+
+# Adjust Makefile
+#   TESTSCRIPT_E2E_FILES = $(wildcard $(TESTSCRIPT_E2E_DIR)/direct*.txtar)
+
+# Set additional debug for simer (txtar:test.sh)
+#   -e SIMBUS_LOGLEVEL=1
+
+# Run the test.
+$ make test_e2e
+
+# Check especially labels on signal groups.
+
+```
 
 
 [e2e_test]: https://github.com/boschglobal/dse.fmi/blob/main/tests/testscript/e2e/direct_index.txtar

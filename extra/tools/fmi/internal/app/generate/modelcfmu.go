@@ -477,29 +477,28 @@ func lookupSimBusChannelName(index *index.YamlFileIndex, sgDoc *kind.KindDoc) (s
 			if selectorChannel.Selectors == nil {
 				continue model_channel
 			}
-			for label, label_val := range sgDoc.Metadata.Labels {
-				// Does the label exist as a selector on the channel?
-				selectorMatch := false
-				for selector, selector_val := range *selectorChannel.Selectors {
-					// Every selector must exist as a channel label.
+			// Each selector must match to a label.
+			selectorMatchCount := 0
+			for selector, selector_val := range *selectorChannel.Selectors {
+				selectorFound := false
+				for label, label_val := range sgDoc.Metadata.Labels {
 					if selector != label {
 						continue
 					}
-					// And its value must match that of the channel label.
+					selectorFound = true
 					if selector_val != label_val {
 						slog.Debug(fmt.Sprintf("  selector value mismatch: %v != %v (%s)", selector_val, label_val, label))
 						continue model_channel
 					}
-					selectorMatch = true
+					selectorMatchCount += 1
 				}
-				// Each selector was matched to a channel label.
-				// Match: Pluck the SimBus Channel name.
-				if selectorMatch {
-					slog.Info("SimBus channel found", "name", *channel.Name, "alias", *selectorChannel.Alias)
-					return *channel.Name, nil
-				} else {
-					slog.Info("  selector not found", "label", label)
+				if !selectorFound {
+					slog.Info("  selector not found", "label", selector)
 				}
+			}
+			if selectorMatchCount == len(*selectorChannel.Selectors) {
+				slog.Info("SimBus channel found", "name", *channel.Name, "alias", *selectorChannel.Alias)
+				return *channel.Name, nil
 			}
 		}
 	}
@@ -526,7 +525,6 @@ func (c *GenModelCFmuAnnotationCommand) runGenerateDirectIndex() error {
 				// Don't index 'index' SignalGroups.
 				continue
 			}
-
 			simbusChannelName, err := lookupSimBusChannelName(c.index, &doc)
 			if err != nil {
 				slog.Error(fmt.Sprintf("SignalGroup not associated with SimBus channel: %v", doc.Metadata.Name), "\nfile", doc.File, "\nerror", err)
