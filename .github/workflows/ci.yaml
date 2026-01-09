@@ -140,7 +140,7 @@ jobs:
       - name: Download package
         uses: actions/download-artifact@v5
         with:
-          name: ${{ env.package_name }}-${{ matrix.package_arch }}-package
+          name: ${{ env.package_name }}-linux-amd64-package
           path: ${{ env.build_dir }}/_dist
 
       - name: Set environment
