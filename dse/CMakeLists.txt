@@ -128,6 +128,28 @@ set_target_properties(xml
 )
 
 
+# External Project - lua
+# ----------------------
+if(UNIX)
+set(LUA_SOURCE_DIR "$ENV{EXTERNAL_BUILD_DIR}/lua")
+set(LUA_BINARY_DIR "$ENV{EXTERNAL_BUILD_DIR}/lua")
+find_library(LUA_LIB
+    NAMES
+        liblua.a
+    PATHS
+        ${LUA_BINARY_DIR}
+    REQUIRED
+    NO_DEFAULT_PATH
+)
+add_library(lua STATIC IMPORTED GLOBAL)
+set_target_properties(lua
+    PROPERTIES
+        IMPORTED_LOCATION "${LUA_LIB}"
+        INTERFACE_INCLUDE_DIRECTORIES "${LUA_BINARY_DIR}"
+)
+endif()
+
+
 # External Project - dlfcn-win32
 # ------------------------------
 if(WIN32)

@@ -60,6 +60,8 @@ target_link_libraries(${FMI2_GW}
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${UNIX}>:-Wl,--whole-archive,--export-dynamic>
         $<$<BOOL:${UNIX}>:modelc_bundled>
+        $<$<BOOL:${UNIX}>:lua>
+        $<$<BOOL:${UNIX}>:m>
         $<$<BOOL:${UNIX}>:-Wl,--no-whole-archive>
         $<$<BOOL:${UNIX}>:rt>
         $<$<BOOL:${WIN32}>:modelc>
@@ -107,6 +109,8 @@ target_link_libraries(${FMI3_GW}
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${UNIX}>:-Wl,--whole-archive,--export-dynamic>
         $<$<BOOL:${UNIX}>:modelc_bundled>
+        $<$<BOOL:${UNIX}>:lua>
+        $<$<BOOL:${UNIX}>:m>
         $<$<BOOL:${UNIX}>:-Wl,--no-whole-archive>
         $<$<BOOL:${UNIX}>:rt>
         $<$<BOOL:${WIN32}>:modelc>

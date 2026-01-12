@@ -61,8 +61,7 @@ PACKAGE_PATH = $(NAMESPACE)/dist
 ## Test Parameters.
 export HOST_DOCKER_WORKSPACE ?= $(shell pwd -P)
 export TESTSCRIPT_E2E_DIR ?= tests/testscript/e2e
-TESTSCRIPT_E2E_FILES = $(wildcard $(TESTSCRIPT_E2E_DIR)/direct*.txtar)
-
+TESTSCRIPT_E2E_FILES = $(wildcard $(TESTSCRIPT_E2E_DIR)/*.txtar)
 
 
 ifneq ($(CI), true)

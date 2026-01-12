@@ -15,7 +15,7 @@ SPDX-License-Identifier: Apache-2.0
 
 FMI Libraries of the Dynamic Simulation Environment (DSE) Core Platform provide various solutions for working with FMUs and FMI based simulation environments. Included are:
 
-* [FMI MCL (Model Compatibility Library)](#fmi-mcl) - for loading FMUs into a DSE simulation.
+* [FMI MCL](#fmi-mcl) - for loading FMUs into a DSE simulation.
 * [ModelC FMU](#modelc-fmu) - for packaging a DSE simulation as an FMU.
 * [Gateway FMU](#gateway-fmu) - for bridging between a remote simulation and a DSE simulation.
 * [FMU API](#fmu-api) - a minimal API for implementing FMUs with support for Binary Variables and Virtual Networks.
@@ -24,19 +24,20 @@ The DSE FMI libraries operate in Co-simulation environments and support both sca
 Virtual networks (e.g. CAN) are implemented using [Network Codecs](https://github.com/boschglobal/dse.standards/tree/main/dse/ncodec) and supported via FMI Binary variables, or in the case of FMI 2, by using encoded [FMI String variables](https://github.com/boschglobal/dse.standards/tree/main/modelica/fmi-ls-binary-to-text).
 
 
-### [FMI MCL]
+### FMI MCL
 
 <img src="doc/static/ki_fmimcl.png" alt="fmimcl.png" align="right" width="220" />
 
+* Model Compatibility Library (MCL) for loading FMUs in a DSE simulation.
 * Multi platform (Linux, Windows) and multi architecture (x64, x86, i386) simulation environment.
 * Native FMU support for Co-simulation.
 * Virtual Networks (CAN etc.) using [Network Codecs](https://github.com/boschglobal/dse.standards/tree/main/dse/ncodec) and Binary Streams. Includes support for FMI 2 (via String variables).
 
 <br/>
 
-### [ModelC FMU]
+### ModelC FMU
 
-<img src="doc/static/ki_fmimodelc.png" alt="ki_fmimodelc.png" align="right" width="200" />
+<img src="doc/static/ki_fmimodelc.png" alt="ki_fmimodelc.png" align="left" width="200" />
 
 * FMU with embedded Model Runtime and SimBus from the [ModelC](https://github.com/boschglobal/dse.modelc/blob/main/dse/modelc/runtime.h) project.
 * Packages [DSE Simer](https://boschglobal.github.io/dse.doc/docs/user/simer/) simulation as an FMU.
@@ -44,7 +45,7 @@ Virtual networks (e.g. CAN) are implemented using [Network Codecs](https://githu
 
 <br/>
 
-### [Gateway FMU]
+### Gateway FMU
 
 <img src="doc/static/ki_fmigateway.png" alt="ki_fmigateway.png" align="right" width="300" />
 
@@ -55,7 +56,7 @@ Virtual networks (e.g. CAN) are implemented using [Network Codecs](https://githu
 
 <br/>
 
-### [FMU API]
+### FMU API
 
 * Minimal API for implementing Co-simulation FMUs with methods:
   * `fmu_create()`
@@ -89,17 +90,47 @@ Virtual networks (e.g. CAN) are implemented using [Network Codecs](https://githu
 
 ### ModelC FMU with DSE Script and Simulation Builder
 
-> Info: This usage example is derived from [E2E Test Direct Index](tests/testscript/e2e/direct_index.txtar).
+> Info: This usage example is derived from [E2E Test - Direct Index](tests/testscript/e2e/direct_index.txtar).
 
+<details>
+<summary>Shell setup instructions</summary>
 
-__simulation.dse__ (DSE Script)
+> Info: Authentication settings for `GHE_*` environment variables are described here: [Builder Authentication](builder_auth).
+
+```bash
+# Set environment.
+$ export BUILDER_IMAGE=ghcr.io/boschglobal/dse-builder:latest
+$ export FMI_IMAGE=ghcr.io/boschglobal/dse-fmi:latest
+$ export TASK_X_REMOTE_TASKFILES=1
+
+# Install shell functions.
+function dse-builder() {
+    (
+        if [[ "$1" == */* ]]; then cd $(dirname "$1"); fi && \
+        local dsefile=$(basename "$1"); shift && \
+        docker run -it --rm \
+            --user $(id -u):$(id -g) \
+            -v $(pwd):/workdir \
+            -e GHE_USER -e GHE_TOKEN -e GHE_PAT \
+            $BUILDER_IMAGE "$dsefile" "$@"; \
+    )
+}
+
+# Install Task (from DSE fork).
+$ go install github.com/boschglobal/task/v3/cmd/task@latest
+```
+</details>
+
+#### Simulation Definition
+
+__simulation.dse__ _([DSE Script](dse_script))_
 ```hs
 simulation
 channel in
 channel out
 
 uses
-dse.fmi file:///repo
+dse.fmi https://github.com/boschglobal/dse.fmi v1.1.47
 
 model direct dse.fmi.example.direct
     channel in in_vector
@@ -114,35 +145,30 @@ workflow generate-modelcfmu
 ```
 
 
-__Simulation Builder and Operation__
+#### Build and Operate
+
 
 ```bash
-# Setup environment.
-$ export BUILDER_IMAGE=ghcr.io/boschglobal/dse-builder:latest
-$ export FMI_IMAGE=ghcr.io/boschglobal/dse-fmi:latest
-$ export TASK_X_REMOTE_TASKFILES=1
+# Build local artifacts.
+$ make build package
 
-# Set command aliases.
-function dse-builder() {
-    ( if test -f "$1"; then cd $(dirname "$1"); fi && docker run -it --user $(id -u):$(id -g) --rm -e AR_USER -e AR_TOKEN -e GHE_USER -e GHE_TOKEN -e GHE_PAT -v $(pwd):/workdir $BUILDER_IMAGE "$@"; )
-}
-
-# Install Task (from DSE fork).
-$ go install github.com/boschglobal/task/v3/cmd/task@latest
+# Create the simulation folder/file (copy content from simulation.dse, above).
+$ mkdir example
+$ vim example/simulation.dse
 
 # Build the simulation.
+$ cd example
 $ dse-builder simulation.dse
 $ task -y -v
 
 # Operate the simulation with the Importer.
-$ dse/build/_out/importer/fmuImporter --verbose out/fmu/direct
+$ ../dse/build/_out/importer/fmuImporter --verbose out/fmu/direct
 ```
 
 
 ### Examples
 
 * [ModelC FMU with Direct Indexing](dse/examples/direct/README.md)
-
 
 
 ## Build
@@ -178,24 +204,6 @@ $ make cleanall
 ```
 
 
-### Toolchains
-
-The FMI Library is built using containerised toolchains. Those are
-available from the DSE C Library and can be built as follows:
-
-```bash
-$ git clone https://github.com/boschglobal/dse.clib.git
-$ cd dse.clib
-$ make docker
-```
-
-Alternatively, the latest Docker Images are available on ghcr.io and can be
-used as follows:
-
-```bash
-$ export GCC_BUILDER_IMAGE=ghcr.io/boschglobal/dse-gcc-builder:latest
-```
-
 
 ## Additional Resources
 
@@ -224,3 +232,8 @@ See the [LICENSE](LICENSE) and [NOTICE](./NOTICE) files for details.
 ### Third Party Licenses
 
 [Third Party Licenses](licenses/)
+
+
+<!--- Links --->
+[dse_script]: https://boschglobal.github.io/dse.doc/docs/user/builder/#dse-script
+[builder_auth]: https://boschglobal.github.io/dse.doc/docs/user/builder/#authentication
