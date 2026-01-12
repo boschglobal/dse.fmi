@@ -95,7 +95,7 @@ Virtual networks (e.g. CAN) are implemented using [Network Codecs](https://githu
 <details>
 <summary>Shell setup instructions</summary>
 
-> Info: Authentication settings for `GHE_*` environment variables are described here: [Builder Authentication](builder_auth).
+> Info: Authentication settings for `GHE_*` environment variables are described here: [Builder Authentication][builder_auth].
 
 ```bash
 # Set environment.
@@ -123,7 +123,7 @@ $ go install github.com/boschglobal/task/v3/cmd/task@latest
 
 #### Simulation Definition
 
-__simulation.dse__ _([DSE Script](dse_script))_
+__simulation.dse__ _([DSE Script][dse_script])_
 ```hs
 simulation
 channel in
