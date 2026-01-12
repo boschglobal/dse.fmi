@@ -16,6 +16,7 @@ project(${MODULE}
 # Target - Importer
 # =================
 add_executable(${MODULE_LC}
+    csv.c
     importer.c
     signal_bus.c
     xml.c

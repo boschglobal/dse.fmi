@@ -5,6 +5,9 @@
 #ifndef DSE_IMPORTER_IMPORTER_H_
 #define DSE_IMPORTER_IMPORTER_H_
 
+#include <stdio.h>
+#include <stdbool.h>
+#include <dse/clib/collections/vector.h>
 #include <dse/ncodec/codec.h>
 
 #ifndef DLL_PUBLIC
@@ -77,6 +80,18 @@ typedef struct modelDescription {
 } modelDescription;
 
 
+typedef struct CsvDesc {
+    FILE*  file;
+    char*  line;
+    double timestamp;
+    Vector index; /* vector_at[idx] -> *double */
+} CsvDesc;
+
+
+#define CSV_LINE_MAXLEN 1024
+#define CSV_DELIMITER   ",;\n"
+
+
 /* xml.c */
 DLL_PRIVATE modelDescription* parse_model_desc(
     const char* docname, const char* platform);
@@ -91,6 +106,12 @@ void network_pull(
     const char* name, const char* mime_type, uint8_t** buffer, size_t* len);
 void network_truncate(void);
 void network_close(void);
+
+/* csv.c */
+CsvDesc* csv_open(const char* path);
+void csv_index(CsvDesc* c, unsigned int* rx_vr, double* rx_real, size_t count);
+bool csv_read_line(CsvDesc* c);
+void csv_close(CsvDesc* c);
 
 
 #endif  // DSE_IMPORTER_IMPORTER_H_

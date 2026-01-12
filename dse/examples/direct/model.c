@@ -4,8 +4,11 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include <stdio.h>
 #include <dse/logger.h>
 #include <dse/modelc/model.h>
+#include <dse/modelc/runtime.h>
 
 
 #define UNUSED(x)           ((void)x)
@@ -44,10 +47,27 @@ static inline void _index(FxModelDesc* m, fx* item)
     }
 }
 
-static inline double _envar(const char* name, double default_value)
+static inline double _envar(
+    ModelDesc* m, const char* name, double default_value)
 {
-    char* _env = getenv(name);
-    return (_env) ? atof(_env) : default_value;
+    char   buf[50];
+    double val = default_value;
+
+    snprintf(buf, sizeof(buf), "%s__%s", m->mi->name, name);
+    for (size_t i = 0; i < strlen(buf); i++)
+        buf[i] = toupper(buf[i]);
+    if (getenv(buf)) {
+        val = atof(getenv(buf));
+    } else {
+        snprintf(buf, sizeof(buf), "%s", name);
+        for (size_t i = 0; i < strlen(buf); i++)
+            buf[i] = toupper(buf[i]);
+        if (getenv(buf)) {
+            val = atof(getenv(buf));
+        }
+    }
+
+    return val;
 }
 
 ModelDesc* model_create(ModelDesc* model)
@@ -77,8 +97,8 @@ ModelDesc* model_create(ModelDesc* model)
     }
 
     /* Model parameters. */
-    m->factor = _envar(MODEL_PARAM__FACTOR, 1);
-    m->offset = _envar(MODEL_PARAM__OFFSET, 0);
+    m->factor = _envar(model, MODEL_PARAM__FACTOR, 1);
+    m->offset = _envar(model, MODEL_PARAM__OFFSET, 0);
 
     /* Return the extended object. */
     return (ModelDesc*)m;
@@ -92,6 +112,8 @@ int model_step(ModelDesc* model, double* model_time, double stop_time)
     for (size_t i = 0; i < ARRAY_SIZE(m->matrix); i++) {
         fx* _ = &m->matrix[i];
         *_->index.out.scalar = (*_->index.in.scalar * m->factor) + m->offset;
+        log_debug("[%d] %f <- %f * %f + %f", *_->index.out.scalar,
+            *_->index.in.scalar, m->factor, m->offset);
     }
 
     /* Indicate progression of time for the entire step.*/

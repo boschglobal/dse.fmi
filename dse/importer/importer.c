@@ -63,7 +63,7 @@ typedef void (*fmi3FreeInstance)();
 #define MODEL_XML_FILE "modelDescription.xml"
 
 
-#define OPT_LIST       "hs:X:P:Bv"
+#define OPT_LIST       "hs:X:P:Bvc:"
 static struct option long_options[] = {
     { "help", no_argument, NULL, 'h' },
     { "step_size", optional_argument, NULL, 's' },
@@ -71,6 +71,7 @@ static struct option long_options[] = {
     { "platform", optional_argument, NULL, 'P' },
     { "signal_bus", no_argument, NULL, 'B' },
     { "verbose", no_argument, NULL, 'v' },
+    { "csv", required_argument, NULL, 'c' },
 };
 
 static inline void print_usage()
@@ -83,9 +84,10 @@ static inline void print_usage()
     printf("      [-P, --platform] (defaults to linux-amd64)\n");
     printf("      [-B, --signal_bus]\n");
     printf("      [-v, --verbose]\n");
+    printf("      [-c, --csv=<csv_file>]\n");
 }
 
-static void _log(const char* format, ...)
+void _log(const char* format, ...)
 {
     printf("Importer: ");
     va_list args;
@@ -96,6 +98,33 @@ static void _log(const char* format, ...)
     fflush(stdout);
 }
 
+static void _apply_samples(CsvDesc* c, double simulation_time)
+{
+    if (c == NULL) return;
+
+    /* Apply value sets from CSV. */
+    while ((c->timestamp >= 0) && (c->timestamp <= simulation_time)) {
+        size_t idx = 0;
+        char*  _saveptr = NULL;
+        char*  _valueptr;
+        strtok_r(c->line, CSV_DELIMITER, &_saveptr);  // Consume the timestamp.
+        while ((_valueptr = strtok_r(NULL, CSV_DELIMITER, &_saveptr))) {
+            errno = 0;
+            double v = strtod(_valueptr, NULL);
+            if (errno == 0) {
+                double* signal = NULL;
+                vector_at(&c->index, idx, &signal);
+                if (signal) *signal = v;
+            } else {
+                _log("Error decoding sample [%f][%u]", c->timestamp, idx);
+            }
+            /* Check limit. */
+            if (++idx >= vector_len(&c->index)) break;
+        }
+        /* Load the next line. */
+        if (csv_read_line(c) == false) break;
+    }
+}
 
 static void _fmu2_log(fmi2ComponentEnvironment componentEnvironment,
     fmi2String instanceName, fmi2Status status, fmi2String category,
@@ -123,8 +152,8 @@ static void _fmu2_log(fmi2ComponentEnvironment componentEnvironment,
     }
 }
 
-static int _run_fmu2_cosim(
-    modelDescription* desc, void* handle, double step_size, unsigned int steps)
+static int _run_fmu2_cosim(modelDescription* desc, void* handle,
+    double step_size, unsigned int steps, CsvDesc* csv)
 {
     /* Setup the FMU
      * ============= */
@@ -171,6 +200,9 @@ static int _run_fmu2_cosim(
     if (get_real == NULL) return EINVAL;
     fmi2GetString get_string = dlsym(handle, "fmi2GetString");
     if (get_string == NULL) return EINVAL;
+
+    _apply_samples(csv, model_time);
+
     fmi2SetReal set_real = dlsym(handle, "fmi2SetReal");
     if (set_real == NULL) return EINVAL;
     fmi2SetString set_string = dlsym(handle, "fmi2SetString");
@@ -263,11 +295,18 @@ static int _run_fmu2_cosim(
 
         /* Increment model time. */
         model_time += step_size;
+
+        _apply_samples(csv, model_time);
     }
     network_close();
 
     if (desc->real.tx_count <= 50 || __verbose__) {
-        _log("Scalar Variables:");
+        _log("Scalar Variables (RX):");
+        for (size_t i = 0; i < desc->real.rx_count; i++) {
+            _log("  [%d] %lf", desc->real.vr_rx_real[i],
+                desc->real.val_rx_real[i]);
+        }
+        _log("Scalar Variables (TX):");
         for (size_t i = 0; i < desc->real.tx_count; i++) {
             _log("  [%d] %lf", desc->real.vr_tx_real[i],
                 desc->real.val_tx_real[i]);
@@ -313,8 +352,8 @@ static void _fmu3_log(fmi3InstanceEnvironment instanceEnvironment,
     }
 }
 
-static int _run_fmu3_cosim(
-    modelDescription* desc, void* handle, double step_size, unsigned int steps)
+static int _run_fmu3_cosim(modelDescription* desc, void* handle,
+    double step_size, unsigned int steps, CsvDesc* csv)
 {
     /* Setup the FMU
      * ============= */
@@ -349,6 +388,9 @@ static int _run_fmu3_cosim(
     if (get_float64 == NULL) return EINVAL;
     fmi3GetBinary get_binary = dlsym(handle, "fmi3GetBinary");
     if (get_binary == NULL) return EINVAL;
+
+    _apply_samples(csv, model_time);
+
     fmi3SetFloat64 set_float64 = dlsym(handle, "fmi3SetFloat64");
     if (set_float64 == NULL) return EINVAL;
     fmi3SetBinary set_binary = dlsym(handle, "fmi3SetBinary");
@@ -444,6 +486,8 @@ static int _run_fmu3_cosim(
 
         /* Increment model time. */
         model_time += step_size;
+
+        _apply_samples(csv, model_time);
     }
     network_close();
 
@@ -473,7 +517,7 @@ static int _run_fmu3_cosim(
 
 static inline void _parse_arguments(int argc, char** argv, double* step_size,
     unsigned int* steps, const char** fmu_path, const char** platform,
-    bool* signal_bus)
+    bool* signal_bus, const char** csv_path)
 {
     extern int   optind, optopt;
     extern char* optarg;
@@ -511,6 +555,9 @@ static inline void _parse_arguments(int argc, char** argv, double* step_size,
         case 'v':
             __verbose__ = 1;
             break;
+        case 'c':
+            *csv_path = optarg;
+            break;
         default:
             exit(1);
         }
@@ -530,6 +577,7 @@ int main(int argc, char** argv)
     unsigned int steps = 10;
     const char*  fmu_path = NULL;
     const char*  platform = "linux-amd64";
+    const char*  csv_path = NULL;
 
     static char _cwd[PATH_MAX];
 
@@ -537,7 +585,7 @@ int main(int argc, char** argv)
     /* Parse arguments
      * =============== */
     _parse_arguments(argc, argv, &step_size, &steps, &fmu_path, &platform,
-        &signal_bus_enabled);
+        &signal_bus_enabled, &csv_path);
     getcwd(_cwd, PATH_MAX);
     if (fmu_path == NULL) {
         fmu_path = _cwd;
@@ -551,6 +599,7 @@ int main(int argc, char** argv)
     _log("FMU Dir: %s", _cwd);
     _log("Step Size: %f", step_size);
     _log("Steps: %u", steps);
+    _log("CSV Input: %s", csv_path);
     _log("Platform: %s", platform);
     _log("Loading FMU Definition: %s", MODEL_XML_FILE);
     modelDescription* desc = parse_model_desc(MODEL_XML_FILE, platform);
@@ -571,15 +620,22 @@ int main(int argc, char** argv)
         return ENOSYS;
     }
 
+    /* Load CSV Samples
+     * ================ */
+    _log("Loading CSV: %s", csv_path);
+    CsvDesc* csv = csv_open(csv_path);
+    csv_index(csv, desc->real.vr_rx_real, desc->real.val_rx_real,
+        desc->real.rx_count);
+
     /* Run a CoSimulation
      * ================== */
     int rc = 0;
     switch (atoi(desc->version)) {
     case 2:
-        rc = _run_fmu2_cosim(desc, handle, step_size, steps);
+        rc = _run_fmu2_cosim(desc, handle, step_size, steps, csv);
         break;
     case 3:
-        rc = _run_fmu3_cosim(desc, handle, step_size, steps);
+        rc = _run_fmu3_cosim(desc, handle, step_size, steps, csv);
         break;
     default:
         _log("Unsupported FMI version (%s)!", desc->version);
@@ -631,6 +687,7 @@ int main(int argc, char** argv)
     free(desc);
 
     dlclose(handle);
+    csv_close(csv);
 
     /* Return result. */
     return rc;

@@ -31,9 +31,17 @@ stdout 'ModelCFmu:   set envar: name=DIRECT__OFFSET, value=100'
 stdout 'ModelCFmu:   set envar: name=DIRECT__FACTOR, value=4'
 stdout 'Loading dynamic model: resources/sim/model/direct/lib/libdirect.so'
 stdout 'Importer: Calling fmi2DoStep\(\): model_time=0.004500, step_size=0.000500'
-stdout 'Importer:   \[256\] 0.000000'
 stdout 'Importer: Simulation return value: 0'
-
+stdout 'Importer:   \[240\] 104.000000'
+stdout 'Importer:   \[248\] 108.000000'
+stdout 'Importer:   \[256\] 112.000000'
+stdout 'Importer:   \[264\] 116.000000'
+stdout 'Importer:   \[272\] 120.000000'
+stdout 'Importer:   \[280\] 124.000000'
+stdout 'Importer:   \[288\] 128.000000'
+stdout 'Importer:   \[296\] 132.000000'
+stdout 'Importer:   \[304\] 136.000000'
+stdout 'Importer:   \[312\] 140.000000'
 
 
 -- simulation.dse --
@@ -127,6 +135,9 @@ docker run --name simer -i --rm --entrypoint="" --workdir=/repo \
     -v $ENTRYWORKDIR:/workdir \
     -e IMPORTER=$IMPORTER \
     -e FMU_DIR=$FMU_DIR \
-    -e SIMBUS_LOGLEVEL=1 \
+    -e SIMBUS_LOGLEVEL=4 \
     $SIMER_IMAGE \
-        bash -c "/repo/$IMPORTER --verbose /workdir/$FMU_DIR"
+        bash -c "/repo/$IMPORTER \
+            --verbose \
+            --csv=/workdir/$FMU_DIR/resources/sim/model/direct/data/in_values.csv \
+            /workdir/$FMU_DIR"

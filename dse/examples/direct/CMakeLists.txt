@@ -52,6 +52,7 @@ install(
     FILES
         model.yaml
         signalgroup.yaml
+        in_values.csv
     DESTINATION
         ${EXAMPLE_DIR}/sim/model/${MODULE_LC}/data
 )
