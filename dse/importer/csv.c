@@ -6,7 +6,6 @@
 #include <string.h>
 #include <errno.h>
 #include <dse/importer/importer.h>
-#include <dse/importer/importer.h>
 
 
 extern void _log(const char* format, ...);
