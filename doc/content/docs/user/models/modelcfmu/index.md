@@ -1,5 +1,5 @@
 ---
-title: "Workflow - ModelC FMU"
+title: "Model - ModelC FMU"
 linkTitle: "ModelC FMU"
 tags:
 - FMI
