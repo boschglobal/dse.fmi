@@ -76,19 +76,19 @@ examples:
 	cd ..;mkdir -p doc/content/apis/fmi/examples/fmu
 	cd ..;cp dse/examples/fmu/counter/counter.c doc/content/apis/fmi/examples/fmu/fmu.c
 
-.PHONY: workflow
-workflow:
+.PHONY: model
+model:
 	cd ..;$(TXTAR_CMD) \
 		--archive tests/testscript/e2e/direct_index.txtar \
 		--file simulation.dse \
-		--dest doc/content/docs/user/workflows/modelcfmu/script.md
+		--dest doc/content/docs/user/models/modelcfmu/script.md
 	cd ..;$(TASK_CMD) \
 		--summary \
 		--color=true \
 		generate-modelcfmu \
 			| sed $$'s/\033\[[0-9;]*m//g' \
-			> doc/content/docs/user/workflows/modelcfmu/task.md
-#		--template workflow.task.md.template \
+			> doc/content/docs/user/models/modelcfmu/task.md
+#		--template model.task.md.template \
 
 .PHONY: index
 index:
@@ -114,4 +114,4 @@ $(DOC_C_MODULES):
 			-tpng  $$(basename $(DOC_OUTPUT_$@))
 
 .PHONY: generate
-generate: index examples workflow $(DOC_C_MODULES)
+generate: index examples model $(DOC_C_MODULES)

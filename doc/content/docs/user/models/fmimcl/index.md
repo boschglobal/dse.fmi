@@ -1,13 +1,14 @@
 ---
-title: "Workflow - Gateway FMU"
-linkTitle: "Gateway FMU"
-weight: 600
+title: "Model - FMI MCL"
+linkTitle: "FMI MCL"
 tags:
 - FMI
-- Gateway
+- MCL
 - Workflow
+- Model
 github_repo: "https://github.com/boschglobal/dse.fmi"
 github_subdir: "doc"
+draft: true
 ---
 
 ## Synposis
@@ -34,7 +35,7 @@ github_subdir: "doc"
 ### Example
 
 ```bash
-task generate-gatewayfmu -- FMU_NAME=foo
+task generate-fmimcl -- FMU_NAME=foo
 ```
 
 {{< readfile file="task.md" code="true" lang="bash" >}}

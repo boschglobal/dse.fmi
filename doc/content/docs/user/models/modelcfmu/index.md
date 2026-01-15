@@ -1,12 +1,12 @@
 ---
 title: "Workflow - ModelC FMU"
 linkTitle: "ModelC FMU"
-weight: 600
 tags:
 - FMI
 - ModelC
 - ModelC FMU
 - Workflow
+- Model
 github_repo: "https://github.com/boschglobal/dse.fmi"
 github_subdir: "doc"
 ---
