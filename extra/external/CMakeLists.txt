@@ -182,7 +182,6 @@ ExternalProject_Add(msgpackc
 
 # Lua
 # ---
-if(UNIX)
 ExternalProject_Add(lua
     URL                 ${ExternalProject__LUA__URL}
     SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/lua"
@@ -196,7 +195,6 @@ ExternalProject_Add(lua
                         CC=${CMAKE_C_COMPILER}
     INSTALL_COMMAND     ""
 )
-endif()
 
 
 # OSS Target
