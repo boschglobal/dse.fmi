@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func Unzip(filename string, dest string) error {
@@ -21,8 +22,19 @@ func Unzip(filename string, dest string) error {
 	}
 	defer archive.Close()
 
+	destAbs, err := filepath.Abs(dest)
+	if err != nil {
+		return fmt.Errorf("UNZIP (%v)", err)
+	}
+
 	for _, file := range archive.File {
-		filePath := filepath.Join(dest, file.Name)
+		cleanName := filepath.Clean(file.Name)
+		filePath := filepath.Join(destAbs, cleanName)
+
+		rel, err := filepath.Rel(destAbs, filePath)
+		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+			return fmt.Errorf("UNZIP (illegal file path %q)", file.Name)
+		}
 
 		if file.FileInfo().IsDir() {
 			if err := os.MkdirAll(filePath, os.ModePerm); err != nil {
