@@ -112,7 +112,7 @@ int model_step(ModelDesc* model, double* model_time, double stop_time)
     for (size_t i = 0; i < ARRAY_SIZE(m->matrix); i++) {
         fx* _ = &m->matrix[i];
         *_->index.out.scalar = (*_->index.in.scalar * m->factor) + m->offset;
-        log_debug("[%d] %f <- %f * %f + %f", *_->index.out.scalar,
+        log_debug("[%d] %f <- %f * %f + %f", i, *_->index.out.scalar,
             *_->index.in.scalar, m->factor, m->offset);
     }
 
