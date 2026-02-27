@@ -39,7 +39,11 @@ target_link_libraries(fmigateway_runtime
         xml
 )
 
+file(GLOB PDUNET_SOURCES CONFIGURE_DEPENDS "${DSE_MODELC_SOURCE_DIR}/model/pdunet/*.c")
+list(APPEND PDUNET_SOURCES ${DSE_MODELC_SOURCE_DIR}/model/pdunet.c)
+
 add_library(modelcgateway_runtime OBJECT
+    ${PDUNET_SOURCES}
     ${DSE_MODELC_SOURCE_DIR}/model/gateway.c
     ${DSE_MODELC_SOURCE_DIR}/model/lua.c
     ${DSE_MODELC_SOURCE_DIR}/model/luamodel.c

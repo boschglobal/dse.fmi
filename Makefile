@@ -12,12 +12,12 @@ DSE_CLIB_VERSION ?= 1.0.47
 export DSE_CLIB_URL ?= $(DSE_CLIB_REPO)/archive/refs/tags/v$(DSE_CLIB_VERSION).zip
 
 DSE_MODELC_REPO ?= https://github.com/boschglobal/dse.modelc
-DSE_MODELC_VERSION ?= 2.3.1
+DSE_MODELC_VERSION ?= 2.3.3
 export DSE_MODELC_URL ?= $(DSE_MODELC_REPO)/archive/refs/tags/v$(DSE_MODELC_VERSION).zip
 export DSE_MODELC_LIB_URL ?= $(DSE_MODELC_REPO)/releases/download/v$(DSE_MODELC_VERSION)/ModelC-$(DSE_MODELC_VERSION)-$(PACKAGE_ARCH).zip
 
 DSE_NCODEC_REPO ?= https://github.com/boschglobal/dse.ncodec
-DSE_NCODEC_VERSION ?= 1.2.1
+DSE_NCODEC_VERSION ?= 1.2.2
 export DSE_NCODEC_URL ?= $(DSE_NCODEC_REPO)/archive/refs/tags/v$(DSE_NCODEC_VERSION).zip
 
 
@@ -94,7 +94,7 @@ build:
 	@${DOCKER_BUILDER_CMD} $(MAKE) do-build
 
 .PHONY: package
-package:
+package: build
 	@${DOCKER_BUILDER_CMD} $(MAKE) do-package
 
 .PHONY: test_tools
@@ -107,7 +107,7 @@ test_tools:
 	done;
 
 .PHONY: fmi
-fmi:
+fmi: build package
 	mkdir -p extra/tools/fmi/build/stage/package/linux-amd64
 	mkdir -p extra/tools/fmi/build/stage/package/linux-x86
 	mkdir -p extra/tools/fmi/build/stage/package/linux-i386
@@ -124,7 +124,7 @@ fmi:
 	fi
 
 .PHONY: tools
-tools:
+tools: fmi
 	for d in $(TOOL_DIRS) ;\
 	do \
 		mkdir -p extra/tools/$$d/build/stage ;\
@@ -165,7 +165,7 @@ ifeq ($(PACKAGE_ARCH), linux-amd64)
 			-v /var/run/docker.sock:/var/run/docker.sock \
 			-v $(HOST_DOCKER_WORKSPACE):/repo \
 			-v $${ENTRYWORKDIR}:/workdir \
-			$(TESTSCRIPT_IMAGE) -work \
+			$(TESTSCRIPT_IMAGE) \
 				-e ENTRYHOSTDIR=$(HOST_DOCKER_WORKSPACE) \
 				-e ENTRYWORKDIR=$${ENTRYWORKDIR} \
 				-e REPODIR=/repo \
