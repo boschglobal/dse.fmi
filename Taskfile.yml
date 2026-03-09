@@ -85,7 +85,6 @@ tasks:
     env:
       FMU_DIR: '{{.FMU_DIR}}'
     cmds:
-      - env | sort
       - task: gen-fmimcl
         vars:
           FMU_DIR: '{{.FMU_DIR}}'
