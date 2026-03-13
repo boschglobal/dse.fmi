@@ -55,6 +55,10 @@ vars:
     sh: id -u
   GROUP:
     sh: id -g
+  DOCKER_OPSTOOLS_REPO: '{{.REPO_DOCKER_REGISTRY | default "REPO_NOT_SPECIFIED"}}'
+  DOCKER_OPSTOOLS_IMAGE: 'dse-opstools'
+  DOCKER_OPSTOOLS_TAG: '{{.TOOLS_OPSTOOLS_VERSION | default "latest"}}'
+  DOCKER_VOLUME_NAME: '{{.PWD}}:/data'
 
 
 tasks:
@@ -203,6 +207,7 @@ tasks:
           FMU_NAME: '{{.FMU_NAME | default "Gateway"}}'
           MODEL_IDENTIFIER: '{{.MODEL_IDENTIFIER}}'
           ANNOTATIONS: '{{.ANNOTATIONS}}'
+          STACK: '{{.STACK}}'
     requires:
       vars: [SIGNAL_GROUPS]
     metadata:
@@ -352,6 +357,7 @@ tasks:
       FMU_NAME: "{{if .FMU_NAME}}--name '{{.FMU_NAME}}'{{else}}{{end}}"
       MODEL_IDENTIFIER: "{{if .MODEL_IDENTIFIER}}--modelidentifier '{{.MODEL_IDENTIFIER}}'{{else}}{{end}}"
       ANNOTATIONS: '{{if .ANNOTATIONS}}--annotations {{squote .ANNOTATIONS}}{{else}}{{end}}'
+      STACK: "{{if .STACK}}--stack '{{.STACK}}'{{else}}{{end}}"
     cmds:
       - echo "USING {{.FMI_IMAGE}} CMD {{.TASK}}"
       - docker run --rm
@@ -368,6 +374,7 @@ tasks:
             {{.FMU_NAME}}
             {{.MODEL_IDENTIFIER}}
             {{.ANNOTATIONS}}
+            {{.STACK}}
     requires:
       vars: [SIGNAL_GROUPS]
 
@@ -413,3 +420,129 @@ tasks:
         REMOVE_UNKNOWN:
           required: false
           hint: Remove unknown items (i.e. not in the patch file).
+  package-legacy-gateway-fmu:
+    desc: Package Legacy Gateway FMU
+    run: always
+    dir: '{{.USER_WORKING_DIR}}'
+    label: dse:fmi:package-legacy-gateway-fmu
+    vars:
+      FMU_NAME: '{{.FMU_NAME | default "FMU"}}'
+      FMI_VERSION: '{{.FMI_VERSION | default "1.1.43"}}'
+      MODELC_VERSION: '{{.MODELC_VERSION | default "2.3.7"}}'
+      GW_MODEL: '{{.GW_MODEL | default ""}}'
+      GW_MODEL_FILES: '{{.GW_MODEL_FILES | default ""}}'
+      STATIC_FILES: '{{.STATIC_FILES | default ""}}'
+
+      FMI_x64: Fmi-{{.FMI_VERSION}}-windows-x64
+      SIMER_WIN: Simer-{{.MODELC_VERSION}}-windows
+      MODELC_x64: ModelC-{{.MODELC_VERSION}}-windows-x64
+      MODELC_x86: ModelC-{{.MODELC_VERSION}}-windows-x86
+
+      OUT_DIR: '{{.ENTRYWORKDIR | default "out"}}'
+      DIST: '{{.OUT_DIR}}/dist'
+      RELEASE: '{{.OUT_DIR}}/release/{{.FMU_NAME}}'
+      RESOURCES: '{{.OUT_DIR}}/release/{{.FMU_NAME}}/resources'
+      BINARIES: '{{.OUT_DIR}}/release/{{.FMU_NAME}}/binaries'
+      LICENSES: '{{.OUT_DIR}}/release/{{.FMU_NAME}}/licenses'
+      MODELS: '{{.OUT_DIR}}/release/{{.FMU_NAME}}/resources/model'
+      TOOLS: '{{.OUT_DIR}}/release/{{.FMU_NAME}}/resources/tools'
+      SIM_MODELS: '{{.OUT_DIR}}/sim/model'
+      DOWNLOADS: '{{.OUT_DIR}}/downloads'
+
+      TMP_DIR:
+        sh: mktemp -d
+
+    requires:
+      vars: [GW_MODEL]
+
+    cmds:
+    # Clean & Prepare dirs
+    - rm -rf {{.DIST}} {{.RELEASE}}
+    - mkdir -p {{.DIST}} {{.RESOURCES}} {{.BINARIES}} {{.LICENSES}} {{.MODELS}} {{.TOOLS}} {{.DOWNLOADS}} {{.TMP_DIR}}
+
+    - |
+      {{- if or (hasPrefix "2.0" .MODELC_VERSION) (hasPrefix "2.1" .MODELC_VERSION) (hasPrefix "2.2" .MODELC_VERSION) }}
+      # ModelC (<2.3.7) : Redis + ModelC extraction
+      [ -z "$AR_USER" ] && echo "AR_USER not set" && exit 1 || true
+      [ -z "$AR_TOKEN" ] && echo "AR_TOKEN not set" && exit 1 || true
+
+      # Download Redis
+      curl --retry 5 --retry-delay 3 --fail --location \
+        -u "$AR_USER:$AR_TOKEN" \
+        -o {{.TMP_DIR}}/Redis-x64-3.0.504.zip \
+        https://artifactory.boschdevcloud.com/artifactory/lab000141-emthacks-generic-local/customer/any/redis/winx64/Redis-x64-3.0.504.zip
+
+      mkdir -p {{.TOOLS}}/Redis-x64-3.0.504
+      unzip -q -o {{.TMP_DIR}}/Redis-x64-3.0.504.zip -d {{.TOOLS}}/Redis-x64-3.0.504
+
+      # Download ModelC x64
+      curl --retry 5 --retry-delay 3 --fail --location \
+        -o {{.TMP_DIR}}/{{.MODELC_x64}}.zip \
+        https://github.com/boschglobal/dse.modelc/releases/download/v{{.MODELC_VERSION}}/{{.MODELC_x64}}.zip
+
+      unzip -q -o {{.TMP_DIR}}/{{.MODELC_x64}}.zip -d {{.TMP_DIR}}
+      mkdir -p {{.TOOLS}}/modelc/windows/x64
+      cp -r {{.TMP_DIR}}/{{.MODELC_x64}}/. {{.TOOLS}}/modelc/windows/x64/
+
+      # Download ModelC x86
+      curl --retry 5 --retry-delay 3 --fail --location \
+        -o {{.TMP_DIR}}/{{.MODELC_x86}}.zip \
+        https://github.com/boschglobal/dse.modelc/releases/download/v{{.MODELC_VERSION}}/{{.MODELC_x86}}.zip
+
+      unzip -q -o {{.TMP_DIR}}/{{.MODELC_x86}}.zip -d {{.TMP_DIR}}
+      mkdir -p {{.TOOLS}}/modelc/windows/x86
+      cp -r {{.TMP_DIR}}/{{.MODELC_x86}}/. {{.TOOLS}}/modelc/windows/x86/
+
+      cp -r {{.TOOLS}}/modelc/windows/x64/licenses/. {{.LICENSES}}/
+      {{- else }}
+
+      # ModelC (>=2.3.7) : Simer bundle
+
+      curl --retry 5 --retry-delay 3 --fail --location \
+        -o {{.TMP_DIR}}/{{.SIMER_WIN}}.zip \
+        https://github.com/boschglobal/dse.modelc/releases/download/v{{.MODELC_VERSION}}/{{.SIMER_WIN}}.zip
+
+      unzip -q -o {{.TMP_DIR}}/{{.SIMER_WIN}}.zip -d {{.TOOLS}}/simer-windows
+
+      {{- end }}
+
+      # Copy models
+      cp -r {{.SIM_MODELS}}/. {{.MODELS}}/
+
+      # Download FMI runtime
+      curl --retry 5 --retry-delay 3 --fail --location \
+        -o {{.DOWNLOADS}}/{{.FMI_x64}}.zip \
+        https://github.com/boschglobal/dse.fmi/releases/download/v{{.FMI_VERSION}}/{{.FMI_x64}}.zip
+
+      mkdir -p {{.BINARIES}}/win64
+
+      unzip -j -o {{.DOWNLOADS}}/{{.FMI_x64}}.zip \
+        {{.FMI_x64}}/bin/libmodelc.dll \
+        -d {{.BINARIES}}/win64
+
+      unzip -j -o {{.DOWNLOADS}}/{{.FMI_x64}}.zip \
+        {{.FMI_x64}}/fmigateway/lib/libfmi2gateway.dll \
+        -d {{.BINARIES}}/win64
+
+      # Copy Gateway resources
+      {{- $files := splitList "," .GW_MODEL_FILES }}
+      {{- range $f := $files }}
+      {{- $file := trim $f }}
+      {{- if eq $file "modelDescription.xml" }}
+      cp {{$.SIM_MODELS}}/{{$.GW_MODEL}}/{{$file}} {{$.RELEASE}}
+      {{- else }}
+      cp {{$.SIM_MODELS}}/{{$.GW_MODEL}}/{{$file}} {{$.RESOURCES}}
+      {{- end }}
+      {{- end }}
+
+      # Copy Static files
+      {{- $static := splitList "," .STATIC_FILES }}
+      {{- range $s := $static }}
+      {{- $sf := trim $s }}
+      cp {{$.PWD}}/{{$sf}} {{$.RESOURCES}}
+      {{- end }}
+
+      # Create FMU
+      cd {{.RELEASE}} && zip -r {{.DIST}}/{{.FMU_NAME}}.fmu .
+
+      echo "FMU created at {{.DIST}}/{{.FMU_NAME}}.fmu"
