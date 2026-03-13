@@ -7,6 +7,7 @@ env MDF_FILE=measurement.mf4
 
 # Create the simulation folder (Simer layout)
 mkdir $SIM
+chmod 777 $SIM
 exec cp -r $REPODIR/dse/build/_out/fmimcl/. sim
 
 
