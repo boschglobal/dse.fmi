@@ -372,7 +372,17 @@ tasks:
       vars: [SIGNAL_GROUPS]
 
   patch-signalgroup:
-    desc: Patch changes into a generated Signal Group.
+    desc: |
+      Patch changes into a generated Signal Group.
+
+      Patch format:
+      ´´´csv
+      source,target
+      input_1,input_1_patched
+      input_2,input_2_patched
+      output_1,output_1_patched
+      output_2,inactive
+      ´´´
     run: always
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:patch-signalgroup
