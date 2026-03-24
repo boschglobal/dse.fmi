@@ -50,16 +50,14 @@ vars:
   # Docker commands) must be set to the host relative path.
   ENTRYDIR: '{{if .SIM}}{{.ENTRYWORKDIR}}/{{.SIM}}{{else}}{{.PWD}}{{end}}'
   # Container image specification.
-  FMI_IMAGE: '{{.FMI_IMAGE | default "ghcr.io/boschglobal/dse-fmi:latest"}}'
+  REPO: 'https://github.com/boschglobal/dse.fmi'
+  REGISTRY: ghcr.io/boschglobal
+  TAG: '{{.TAG | default "latest"}}'
+  FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.REGISTRY}}/dse-fmi:{{.TAG}}{{end}}'
   USER:
     sh: id -u
   GROUP:
     sh: id -g
-  DOCKER_OPSTOOLS_REPO: '{{.REPO_DOCKER_REGISTRY | default "REPO_NOT_SPECIFIED"}}'
-  DOCKER_OPSTOOLS_IMAGE: 'dse-opstools'
-  DOCKER_OPSTOOLS_TAG: '{{.TOOLS_OPSTOOLS_VERSION | default "latest"}}'
-  DOCKER_VOLUME_NAME: '{{.PWD}}:/data'
-
 
 tasks:
 
