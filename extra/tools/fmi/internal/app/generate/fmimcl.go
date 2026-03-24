@@ -19,15 +19,17 @@ type FmiMclCommand struct {
 	commandName string
 	fs          *flag.FlagSet
 
-	fmupath  string
-	mcl      string
-	platform string
-	outdir   string
-	logLevel int
+	modelName string
+	fmupath   string
+	mcl       string
+	platform  string
+	outdir    string
+	logLevel  int
 }
 
 func NewFmiMclCommand(name string) *FmiMclCommand {
 	c := &FmiMclCommand{commandName: name, fs: flag.NewFlagSet(name, flag.ExitOnError)}
+	c.fs.StringVar(&c.modelName, "name", "", "Model Name for this FMU (defaults to FMU Name)")
 	c.fs.StringVar(&c.fmupath, "fmu", "", "Path to FMU")
 	c.fs.StringVar(&c.mcl, "mcl", "", "Path to the FMI MCL library")
 	c.fs.StringVar(&c.platform, "platform", "linux-amd64", "Platform of Model to generate")
@@ -58,18 +60,21 @@ func (c *FmiMclCommand) Run() error {
 	if fmiMD = h.Detect(fmuModelDescriptionFilename); fmiMD == nil {
 		return fmt.Errorf("could not read FMU Model Description file")
 	}
+	if c.modelName == "" {
+		c.modelName = fmiMD.ModelName
+	}
 	if err := c.generateModel(*fmiMD); err != nil {
 		return err
 	}
 	return nil
 }
 
-func _generateChannels(fmiMD fmi2.ModelDescription) ([]kind.Channel, error) {
+func (c *FmiMclCommand) generateChannels(fmiMD fmi2.ModelDescription) ([]kind.Channel, error) {
 	channels := []kind.Channel{
 		{
 			Alias: stringPtr("signal_channel"),
 			Selectors: &kind.Labels{
-				"model":   fmiMD.ModelName,
+				"model":   c.modelName,
 				"channel": "signal_vector",
 			},
 		},
@@ -88,7 +93,7 @@ func _generateChannels(fmiMD fmi2.ModelDescription) ([]kind.Channel, error) {
 			kind.Channel{
 				Alias: stringPtr("network_channel"),
 				Selectors: &kind.Labels{
-					"model":   fmiMD.ModelName,
+					"model":   c.modelName,
 					"channel": "network_vector",
 				},
 			},
@@ -141,7 +146,7 @@ func (c *FmiMclCommand) generateModel(fmiMD fmi2.ModelDescription) error {
 	model := kind.Model{
 		Kind: "Model",
 		Metadata: &kind.ObjectMetadata{
-			Name: &fmiMD.ModelName,
+			Name: &c.modelName,
 			Annotations: &kind.Annotations{
 				"mcl_adapter":       "fmi",
 				"mcl_version":       fmiMD.FmiVersion,
@@ -163,7 +168,7 @@ func (c *FmiMclCommand) generateModel(fmiMD fmi2.ModelDescription) error {
 	dynlib := []kind.LibrarySpec{
 		{Arch: stringPtr(platformArch), Os: stringPtr(platformOs), Path: c.mcl},
 	}
-	channels, err := _generateChannels(fmiMD)
+	channels, err := c.generateChannels(fmiMD)
 	if err != nil {
 		return fmt.Errorf("Could not generate channels: (%v)", err)
 	}

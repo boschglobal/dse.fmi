@@ -19,6 +19,7 @@ type GenSignalGroupCommand struct {
 	commandName string
 	fs          *flag.FlagSet
 
+	modelName  string
 	inputFile  string
 	outputFile string
 	logLevel   int
@@ -26,6 +27,7 @@ type GenSignalGroupCommand struct {
 
 func NewGenSignalGroupCommand(name string) *GenSignalGroupCommand {
 	c := &GenSignalGroupCommand{commandName: name, fs: flag.NewFlagSet(name, flag.ExitOnError)}
+	c.fs.StringVar(&c.modelName, "name", "", "Model Name for this FMU (defaults to FMU Name)")
 	c.fs.StringVar(&c.inputFile, "input", "", "path to FMU Model Description file (XML)")
 	c.fs.StringVar(&c.outputFile, "output", "", "path to write generated signal group file")
 	c.fs.IntVar(&c.logLevel, "log", 4, "Loglevel")
@@ -50,6 +52,9 @@ func (c *GenSignalGroupCommand) Run() error {
 	fmt.Fprintf(flag.CommandLine.Output(), "Reading file: %s\n", c.inputFile)
 	h := fmi2.XmlFmuHandler{}
 	fmiMD := h.Detect(c.inputFile)
+	if c.modelName == "" {
+		c.modelName = fmiMD.ModelName
+	}
 	if err := c.generateSignalVector(*fmiMD); err != nil {
 		return err
 	}
@@ -119,10 +124,10 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.ModelDescription
 	signalVector := kind.SignalGroup{
 		Kind: "SignalGroup",
 		Metadata: &kind.ObjectMetadata{
-			Name: stringPtr(fmiMD.ModelName),
+			Name: stringPtr(c.modelName),
 			Labels: &kind.Labels{
 				"channel": "signal_vector",
-				"model":   fmiMD.ModelName,
+				"model":   c.modelName,
 			},
 		},
 	}
@@ -135,10 +140,10 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.ModelDescription
 		networkVector := kind.SignalGroup{
 			Kind: "SignalGroup",
 			Metadata: &kind.ObjectMetadata{
-				Name: stringPtr(fmiMD.ModelName),
+				Name: stringPtr(c.modelName),
 				Labels: &kind.Labels{
 					"channel": "network_vector",
-					"model":   fmiMD.ModelName,
+					"model":   c.modelName,
 				},
 				Annotations: &kind.Annotations{
 					"vector_type": "binary",
