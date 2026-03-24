@@ -4,7 +4,7 @@ version: '3'
 metadata:
   package:
     download: '{{.REPO}}/releases/download/v{{.TAG}}/Fmi-{{.TAG}}-{{.PLATFORM_ARCH}}.zip'
-    file: 'dse/build/_dist/Fmi-{{coalesce .TAG .PACKAGE_VERSION "not-specified"}}-{{.PLATFORM_ARCH}}.zip'
+    file: 'dse/build/_dist/Fmi-{{coalesce .PACKAGE_VERSION "not-specified"}}-{{.PLATFORM_ARCH}}.zip'
   container:
     repository: ghcr.io/boschglobal/dse-fmi
 
@@ -68,10 +68,10 @@ tasks:
     cmds:
       - echo ENTRYDIR={{.ENTRYDIR}}
       - echo FMI_IMAGE={{.FMI_IMAGE}}
+      - echo TAG={{.TAG}}
       - echo PACKAGE_VERSION={{.PACKAGE_VERSION}}
       - echo PLATFORM_ARCH={{.PLATFORM_ARCH}}
       - echo REPO={{.REPO}}
-      - echo TAG={{coalesce .TAG .PACKAGE_VERSION "not-specified"}}
 
   generate-fmimcl:
     desc: Generate an FMI MCL from an existing FMU.
