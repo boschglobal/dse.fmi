@@ -52,8 +52,7 @@ vars:
   # Container image specification.
   REPO: 'https://github.com/boschglobal/dse.fmi'
   REGISTRY: ghcr.io/boschglobal
-  TAG: '{{.TAG | default "latest"}}'
-  FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.REGISTRY}}/dse-fmi:{{.TAG}}{{end}}'
+  FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.REGISTRY}}/dse-fmi:{{.TAG | default "latest"}}{{end}}'
   USER:
     sh: id -u
   GROUP:
@@ -88,6 +87,7 @@ tasks:
     env:
       FMU_DIR: '{{.FMU_DIR}}'
     cmds:
+      - task: info
       - task: gen-fmimcl
         vars:
           MODEL_NAME: '{{.MODEL_NAME}}'
@@ -140,6 +140,7 @@ tasks:
     label: dse:fmi:generate-modelcfmu
     vars: {}
     cmds:
+      - task: info
       - task: gen-modelcfmu-annotations
         vars:
           SIM_DIR: '{{.SIM_DIR}}'
@@ -200,6 +201,7 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:generate-gatewayfmu
     cmds:
+      - task: info
       - task: gen-gatewayfmu
         vars:
           SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
