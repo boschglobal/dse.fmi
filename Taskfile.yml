@@ -52,7 +52,7 @@ vars:
   # Container image specification.
   REPO: 'https://github.com/boschglobal/dse.fmi'
   REGISTRY: ghcr.io/boschglobal
-  FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.REGISTRY}}/dse-fmi:{{.TAG | default "latest"}}{{end}}'
+  FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.REGISTRY}}/dse-fmi:{{.TAG}}{{end}}'
   USER:
     sh: id -u
   GROUP:
@@ -64,9 +64,12 @@ tasks:
     run: always
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:info
+    vars:
+      FMI_IMAGE_RAW: '{{.REGISTRY}}/dse-fmi:{{.TAG}}'
     cmds:
       - echo ENTRYDIR={{.ENTRYDIR}}
       - echo FMI_IMAGE={{.FMI_IMAGE}}
+      - echo FMI_IMAGE_RAW={{.FMI_IMAGE_RAW}}
       - echo TAG={{.TAG}}
       - echo PACKAGE_VERSION={{.PACKAGE_VERSION}}
       - echo PLATFORM_ARCH={{.PLATFORM_ARCH}}
