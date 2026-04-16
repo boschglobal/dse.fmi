@@ -20,24 +20,24 @@ func writeYaml(v interface{}, path string, append bool) error {
 	enc := yaml.NewEncoder(&b)
 	enc.SetIndent(2)
 	if err := enc.Encode(v); err != nil {
-		return fmt.Errorf("Error encoding yaml: %v", err)
+		return fmt.Errorf("error encoding yaml: %v", err)
 	}
 	enc.Close()
 	if append {
 		f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			return fmt.Errorf("Error appending yaml: %v", err)
+			return fmt.Errorf("error appending yaml: %v", err)
 		}
 		defer f.Close()
 		if _, err := f.Write([]byte("---\n")); err != nil {
-			return fmt.Errorf("Error appending yaml: %v", err)
+			return fmt.Errorf("error appending yaml: %v", err)
 		}
 		if _, err := f.Write(b.Bytes()); err != nil {
-			return fmt.Errorf("Error appending yaml: %v", err)
+			return fmt.Errorf("error appending yaml: %v", err)
 		}
 	} else {
 		if err := os.WriteFile(path, b.Bytes(), 0644); err != nil {
-			return fmt.Errorf("Error writing yaml: %v", err)
+			return fmt.Errorf("error writing yaml: %v", err)
 		}
 	}
 	return nil
@@ -45,14 +45,15 @@ func writeYaml(v interface{}, path string, append bool) error {
 
 func writeXml(v interface{}, path string) error {
 	var b bytes.Buffer
+	b.WriteString(xml.Header)
 	enc := xml.NewEncoder(&b)
 	enc.Indent("  ", "    ")
 	if err := enc.Encode(v); err != nil {
-		return fmt.Errorf("Error encoding xml: %v", err)
+		return fmt.Errorf("error encoding xml: %v", err)
 	}
 	enc.Close()
 	if err := os.WriteFile(path, b.Bytes(), 0644); err != nil {
-		return fmt.Errorf("Error writing yaml: %v", err)
+		return fmt.Errorf("error writing xml: %v", err)
 	}
 	return nil
 }

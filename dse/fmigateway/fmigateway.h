@@ -88,8 +88,17 @@ typedef struct FmiGatewaySession {
     double            last_step;
 } FmiGatewaySession;
 
+typedef enum FmiGatewayState {
+    FMIGATEWAY_STATE_CREATED = 0,
+    FMIGATEWAY_STATE_INITIALIZED,
+    FMIGATEWAY_STATE_RUNNING,
+    FMIGATEWAY_STATE_STOPPED,
+    FMIGATEWAY_STATE_TERMINATED,
+} FmiGatewayState;
+
 typedef struct FmiGateway {
     ModelGatewayDesc* model;
+    FmiGatewayState   state;
     struct {
         YamlDocList*       doc_list;
         const char**       yaml_files;
@@ -113,13 +122,16 @@ DLL_PRIVATE void fmigateway_index_text_encoding(FmuInstanceData* fmu,
 DLL_PRIVATE void fmigateway_parse(FmuInstanceData* fmu);
 
 /* session.c */
-DLL_PRIVATE int fmigateway_session_configure(FmuInstanceData* fmu);
+DLL_PRIVATE int fmigateway_session_start(FmuInstanceData* fmu);
 DLL_PRIVATE int fmigateway_session_end(FmuInstanceData* fmu);
 DLL_PRIVATE int fmigateway_setenv(const char* name, const char* value);
 
-/* session_win32.c */
-DLL_PRIVATE void fmigateway_session_windows_start(FmuInstanceData* fmu);
-DLL_PRIVATE void fmigateway_session_windows_end(FmuInstanceData* fmu);
+/* session_unix.c / session_win32.c */
+DLL_PRIVATE int fmigateway_run_cmd(
+    FmuInstanceData* fmu, const char* cmd_string);
+DLL_PRIVATE void fmigateway_start_models(FmuInstanceData* fmu);
+DLL_PRIVATE void fmigateway_shutdown_models(FmuInstanceData* fmu);
+DLL_PRIVATE void fmigateway_parallelize(FmuInstanceData* fmu);
 
 
 #endif  // DSE_FMIGATEWAY_FMIGATEWAY_H_

@@ -62,7 +62,7 @@ static void _log_binary_signal(
     if (idx == NULL || idx->sv->binary == NULL) return;
     uint32_t index = idx->vi;
 
-    fmu_log(fmu, fmi3OK, "Debug",
+    fmu_log(fmu, fmi3OK, "Trace",
         "\n      - name       : %s (%s)"
         "\n        length     : %d"
         "\n        buffer len : %d",
@@ -71,7 +71,7 @@ static void _log_binary_signal(
 
     uint8_t* buffer = idx->sv->binary[index];
     for (uint32_t j = 0; j + 16 < idx->sv->length[index]; j += 16) {
-        fmu_log(fmu, fmi3OK, "Debug",
+        fmu_log(fmu, fmi3OK, "Trace",
             "%02x %02x %02x %02x %02x %02x %02x %02x "
             "%02x %02x %02x %02x %02x %02x %02x %02x",
             buffer[j + 0], buffer[j + 1], buffer[j + 2], buffer[j + 3],

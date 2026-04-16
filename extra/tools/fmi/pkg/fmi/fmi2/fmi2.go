@@ -104,6 +104,12 @@ type InitialUnknowns struct {
 	Unknown []Unknown `xml:"Unknown,omitempty"`
 }
 
+type LogCategory struct {
+	Text        string `xml:",chardata"`
+	Name        string `xml:"name,attr"`
+	Description string `xml:"description,attr,omitempty"`
+}
+
 // ModelDescription was generated 2023-05-23 07:27:35 by https://xml-to-go.github.io/ in Ukraine.
 type ModelDescription struct {
 	XMLName                  xml.Name `xml:"fmiModelDescription"`
@@ -124,6 +130,10 @@ type ModelDescription struct {
 		CanHandleVariableCommunicationStepSize string `xml:"canHandleVariableCommunicationStepSize,attr"`
 		CanInterpolateInputs                   string `xml:"canInterpolateInputs,attr"`
 	} `xml:"CoSimulation"`
+	LogCategories struct {
+		Text        string        `xml:",chardata"`
+		LogCategory []LogCategory `xml:"LogCategory,omitempty"`
+	} `xml:"LogCategories,omitempty"`
 	DefaultExperiment struct {
 		Text      string `xml:",chardata"`
 		StartTime string `xml:"startTime,attr"`
@@ -387,6 +397,15 @@ func SetGeneralFmuXmlFields(fmiConfig fmi.FmiConfig, fmuXml *ModelDescription) e
 	fmuXml.CoSimulation.ModelIdentifier = fmiConfig.ModelIdentifier // This is the packaged SO/DLL file.
 	fmuXml.CoSimulation.CanHandleVariableCommunicationStepSize = "true"
 	fmuXml.CoSimulation.CanInterpolateInputs = "true"
+
+	fmuXml.LogCategories.LogCategory = []LogCategory{
+		{Name: "All", Description: "Log all messages"},
+		{Name: "Fatal", Description: "Log fatal messages"},
+		{Name: "Error", Description: "Log error messages"},
+		{Name: "Warning", Description: "Log warning messages"},
+		{Name: "Info", Description: "Log informational messages"},
+		{Name: "Debug", Description: "Log debug messages"},
+	}
 
 	// Add VendorAnnotations if provided.
 	fmuXml.VendorAnnotations = buildAnnotations(fmiConfig.Annotations)

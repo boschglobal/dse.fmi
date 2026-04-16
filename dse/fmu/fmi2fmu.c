@@ -47,6 +47,23 @@ void fmu_log(FmuInstanceData* fmu, const int status, const char* category,
 {
     if (fmu->instance.log_enabled == fmi2False) return;
 
+    /* Filter by active category bitmask when a specific set is configured. */
+    if (fmu->instance.log_enabled == fmi2False ||
+        fmu->instance.log_categories == 0 || category == NULL) {
+        return;  // nothing to log
+    }
+
+    if ((fmu->instance.log_categories & FmiLogCategory_All) == 0) {
+        uint16_t flag = 0;
+        for (size_t i = 0; i < FMI_LOG_CATEGORY_MAP_LEN; i++) {
+            if (strcmp(_fmi_log_category_map[i].name, category) == 0) {
+                flag = _fmi_log_category_map[i].flag;
+                break;
+            }
+        }
+        if ((fmu->instance.log_categories & flag) == 0) return;
+    }
+
     va_list args;
     va_start(args, message);
     char format[1024];
@@ -64,7 +81,7 @@ static void _log_binary_signal(
     if (idx == NULL || idx->sv->binary == NULL) return;
     uint32_t index = idx->vi;
 
-    fmu_log(fmu, fmi2OK, "Debug",
+    fmu_log(fmu, fmi2OK, "Trace",
         "\n      - name       : %s (%s)"
         "\n        length     : %d"
         "\n        buffer len : %d",
@@ -73,7 +90,7 @@ static void _log_binary_signal(
 
     uint8_t* buffer = idx->sv->binary[index];
     for (uint32_t j = 0; j + 16 < idx->sv->length[index]; j += 16) {
-        fmu_log(fmu, fmi2OK, "Debug",
+        fmu_log(fmu, fmi2OK, "Trace",
             "%02x %02x %02x %02x %02x %02x %02x %02x "
             "%02x %02x %02x %02x %02x %02x %02x %02x",
             buffer[j + 0], buffer[j + 1], buffer[j + 2], buffer[j + 3],
@@ -127,6 +144,13 @@ fmi2Component fmi2Instantiate(fmi2String instance_name, fmi2Type fmu_type,
         /* No callback function at all provided. */
     } else {
         fmu->instance.logger = default_log;
+    }
+    if (fmu->instance.log_enabled) {
+        /* Enable everything except Trace by default. */
+        fmu->instance.log_categories |= FmiLogCategory_Debug;
+        fmu->instance.log_categories |= FmiLogCategory_Info;
+        fmu->instance.log_categories |= FmiLogCategory_Error;
+        fmu->instance.log_categories |= FmiLogCategory_Fatal;
     }
     fmu_log(fmu, fmi2OK, "Debug", "FMU Model instantiated");
 
@@ -599,6 +623,53 @@ void fmi2FreeInstance(fmi2Component c)
 }
 
 
+/**
+fmi2SetDebugLogging
+===================
+
+Enable or disable logging and set the active logging categories.
+
+Parameters
+----------
+c (fmi2Component*)
+: An FmuInstanceData object representing an instance of this FMU.
+loggingOn (fmi2Boolean)
+: Enable or disable logging.
+nCategories (size_t)
+: The number of logging categories.
+categories (const fmi2String[])
+: An array of logging category names.
+
+Returns
+-------
+fmi2OK (fmi2Status)
+: Logging settings updated successfully.
+*/
+fmi2Status fmi2SetDebugLogging(fmi2Component c, fmi2Boolean loggingOn,
+    size_t nCategories, const fmi2String categories[])
+{
+    assert(c);
+    FmuInstanceData* fmu = (FmuInstanceData*)c;
+
+    fmu->instance.log_categories = 0;
+    fmu->instance.log_enabled = loggingOn;
+    if (loggingOn == fmi2False) return fmi2OK;
+
+    /* Build bitmask from the supplied category names. */
+    for (size_t i = 0; i < nCategories; i++) {
+        for (size_t j = 0; j < FMI_LOG_CATEGORY_MAP_LEN; j++) {
+            if (strcmp(_fmi_log_category_map[j].name, categories[i]) == 0) {
+                fmu->instance.log_categories |=
+                    (uint16_t)_fmi_log_category_map[j].flag;
+                break;
+            }
+        }
+    }
+
+    return fmi2OK;
+}
+
+
 /*
 Unused parts of FMI interface
 =============================
@@ -617,15 +688,6 @@ const char* fmi2GetVersion(void)
     return fmi2Version;
 }
 
-fmi2Status fmi2SetDebugLogging(fmi2Component c, fmi2Boolean loggingOn,
-    size_t nCategories, const fmi2String categories[])
-{
-    assert(c);
-    UNUSED(loggingOn);
-    UNUSED(nCategories);
-    UNUSED(categories);
-    return fmi2OK;
-}
 
 fmi2Status fmi2SetupExperiment(fmi2Component c, fmi2Boolean toleranceDefined,
     fmi2Real tolerance, fmi2Real startTime, fmi2Boolean stopTimeDefined,

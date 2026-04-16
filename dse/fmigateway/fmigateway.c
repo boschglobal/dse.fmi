@@ -52,6 +52,9 @@ FmuInstanceData* fmu_create(FmuInstanceData* fmu)
         .settings.yaml_files = calloc(4, sizeof(char*)),
     };
 
+    /* Windows specific parallelization. */
+    fmigateway_parallelize(fmu);
+
     /* Allocate a NTL for the required files. */
     fmi_gw->settings.yaml_files[0] =
         dse_path_cat(fmu->instance.resource_location, "model.yaml");
@@ -59,7 +62,6 @@ FmuInstanceData* fmu_create(FmuInstanceData* fmu)
         dse_path_cat(fmu->instance.resource_location, "fmu.yaml");
     fmi_gw->settings.yaml_files[2] =
         dse_path_cat(fmu->instance.resource_location, "stack.yaml");
-
     fmu->data = (void*)fmi_gw;
 
     /* Parse the yaml files. */
@@ -99,7 +101,7 @@ int32_t fmu_init(FmuInstanceData* fmu)
     assert(gw);
     int rc;
 
-    rc = fmigateway_session_configure(fmu);
+    rc = fmigateway_session_start(fmu);
     if (rc) return rc;
 
     /* Setup the Model Gateway object. */
@@ -117,6 +119,8 @@ int32_t fmu_init(FmuInstanceData* fmu)
         fmu, gw, &fmu->variables.binary.rx, &fmu->variables.binary.tx);
     fmigateway_index_text_encoding(fmu, gw, &fmu->variables.binary.encode_func,
         &fmu->variables.binary.decode_func);
+
+    fmi_gw->state = FMIGATEWAY_STATE_INITIALIZED;
 
     return 0;
 }
@@ -154,6 +158,10 @@ int32_t fmu_step(
     assert(fmi_gw);
     ModelGatewayDesc* gw = fmi_gw->model;
     assert(gw);
+
+    if (fmi_gw->state == FMIGATEWAY_STATE_INITIALIZED) {
+        fmi_gw->state = FMIGATEWAY_STATE_RUNNING;
+    }
 
     /* Step the model. */
     int rc = model_gw_sync(gw, communication_point);
@@ -198,9 +206,7 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
     assert(gw);
 
     fmigateway_session_end(fmu);
-
-    /* Disconnect from the simbus. */
-    model_gw_exit(gw);
+    fmi_gw->state = FMIGATEWAY_STATE_TERMINATED;
 
     /* Cleanup */
     dse_yaml_destroy_doc_list(fmi_gw->settings.doc_list);

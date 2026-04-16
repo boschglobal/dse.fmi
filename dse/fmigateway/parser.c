@@ -4,7 +4,6 @@
 
 #include <assert.h>
 #include <stdio.h>
-#include <dse/testing.h>
 #include <dse/logger.h>
 #include <dse/clib/collections/hashlist.h>
 #include <dse/clib/collections/hashmap.h>
@@ -17,7 +16,7 @@
 
 #define UNUSED(x)            ((void)x)
 #define ARRAY_SIZE(x)        (sizeof(x) / sizeof(x[0]))
-#define DEFAULT_END_TIME     60 * 60 * 10  // 10 minutes
+#define DEFAULT_END_TIME     60 * 60  // 1 hour
 #define DEFAULT_STEP_SIZE    0.0005
 #define DEFAULT_LOG_LEVEL    6
 #define DEFAULT_TIMEOUT      60.0
@@ -423,7 +422,7 @@ static WindowsModel* _parse_simbus(FmuInstanceData* fmu, YamlNode* root)
     YamlNode*   simbus_node = dse_yaml_find_node_in_seq(
         root, "spec/models", selector, value, ARRAY_SIZE(selector));
     if (simbus_node == NULL) {
-        fmu_log(fmu, 0, "Notice", "Simbus not running on windows.");
+        fmu_log(fmu, 0, "Info", "Simbus not running on windows.");
         return NULL;
     }
 
@@ -493,8 +492,8 @@ static void _get_stack_annotations(FmuInstanceData* fmu, YamlNode* doc)
     dse_yaml_get_uint(
         ann_node, "create_logfiles", (unsigned int*)&session->logging);
 
-    bool start_redis = true;
-    dse_yaml_get_uint(doc, "start_redis", (unsigned int*)&start_redis);
+    unsigned int start_redis = true;
+    dse_yaml_get_uint(ann_node, "start_redis", &start_redis);
     if (start_redis) {
         session->transport = _parse_redis(fmu, doc);
         fmu_log(fmu, 0, "Debug", "Redis will be started by the gateway");

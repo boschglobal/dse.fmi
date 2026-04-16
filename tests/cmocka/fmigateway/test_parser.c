@@ -97,7 +97,7 @@ void test_fmigateway__parser_gw_stack_default(void** state)
     WindowsModel simbus = {
         .name = (char*)"simbus",
         .step_size = 0.0005,
-        .end_time = 36000.0,
+        .end_time = 360000.0,
         .log_level = 6,
         .timeout = 60.0,
         .exe = "simbus.exe",
@@ -114,7 +114,7 @@ void test_fmigateway__parser_gw_stack_default(void** state)
 
     /* Test Gateway parsing. */
     assert_non_null(fmi_gw->settings.doc_list);
-    assert_double_equal(fmi_gw->settings.end_time, 36000.0, 0.0);
+    assert_double_equal(fmi_gw->settings.end_time, 360000.0, 0.0);
     assert_double_equal(fmi_gw->settings.step_size, 0.0005, 0.0);
     assert_int_equal(fmi_gw->settings.log_level, 6);
     assert_string_equal(fmi_gw->settings.session->log_location,
@@ -230,7 +230,7 @@ void test_fmigateway__parser_model_stack(void** state)
             /* Model with default values. */
             .name = (char*)"Model_2",
             .step_size = 0.0005,
-            .end_time = 36000.0,
+            .end_time = 360000.0,
             .log_level = 6,
             .timeout = 60.0,
             .exe = "modelc.exe",
@@ -240,7 +240,7 @@ void test_fmigateway__parser_model_stack(void** state)
             /* Model with default values. */
             .name = (char*)"Model_3,Model_4",
             .step_size = 0.0005,
-            .end_time = 36000.0,
+            .end_time = 360000.0,
             .log_level = 6,
             .timeout = 60.0,
             .exe = "modelc.exe",

@@ -63,7 +63,7 @@ func NewFmiGatewayCommand(name string) *GenFmiGatewayCommand {
 		startTime: 0.0,
 		endTime:   9999.0,
 		stepSize:  0.0005,
-		signalIdx: 1,
+		signalIdx: 0,
 	}
 
 	c.fs.IntVar(&c.logLevel, "log", 4, "Loglevel")

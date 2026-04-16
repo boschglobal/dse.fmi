@@ -162,6 +162,29 @@ typedef enum {
     FmiLogPending
 } FmiLogStatus;
 
+/* Log categories, used as bitmask flags. */
+typedef enum {
+    FmiLogCategory_Trace = (1u << 0),
+    FmiLogCategory_Debug = (1u << 1),
+    FmiLogCategory_Info = (1u << 2),
+    FmiLogCategory_Error = (1u << 3),
+    FmiLogCategory_Fatal = (1u << 4),
+    FmiLogCategory_All = (1u << 5),
+} FmiLogCategory;
+
+static const struct {
+    const char*    name;
+    FmiLogCategory flag;
+} _fmi_log_category_map[] = {
+    { "Trace", FmiLogCategory_Trace },
+    { "Debug", FmiLogCategory_Debug },
+    { "Info", FmiLogCategory_Info },
+    { "Error", FmiLogCategory_Error },
+    { "Fatal", FmiLogCategory_Fatal },
+    { "All", FmiLogCategory_All },
+};
+#define FMI_LOG_CATEGORY_MAP_LEN                                               \
+    (sizeof(_fmi_log_category_map) / sizeof(_fmi_log_category_map[0]))
 
 /* FMU Signal Interface. */
 #define FMU_SIGNALS_RESET_FUNC_NAME  "fmu_signals_reset"
@@ -221,16 +244,18 @@ typedef struct FmuVarTableMarshalItem {
 typedef struct FmuInstanceData {
     /* FMI Instance Data. */
     struct {
-        char* name;
-        int   type;
-        int   version;
-        char* resource_location;
-        char* guid;
-        bool  log_enabled;
-        void* logger;
-        void* environment;
+        char*    name;
+        int      type;
+        int      version;
+        char*    resource_location;
+        char*    guid;
+        bool     log_enabled;
+        void*    logger;
+        void*    environment;
         /* Storage for memory to be explicitly released. */
-        char* save_resource_location;
+        char*    save_resource_location;
+        /* Bitmask of active log categories (FmiLogCategory flags). */
+        uint16_t log_categories;
     } instance;
     /* FMU, Signal Variables. */
     struct {
