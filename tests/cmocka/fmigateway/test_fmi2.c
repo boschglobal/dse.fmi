@@ -129,6 +129,9 @@ void test_fmigateway__fmi2_instantiate(void** state)
     assert_non_null(inst->instance.type);
     assert_int_equal(inst->instance.type, setup->fmu_type);
 
+    const char* categories[1] = { "All" };
+    fmi2SetDebugLogging(inst, setup->logging_on, 1, categories);
+
     /* Check gateway data. */
     assert_non_null(inst->data);
 

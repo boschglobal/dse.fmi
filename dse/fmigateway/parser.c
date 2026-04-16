@@ -187,6 +187,8 @@ static void _parse_script_envar(
             /* Read cmd envar annotations. */
             if (dse_yaml_get_string(_env, "name", &envar->name)) {
                 fmu_log(fmu, 4, "Error", "no envvar name for index %d", i);
+                free(envar->vref);
+                free(envar);
                 continue;
             };
             if (dse_yaml_get_string(_env, "type", &envar->type)) {

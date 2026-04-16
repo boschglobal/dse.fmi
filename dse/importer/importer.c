@@ -38,6 +38,7 @@ Support for both FMI 2 and FMI 3 Co-Simulation.
 
 /* Define types for the FMI 2 inteface methods being used. */
 typedef void* (*fmi2Instantiate)();
+typedef int32_t (*fmi2SetDebugLogging)();
 typedef int32_t (*fmi2ExitInitializationMode)();
 typedef int32_t (*fmi2GetReal)();
 typedef int32_t (*fmi2GetString)();
@@ -178,6 +179,13 @@ static int _run_fmu2_cosim(modelDescription* desc, void* handle,
     fmu = instantiate(
         "fmu", fmi2CoSimulation, "guid", "resources", &functions, true, true);
     if (fmu == NULL) return EINVAL;
+
+    /* fmi2SetDebugLogging */
+    fmi2SetDebugLogging set_debug_logging =
+        dlsym(handle, "fmi2SetDebugLogging");
+    if (set_debug_logging == NULL) return EINVAL;
+    const char* log_categories[] = { "All" };
+    set_debug_logging(fmu, fmi2True, 1, log_categories);
 
     /* fmi2ExitInitializationMode */
     fmi2ExitInitializationMode exit_init_mode =
