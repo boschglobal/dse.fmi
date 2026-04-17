@@ -111,7 +111,10 @@ int fmigateway_session_end(FmuInstanceData* fmu)
     FmiGateway* fmi_gw = fmu->data;
 
     FmiGatewaySession* session = fmi_gw->settings.session;
-    if (session == NULL) return 0;
+    if (session == NULL) {
+        model_gw_exit(fmi_gw->model);
+        return 0;
+    }
 
     fmigateway_shutdown_models(fmu);
 
