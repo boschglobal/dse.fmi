@@ -14,7 +14,6 @@
 #include <dse/fmigateway/fmigateway.h>
 
 
-#define MODEL_MAX_TIME 60 * 60 * 100  // 100 hours.
 #define UNUSED(x)      ((void)x)
 #define MAX_CMD_LENGTH 2048
 
@@ -116,7 +115,6 @@ static void _gracefully_terminate_process(
 {
     WindowsProcess* w_process = w_model->w_process;
     if (w_process == NULL) return;
-    if (w_model->end_time != MODEL_MAX_TIME) return;
 
     /* Check if process is still running */
     DWORD exitCode;

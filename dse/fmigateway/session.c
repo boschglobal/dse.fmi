@@ -15,7 +15,7 @@
 static char* _get_fmu_env_value(FmuInstanceData* fmu, FmiGatewayEnvvar* e)
 {
     if (strcmp(e->type, "string") == 0) {
-        const char* value = hashmap_get(&fmu->variables.string.input, // NOLINT
+        const char* value = hashmap_get(&fmu->variables.string.input,  // NOLINT
             e->vref);
         if (value) return strdup(value);
     } else if (strcmp(e->type, "real") == 0) {

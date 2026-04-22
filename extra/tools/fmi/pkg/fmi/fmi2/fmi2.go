@@ -104,7 +104,7 @@ type InitialUnknowns struct {
 	Unknown []Unknown `xml:"Unknown,omitempty"`
 }
 
-type LogCategory struct {
+type Category struct {
 	Text        string `xml:",chardata"`
 	Name        string `xml:"name,attr"`
 	Description string `xml:"description,attr,omitempty"`
@@ -131,8 +131,8 @@ type ModelDescription struct {
 		CanInterpolateInputs                   string `xml:"canInterpolateInputs,attr"`
 	} `xml:"CoSimulation"`
 	LogCategories struct {
-		Text        string        `xml:",chardata"`
-		LogCategory []LogCategory `xml:"LogCategory,omitempty"`
+		Text        string     `xml:",chardata"`
+		LogCategory []Category `xml:"Category,omitempty"`
 	} `xml:"LogCategories,omitempty"`
 	DefaultExperiment struct {
 		Text      string `xml:",chardata"`
@@ -398,7 +398,7 @@ func SetGeneralFmuXmlFields(fmiConfig fmi.FmiConfig, fmuXml *ModelDescription) e
 	fmuXml.CoSimulation.CanHandleVariableCommunicationStepSize = "true"
 	fmuXml.CoSimulation.CanInterpolateInputs = "true"
 
-	fmuXml.LogCategories.LogCategory = []LogCategory{
+	fmuXml.LogCategories.LogCategory = []Category{
 		{Name: "All", Description: "Log all messages"},
 		{Name: "Fatal", Description: "Log fatal messages"},
 		{Name: "Error", Description: "Log error messages"},
