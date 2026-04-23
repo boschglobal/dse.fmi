@@ -24,6 +24,7 @@ set(FMU_FILES
 # Targets - FMI2 FMU
 # ==================
 set(FMU_FMI2_PATH examples/fmu/${MODULE_LC}/fmi2)
+list(GET FMI2_BIN_PATHS "${OS_IDX}" FMI2_BINARY_PATH)
 add_library(fmu2${MODULE_LC} SHARED
     ${FMU_FILES}
 )
@@ -49,7 +50,9 @@ install(
     TARGETS
         fmu2${MODULE_LC}
     LIBRARY DESTINATION
-        ${FMU_FMI2_PATH}/binaries/linux64
+        ${FMU_FMI2_PATH}/${FMI2_BINARY_PATH}
+    RUNTIME DESTINATION
+        ${FMU_FMI2_PATH}/${FMI2_BINARY_PATH}
 )
 install(
     FILES
@@ -68,6 +71,7 @@ install(
 # Targets - FMI3 FMU
 # ==================
 set(FMU_FMI3_PATH examples/fmu/${MODULE_LC}/fmi3)
+list(GET FMI3_BIN_PATHS "${OS_IDX}" FMI3_BINARY_PATH)
 add_library(fmu3${MODULE_LC} SHARED
     ${FMU_FILES}
 )
@@ -93,7 +97,9 @@ install(
     TARGETS
         fmu3${MODULE_LC}
     LIBRARY DESTINATION
-        ${FMU_FMI3_PATH}/binaries/x86_64-linux
+        ${FMU_FMI3_PATH}/${FMI3_BINARY_PATH}
+    RUNTIME DESTINATION
+        ${FMU_FMI3_PATH}/${FMI3_BINARY_PATH}
 )
 install(
     FILES
