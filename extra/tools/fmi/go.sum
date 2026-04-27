@@ -6,8 +6,8 @@ github.com/boschglobal/dse.clib/extra/go/command v1.0.36 h1:4XbJLorCUk0BEB22KTE+
 github.com/boschglobal/dse.clib/extra/go/command v1.0.36/go.mod h1:g11DkMVJRVo+FP+vLJcTkJpLHpm27Xfizk8WzWDs17c=
 github.com/boschglobal/dse.clib/extra/go/file v1.0.48 h1:IY7zDlCK+XE8RABE89tHusv7EF1RK7PwamSHHnQ03V8=
 github.com/boschglobal/dse.clib/extra/go/file v1.0.48/go.mod h1:2jSOjLXC0QhLz/OPUcnJ+WA727YWv0nNrYIShdHB5m4=
-github.com/boschglobal/dse.schemas/code/go/dse v1.2.47 h1:jfjfjDMF/53m2WDc+RgejbmHaNUuVnBsjoG+Utc7qpo=
-github.com/boschglobal/dse.schemas/code/go/dse v1.2.47/go.mod h1:uED31AxkE3HObS0ByOV13cBM63NrkfLz1KCaTeXZwek=
+github.com/boschglobal/dse.schemas/code/go/dse v1.2.48 h1:xkivZ9IPWtYHUSvbypYhjbFYTb6X/ctxvoY6D0ZxJko=
+github.com/boschglobal/dse.schemas/code/go/dse v1.2.48/go.mod h1:uED31AxkE3HObS0ByOV13cBM63NrkfLz1KCaTeXZwek=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
