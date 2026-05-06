@@ -46,15 +46,16 @@ metadata:
         - alias: out_vector
 
 vars:
-  # When running from E2E tests (i.e. Docker in Docker), the ENTRYDIR (for
+  # When running from E2E tests (i.e. Docker in Docker), the FMI_SIMDIR (for
   # Docker commands) must be set to the host relative path.
-  ENTRYDIR: '{{if .SIM}}{{.ENTRYWORKDIR}}/{{.SIM}}{{else}}{{.PWD}}{{end}}'
+  FMI_SIMDIR: '{{if .SIM}}{{.ENTRYWORKDIR}}/{{.SIM}}{{else}}{{.PWD}}{{end}}'
   # Container image specification.
-  REPO: 'https://github.com/boschglobal/dse.fmi'
-  REGISTRY: ghcr.io/boschglobal
-  USER:
+  FMI_REPO: 'https://github.com/boschglobal/dse.fmi'
+  FMI_REGISTRY: ghcr.io/boschglobal
+  FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.FMI_REGISTRY}}/dse-fmi:{{.TAG | default "latest"}}{{end}}'
+  FMI_USER:
     sh: id -u
-  GROUP:
+  FMI_GROUP:
     sh: id -g
 
 tasks:
@@ -63,16 +64,20 @@ tasks:
     run: always
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:info
-    vars:
-      FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.REGISTRY}}/dse-fmi:{{.TAG | default "latest"}}{{end}}'
     cmds:
-      - echo ENTRYDIR={{.ENTRYDIR}}
+      - echo "** Taskfile global vars (FMI Namespace) **"
+      - echo FMI_SIMDIR={{.FMI_SIMDIR}}
       - echo FMI_IMAGE={{.FMI_IMAGE}}
-      - echo FMI_IMAGE_RAW={{.FMI_IMAGE_RAW}}
+      - echo FMI_USER={{.FMI_USER}}
+      - echo FMI_GROUP={{.FMI_GROUP}}
+      - echo "** Taskfile Include vars **"
+      - echo ENTRYWORKDIR={{.ENTRYWORKDIR}}
+      - echo SIM={{.SIM}}
       - echo TAG={{.TAG}}
+      - echo "** Runtime/Other vars **"
       - echo PACKAGE_VERSION={{.PACKAGE_VERSION}}
       - echo PLATFORM_ARCH={{.PLATFORM_ARCH}}
-      - echo REPO={{.REPO}}
+      - echo USER_WORKING_DIR={{.USER_WORKING_DIR}}
 
   generate-fmimcl:
     desc: Generate an FMI MCL from an existing FMU.
@@ -256,7 +261,6 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-mcl
     vars:
-      FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.REGISTRY}}/dse-fmi:{{.TAG | default "latest"}}{{end}}'
       # FMU_DIR: '{{.FMU_DIR}}'
       OUT_DIR: '{{.OUT_DIR | default "out/model"}}'
       # MCL_PATH: '{{.MCL_PATH}}'
@@ -264,8 +268,8 @@ tasks:
       MODEL_NAME: "{{if .MODEL_NAME}}--name '{{.MODEL_NAME}}'{{else}}{{end}}"
     cmds:
       - docker run --rm
-          --user {{.USER}}:{{.GROUP}}
-          -v {{.ENTRYDIR}}:/sim
+          --user {{.FMI_USER}}:{{.FMI_GROUP}}
+          -v {{.FMI_SIMDIR}}:/sim
           {{.FMI_IMAGE}}
           gen-fmimcl
             --fmu {{.FMU_DIR}}
@@ -282,12 +286,11 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-signalgroup
     vars:
-      FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.REGISTRY}}/dse-fmi:{{.TAG | default "latest"}}{{end}}'
       MODEL_NAME: "{{if .MODEL_NAME}}--name '{{.MODEL_NAME}}'{{else}}{{end}}"
     cmds:
       - docker run --rm
-          --user {{.USER}}:{{.GROUP}}
-          -v {{.ENTRYDIR}}:/sim
+          --user {{.FMI_USER}}:{{.FMI_GROUP}}
+          -v {{.FMI_SIMDIR}}:/sim
           {{.FMI_IMAGE}}
           gen-signalgroup
             --input {{.INPUT}}
@@ -303,7 +306,6 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-modelcfmu
     vars:
-      FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.REGISTRY}}/dse-fmi:{{.TAG | default "latest"}}{{end}}'
       SIM_DIR: "{{if .SIM_DIR}}--sim '{{.SIM_DIR}}'{{else}}{{end}}"
       # FMU_NAME: '{{.FMU_NAME}}'
       PLATFORM: "{{if .PLATFORM}}--platform '{{.PLATFORM}}'{{else}}{{end}}"
@@ -314,11 +316,11 @@ tasks:
       OUT_DIR: "{{if .OUT_DIR}}--outdir '{{.OUT_DIR}}'{{else}}{{end}}"
     cmds:
       - echo "USING {{.FMI_IMAGE}} CMD {{.TASK}}"
-      - mkdir -p {{.ENTRYDIR}}/../fmu
+      - mkdir -p {{.FMI_SIMDIR}}/../fmu
       - docker run --rm
-          --user {{.USER}}:{{.GROUP}}
-          -v {{.ENTRYDIR}}:/sim
-          -v {{.ENTRYDIR}}/../fmu:/out
+          --user {{.FMI_USER}}:{{.FMI_GROUP}}
+          -v {{.FMI_SIMDIR}}:/sim
+          -v {{.FMI_SIMDIR}}/../fmu:/out
           {{.FMI_IMAGE}}
           gen-modelcfmu
             {{.SIM_DIR}}
@@ -338,7 +340,6 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-modelcfmu-annotations
     vars:
-      FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.REGISTRY}}/dse-fmi:{{.TAG | default "latest"}}{{end}}'
       SIM_DIR: "{{if .SIM_DIR}}--sim '{{.SIM_DIR}}'{{else}}{{end}}"
       SIGNAL_GROUPS: "{{if .SIGNAL_GROUPS}}--signalgroups '{{.SIGNAL_GROUPS}}'{{else}}{{end}}"
       RULEFILE: "{{if .RULEFILE}}--rule '{{.RULEFILE}}'{{else}}{{end}}"
@@ -347,8 +348,8 @@ tasks:
     cmds:
       - echo "USING {{.FMI_IMAGE}} CMD {{.TASK}}"
       - docker run --rm
-          --user {{.USER}}:{{.GROUP}}
-          -v {{.ENTRYDIR}}:/sim
+          --user {{.FMI_USER}}:{{.FMI_GROUP}}
+          -v {{.FMI_SIMDIR}}:/sim
           {{.FMI_IMAGE}}
           gen-modelcfmu-annotations
             {{.SIM_DIR}}
@@ -365,7 +366,6 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-gateway
     vars:
-      FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.REGISTRY}}/dse-fmi:{{.TAG | default "latest"}}{{end}}'
       # SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
       OUT_DIR: '{{.OUT_DIR | default "out"}}'
       SESSION: "{{if .SESSION}}--session '{{.SESSION}}'{{else}}{{end}}"
@@ -379,8 +379,8 @@ tasks:
     cmds:
       - echo "USING {{.FMI_IMAGE}} CMD {{.TASK}}"
       - docker run --rm
-          --user {{.USER}}:{{.GROUP}}
-          -v {{.ENTRYDIR}}:/sim
+          --user {{.FMI_USER}}:{{.FMI_GROUP}}
+          -v {{.FMI_SIMDIR}}:/sim
           {{.FMI_IMAGE}}
           gen-gatewayfmu
             --signalgroups {{.SIGNAL_GROUPS}}
@@ -412,15 +412,14 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:patch-signalgroup
     vars:
-      FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.REGISTRY}}/dse-fmi:{{.TAG | default "latest"}}{{end}}'
       INPUT: '{{.INPUT}}'
       PATCH: '{{.PATCH}}'
       REMOVE_UNKNOWN: '{{if .REMOVE_UNKNOWN}}--remove-unknown{{else}}{{end}}'
     cmds:
       - echo "USING {{.FMI_IMAGE}} CMD {{.TASK}}"
       - docker run --rm
-          --user {{.USER}}:{{.GROUP}}
-          -v {{.ENTRYDIR}}:/sim
+          --user {{.FMI_USER}}:{{.FMI_GROUP}}
+          -v {{.FMI_SIMDIR}}:/sim
           {{.FMI_IMAGE}}
           patch-signalgroup
             --input {{.INPUT}}
