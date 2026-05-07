@@ -82,14 +82,14 @@ docker run --name builder -i --rm \
     $BUILDER_IMAGE "$SIMULATION_DSE"
 echo "==========================="
 echo "==========================="
-cat simulation.yaml
+cat out/simulation.yaml
 echo "==========================="
 echo "==========================="
-cat Taskfile.yml
+cat out/Taskfile.yml
 echo "==========================="
 echo "==========================="
 
-task -y -v
+task -y -t out/Taskfile.yml
 
 echo "==========================="
 echo "==========================="
