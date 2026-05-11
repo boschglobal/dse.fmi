@@ -4,7 +4,7 @@ version: '3'
 metadata:
   package:
     download: '{{.REPO}}/releases/download/v{{.TAG}}/Fmi-{{.TAG}}-{{.PLATFORM_ARCH}}.zip'
-    file: 'dse/build/_dist/Fmi-{{coalesce .PACKAGE_VERSION "not-specified"}}-{{.PLATFORM_ARCH}}.zip'
+    file: 'dse/build/_dist/Fmi-{{coalesce .TAG .PACKAGE_VERSION "not-specified"}}-{{.PLATFORM_ARCH}}.zip'
   container:
     repository: ghcr.io/boschglobal/dse-fmi
 
@@ -456,7 +456,7 @@ tasks:
       MODELC_x64: ModelC-{{.MODELC_VERSION}}-windows-x64
       MODELC_x86: ModelC-{{.MODELC_VERSION}}-windows-x86
 
-      OUT_DIR: '{{.ENTRYWORKDIR | default "out"}}'
+      OUT_DIR: '{{.OUT_DIR | default "out"}}'
       DIST: '{{.OUT_DIR}}/dist'
       RELEASE: '{{.OUT_DIR}}/release/{{.FMU_NAME}}'
       RESOURCES: '{{.OUT_DIR}}/release/{{.FMU_NAME}}/resources'
@@ -560,6 +560,9 @@ tasks:
         {{- end }}
 
         # Create FMU
-        cd {{.RELEASE}} && zip -r {{.DIST}}/{{.FMU_NAME}}.fmu .
+        (
+          cd {{.RELEASE}} || exit 1
+          zip -r ../../dist/{{.FMU_NAME}}.fmu .
+        )
 
         echo "FMU created at {{.DIST}}/{{.FMU_NAME}}.fmu"
