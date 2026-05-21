@@ -452,18 +452,18 @@ tasks:
       STATIC_FILES: '{{.STATIC_FILES | default ""}}'
 
       FMI_x64: Fmi-{{.FMI_VERSION}}-windows-x64
-      SIMER_WIN: Simer-{{.MODELC_VERSION}}-windows
       MODELC_x64: ModelC-{{.MODELC_VERSION}}-windows-x64
       MODELC_x86: ModelC-{{.MODELC_VERSION}}-windows-x86
 
       OUT_DIR: '{{.OUT_DIR | default "out"}}'
       DIST: '{{.OUT_DIR}}/dist'
       RELEASE: '{{.OUT_DIR}}/release/{{.FMU_NAME}}'
-      RESOURCES: '{{.OUT_DIR}}/release/{{.FMU_NAME}}/resources'
-      BINARIES: '{{.OUT_DIR}}/release/{{.FMU_NAME}}/binaries'
-      LICENSES: '{{.OUT_DIR}}/release/{{.FMU_NAME}}/licenses'
-      MODELS: '{{.OUT_DIR}}/release/{{.FMU_NAME}}/resources/model'
-      TOOLS: '{{.OUT_DIR}}/release/{{.FMU_NAME}}/resources/tools'
+      RESOURCES: '{{.RELEASE}}/resources'
+      BINARIES: '{{.RELEASE}}/binaries'
+      LICENSES: '{{.RELEASE}}/licenses'
+      MODELS: '{{.RESOURCES}}/model'
+      TOOLS: '{{.RESOURCES}}/tools'
+      SIMER_WIN: '{{.TOOLS}}/simer-windows'
       SIM_MODELS: '{{.OUT_DIR}}/sim/model'
       DOWNLOADS: '{{.OUT_DIR}}/downloads'
 
@@ -478,61 +478,59 @@ tasks:
       - rm -rf {{.DIST}} {{.RELEASE}}
       - mkdir -p {{.DIST}} {{.RESOURCES}} {{.BINARIES}} {{.LICENSES}} {{.MODELS}} {{.TOOLS}} {{.DOWNLOADS}} {{.TMP_DIR}}
       - |
+        echo "=== Packaging {{.FMU_NAME}} FMU ==="
         {{- if or (hasPrefix "2.0" .MODELC_VERSION) (hasPrefix "2.1" .MODELC_VERSION) (hasPrefix "2.2" .MODELC_VERSION) }}
-        # ModelC (<2.3.7) : Redis + ModelC extraction
-        [ -z "$AR_USER" ] && echo "AR_USER not set" && exit 1 || true
-        [ -z "$AR_TOKEN" ] && echo "AR_TOKEN not set" && exit 1 || true
+            # ModelC (<2.3.7) : Redis + ModelC extraction
 
-        # Download Redis
-        curl --retry 5 --retry-delay 3 --fail --location \
-          -u "$AR_USER:$AR_TOKEN" \
-          -o {{.TMP_DIR}}/Redis-x64-3.0.504.zip \
-          https://artifactory.boschdevcloud.com/artifactory/lab000141-emthacks-generic-local/customer/any/redis/winx64/Redis-x64-3.0.504.zip
+            echo "Copying Redis runtime files..."
+            # Redis files from simer-windows
+            rsync -av --exclude='x64/' --exclude='x86/' --exclude='simer.exe' {{.OUT_DIR}}/sim/bin/. {{.TOOLS}}/Redis-x64-3.0.504/
 
-        mkdir -p {{.TOOLS}}/Redis-x64-3.0.504
-        unzip -q -o {{.TMP_DIR}}/Redis-x64-3.0.504.zip -d {{.TOOLS}}/Redis-x64-3.0.504
+            echo "Downloading ModelC dependencies..."
+            # Download ModelC x64
+            echo "Downloading ModelC x64..."
+            curl --retry 5 --retry-delay 3 --fail --location \
+              -o {{.TMP_DIR}}/{{.MODELC_x64}}.zip \
+              https://github.com/boschglobal/dse.modelc/releases/download/v{{.MODELC_VERSION}}/{{.MODELC_x64}}.zip
 
-        # Download ModelC x64
-        curl --retry 5 --retry-delay 3 --fail --location \
-          -o {{.TMP_DIR}}/{{.MODELC_x64}}.zip \
-          https://github.com/boschglobal/dse.modelc/releases/download/v{{.MODELC_VERSION}}/{{.MODELC_x64}}.zip
+            # Download ModelC x86
+            echo "Downloading ModelC x86..."
+            curl --retry 5 --retry-delay 3 --fail --location \
+              -o {{.TMP_DIR}}/{{.MODELC_x86}}.zip \
+              https://github.com/boschglobal/dse.modelc/releases/download/v{{.MODELC_VERSION}}/{{.MODELC_x86}}.zip
 
-        unzip -q -o {{.TMP_DIR}}/{{.MODELC_x64}}.zip -d {{.TMP_DIR}}
-        mkdir -p {{.TOOLS}}/modelc/windows/x64
-        cp -r {{.TMP_DIR}}/{{.MODELC_x64}}/. {{.TOOLS}}/modelc/windows/x64/
 
-        # Download ModelC x86
-        curl --retry 5 --retry-delay 3 --fail --location \
-          -o {{.TMP_DIR}}/{{.MODELC_x86}}.zip \
-          https://github.com/boschglobal/dse.modelc/releases/download/v{{.MODELC_VERSION}}/{{.MODELC_x86}}.zip
+            echo "Extracting ModelC packages..."
+            unzip -q -o {{.TMP_DIR}}/{{.MODELC_x64}}.zip -d {{.TMP_DIR}}
+            mkdir -p {{.TOOLS}}/modelc/windows/x64
+            cp -r {{.TMP_DIR}}/{{.MODELC_x64}}/. {{.TOOLS}}/modelc/windows/x64/
 
-        unzip -q -o {{.TMP_DIR}}/{{.MODELC_x86}}.zip -d {{.TMP_DIR}}
-        mkdir -p {{.TOOLS}}/modelc/windows/x86
-        cp -r {{.TMP_DIR}}/{{.MODELC_x86}}/. {{.TOOLS}}/modelc/windows/x86/
+            unzip -q -o {{.TMP_DIR}}/{{.MODELC_x86}}.zip -d {{.TMP_DIR}}
+            mkdir -p {{.TOOLS}}/modelc/windows/x86
+            cp -r {{.TMP_DIR}}/{{.MODELC_x86}}/. {{.TOOLS}}/modelc/windows/x86/
 
-        cp -r {{.TOOLS}}/modelc/windows/x64/licenses/. {{.LICENSES}}/
+            echo "Copying license files..."
+            cp -r {{.TOOLS}}/modelc/windows/x64/licenses/. {{.LICENSES}}/
         {{- else }}
-
-        # ModelC (>=2.3.7) : Simer bundle
-
-        curl --retry 5 --retry-delay 3 --fail --location \
-          -o {{.TMP_DIR}}/{{.SIMER_WIN}}.zip \
-          https://github.com/boschglobal/dse.modelc/releases/download/v{{.MODELC_VERSION}}/{{.SIMER_WIN}}.zip
-
-        unzip -q -o {{.TMP_DIR}}/{{.SIMER_WIN}}.zip -d {{.TOOLS}}/simer-windows
-
+            # ModelC (>=2.3.7) : Simer bundle
+            mkdir -p {{.SIMER_WIN}}
+            echo "Copying Simer-windows binaries..."
+            cp -r {{.OUT_DIR}}/sim/bin/. {{.SIMER_WIN}}/bin
+            echo "Copying license files..."
+            cp -r {{.OUT_DIR}}/sim/licenses/. {{.LICENSES}}
         {{- end }}
 
-        # Copy models
+        echo "Copying simulation models..."
         cp -r {{.SIM_MODELS}}/. {{.MODELS}}/
 
+        echo "Downloading FMI runtime dependencies..."
         # Download FMI runtime
         curl --retry 5 --retry-delay 3 --fail --location \
           -o {{.DOWNLOADS}}/{{.FMI_x64}}.zip \
           https://github.com/boschglobal/dse.fmi/releases/download/v{{.FMI_VERSION}}/{{.FMI_x64}}.zip
 
         mkdir -p {{.BINARIES}}/win64
-
+        echo "Extracting FMI runtime libraries..."
         unzip -j -o {{.DOWNLOADS}}/{{.FMI_x64}}.zip \
           {{.FMI_x64}}/bin/libmodelc.dll \
           -d {{.BINARIES}}/win64
@@ -558,7 +556,7 @@ tasks:
         {{- $sf := trim $s }}
         cp {{$.PWD}}/{{$sf}} {{$.RESOURCES}}
         {{- end }}
-
+        echo "Creating FMU package..."
         # Create FMU
         (
           cd {{.RELEASE}} || exit 1
