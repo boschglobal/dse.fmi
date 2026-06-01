@@ -1,8 +1,6 @@
 module github.com/boschglobal/dse.fmi/extra/tools/fmi
 
-go 1.24.0
-
-toolchain go1.24.4
+go 1.25
 
 require (
 	github.com/boschglobal/dse.clib/extra/go/command v1.0.36
@@ -11,7 +9,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/uuid v1.6.0
-	github.com/rogpeppe/go-internal v1.14.1
+	github.com/rogpeppe/go-internal v1.15.0
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
 )
