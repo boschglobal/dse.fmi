@@ -6,8 +6,8 @@ github.com/boschglobal/dse.clib/extra/go/command v1.0.36 h1:4XbJLorCUk0BEB22KTE+
 github.com/boschglobal/dse.clib/extra/go/command v1.0.36/go.mod h1:g11DkMVJRVo+FP+vLJcTkJpLHpm27Xfizk8WzWDs17c=
 github.com/boschglobal/dse.clib/extra/go/file v1.0.48 h1:IY7zDlCK+XE8RABE89tHusv7EF1RK7PwamSHHnQ03V8=
 github.com/boschglobal/dse.clib/extra/go/file v1.0.48/go.mod h1:2jSOjLXC0QhLz/OPUcnJ+WA727YWv0nNrYIShdHB5m4=
-github.com/boschglobal/dse.schemas/code/go/dse v1.3.2 h1:VRPG8Q9md8e3uNvrnEIiuP6ZD+XU07zpjbf++usgJP4=
-github.com/boschglobal/dse.schemas/code/go/dse v1.3.2/go.mod h1:uED31AxkE3HObS0ByOV13cBM63NrkfLz1KCaTeXZwek=
+github.com/boschglobal/dse.schemas/code/go/dse v1.3.3 h1:PGR+XPkp7xU5dfE42F6UsMnLQUk0Fdk8Bwg+i+Trb0o=
+github.com/boschglobal/dse.schemas/code/go/dse v1.3.3/go.mod h1:rcS8cJKA4Mc5OSjgU7yPiArQbM4eWgIAnx1RVkhrIlw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -16,8 +16,10 @@ github.com/goccy/go-yaml v1.19.2/go.mod h1:XBurs7gK8ATbW4ZPGKgcbrY1Br56PdM69F7Lk
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/juju/gnuflag v0.0.0-20171113085948-2ce1bb71843d/go.mod h1:2PavIy+JPciBPrBUjwbNvtwB6RQlve+hkpll6QSNmOE=
-github.com/oapi-codegen/runtime v1.4.0 h1:KLOSFOp7UzkbS7Cs1ms6NBEKYr0WmH2wZG0KKbd2er4=
-github.com/oapi-codegen/runtime v1.4.0/go.mod h1:5sw5fxCDmnOzKNYmkVNF8d34kyUeejJEY8HNT2WaPec=
+github.com/oapi-codegen/nullable v1.1.0 h1:eAh8JVc5430VtYVnq00Hrbpag9PFRGWLjxR1/3KntMs=
+github.com/oapi-codegen/nullable v1.1.0/go.mod h1:KUZ3vUzkmEKY90ksAmit2+5juDIhIZhfDl+0PwOQlFY=
+github.com/oapi-codegen/runtime v1.4.1 h1:9nwLoI+KrWxzbBcp0jO/R8uXqbik/HUyCvPeU68Y/qo=
+github.com/oapi-codegen/runtime v1.4.1/go.mod h1:GwV7hC2hviaMzj+ITfHVRESK5J2W/GefVwIND/bMGvU=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/rogpeppe/go-internal v1.15.0 h1:D0RCU5rMAp+SpgkiNdrjfJ+LX4J1M32V2NeCY7EJ6hc=
