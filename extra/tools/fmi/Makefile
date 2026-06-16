@@ -32,19 +32,14 @@ test:
 test_e2e:
 	go test ./cmd/... -tags test_e2e -count=1
 
-.PHONY: format
-format:
-	go fmt -x ./...
-
 .PHONY: lint
 lint:
-	go fmt -x ./...
-	docker run -t --rm \
+	@docker run -t --rm \
 		-v $$(pwd):/app \
-		-v ~/.cache/golangci-lint/1.59.1:/root/.cache \
 		-w /app \
-		golangci/golangci-lint:latest \
-		golangci-lint run -v ./...
+		golangci/golangci-lint:v2.12.2 \
+			golangci-lint fmt ./...; \
+			golangci-lint run --fix --disable errcheck ./...
 
 
 .PHONY: clean

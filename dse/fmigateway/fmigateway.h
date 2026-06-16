@@ -6,6 +6,7 @@
 #define DSE_FMIGATEWAY_FMIGATEWAY_H_
 
 #include <dse/clib/util/yaml.h>
+#include <dse/clib/collections/vector.h>
 #include <dse/modelc/gateway.h>
 #include <dse/fmu/fmu.h>
 
@@ -42,29 +43,29 @@ Example
 #define NUMERIC_ENVAR_LEN 24
 
 
-typedef struct FmiGatewayEnvvar {
+typedef struct FmiGatewayParameter {
     const char* name;
     const char* type;
     char*       vref;
     char*       default_value;
-} FmiGatewayEnvvar;
+} FmiGatewayParameter;
 
 typedef struct WindowsModel {
     /* process Information */
-    const char*       exe;
-    const char*       args;
+    const char*          exe;
+    const char*          args;
     /* Model information. */
-    char*             name;
-    double            step_size;
-    double            end_time;
-    int               log_level;
-    char*             yaml;
-    double            current_step;
-    double            timeout;
-    bool              stacked;
-    FmiGatewayEnvvar* envar;
+    char*                name;
+    double               step_size;
+    double               end_time;
+    int                  log_level;
+    char*                yaml;
+    double               current_step;
+    double               timeout;
+    bool                 stacked;
+    FmiGatewayParameter* envar;
     /* Windows Information. */
-    void*             w_process;
+    void*                w_process;
 } WindowsModel;
 
 typedef struct FmiGatewaySession {
@@ -78,15 +79,15 @@ typedef struct FmiGatewaySession {
         bool simbus;
         bool transport;
     } visibility;
-    /* cmds. */
-    const char*       init_cmd;
-    const char*       shutdown_cmd;
-    FmiGatewayEnvvar* envar;
     /* Additional information. */
-    bool              logging;
-    const char*       log_location;
-    double            last_step;
+    bool   logging;
+    double last_step;
 } FmiGatewaySession;
+
+typedef enum FmiGatewayRuntimeType {
+    FMIGATEWAY_RUNTIME_LEGACY = 0,
+    FMIGATEWAY_RUNTIME_SIMER = 1,
+} FmiGatewayRuntimeType;
 
 typedef enum FmiGatewayState {
     FMIGATEWAY_STATE_CREATED = 0,
@@ -100,12 +101,26 @@ typedef struct FmiGateway {
     ModelGatewayDesc* model;
     FmiGatewayState   state;
     struct {
-        YamlDocList*       doc_list;
-        const char**       yaml_files;
-        double             step_size;
-        double             end_time;
-        int                log_level;
+        YamlDocList* doc_list;
+        const char** yaml_files;
+        const char*  model_name; /* ModelName from modelDescription.xml. */
+        double       step_size;
+        double       end_time;
+        int          log_level;
         FmiGatewaySession* session;
+        /* runtime (parsed from VendorAnnotations). */
+        struct {
+            FmiGatewayRuntimeType type;
+            Vector                cmds; /* Vector of char* command strings */
+            const char*           log_location;
+            void*                 simer_process;
+        } runtime;
+        /* scripts (parsed from YAML and ModelDescription). */
+        struct {
+            const char*          startup_cmd;
+            const char*          shutdown_cmd;
+            FmiGatewayParameter* envar;
+        } scripts;
     } settings;
     bool binary_signals_reset;
 } FmiGateway;
@@ -121,17 +136,25 @@ DLL_PRIVATE void fmigateway_index_text_encoding(FmuInstanceData* fmu,
 /* parser.c */
 DLL_PRIVATE void fmigateway_parse(FmuInstanceData* fmu);
 
+/* parse_fmi.c */
+DLL_PRIVATE void fmigateway_parse_xml(FmuInstanceData* fmu);
+
 /* session.c */
 DLL_PRIVATE int fmigateway_session_start(FmuInstanceData* fmu);
 DLL_PRIVATE int fmigateway_session_end(FmuInstanceData* fmu);
 DLL_PRIVATE int fmigateway_setenv(const char* name, const char* value);
 
 /* session_unix.c / session_win32.c */
+DLL_PRIVATE char* fmigateway_file_exists(
+    FmuInstanceData* fmu, const char* name);
 DLL_PRIVATE int fmigateway_run_cmd(
     FmuInstanceData* fmu, const char* cmd_string);
 DLL_PRIVATE void fmigateway_start_models(FmuInstanceData* fmu);
 DLL_PRIVATE void fmigateway_shutdown_models(FmuInstanceData* fmu);
 DLL_PRIVATE void fmigateway_parallelize(FmuInstanceData* fmu);
+DLL_PRIVATE void fmigateway_teardown(FmuInstanceData* fmu);
+DLL_PRIVATE void fmigateway_run_simer(FmuInstanceData* fmu);
+DLL_PRIVATE void fmigateway_stop_simer(FmuInstanceData* fmu);
 
 
 #endif  // DSE_FMIGATEWAY_FMIGATEWAY_H_

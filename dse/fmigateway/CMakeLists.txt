@@ -16,15 +16,25 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -ggdb -DLIBXML_STATIC")
 
 # Gateway Files
 # =============
-set(FMIGATEWAY_FILES
+set(FMIGATEWAY_COMMON_FILES
     fmigateway.c
     index.c
     session.c
     parser.c
+    parse_fmi.c
     signal.c
+    ${REPO_DIR}/dse/fmu/xml.c
     $<$<BOOL:${WIN32}>:session_win32.c>
     $<$<BOOL:${UNIX}>:session_unix.c>
     ${DSE_CLIB_SOURCE_DIR}/clib/util/ascii85.c
+)
+set(FMIGATEWAY_FMI2_FILES
+    ${FMIGATEWAY_COMMON_FILES}
+    ${REPO_DIR}/dse/fmu/fmi2fmu.c
+)
+set(FMIGATEWAY_FMI3_FILES
+    ${FMIGATEWAY_COMMON_FILES}
+    ${REPO_DIR}/dse/fmu/fmi3fmu.c
 )
 
 
@@ -32,8 +42,7 @@ set(FMIGATEWAY_FILES
 # =========================
 set(FMI2_GW fmi2gateway)
 add_library(${FMI2_GW} SHARED
-    ${REPO_DIR}/dse/fmu/fmi2fmu.c
-    ${FMIGATEWAY_FILES}
+    ${FMIGATEWAY_FMI2_FILES}
 )
 target_include_directories(${FMI2_GW}
     PRIVATE
@@ -81,8 +90,7 @@ install(
 # =========================
 set(FMI3_GW fmi3gateway)
 add_library(${FMI3_GW} SHARED
-    ${REPO_DIR}/dse/fmu/fmi3fmu.c
-    ${FMIGATEWAY_FILES}
+    ${FMIGATEWAY_FMI3_FILES}
 )
 target_include_directories(${FMI3_GW}
     PRIVATE

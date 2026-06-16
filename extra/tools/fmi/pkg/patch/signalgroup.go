@@ -48,27 +48,27 @@ func (c *PatchSignalGroupCommand) Parse(args []string) error {
 func (c *PatchSignalGroupCommand) Run() error {
 	inputYaml, err := os.ReadFile(c.signalGroupFile)
 	if err != nil {
-		return fmt.Errorf("Unable to open signalgroup file: %s (%w)", c.signalGroupFile, err)
+		return fmt.Errorf("unable to open signalgroup file: %s (%w)", c.signalGroupFile, err)
 	}
 	sigGroup := kind.SignalGroup{}
 	if err := yaml.Unmarshal(inputYaml, &sigGroup); err != nil {
-		return fmt.Errorf("Unable to unmarshal signalgroup yaml: %s (%w)", c.signalGroupFile, err)
+		return fmt.Errorf("unable to unmarshal signalgroup yaml: %s (%w)", c.signalGroupFile, err)
 	}
 
 	if c.signalPatchFile != "" {
 		if err := patchSignals(&sigGroup, c.signalPatchFile, c.removeUnknown); err != nil {
-			return fmt.Errorf("Error with signal patch: %v", err)
+			return fmt.Errorf("error with signal patch: %v", err)
 		}
 	}
 
 	// Write the patched SignalGroup.
 	y, err := yaml.Marshal(&sigGroup)
 	if err != nil {
-		return fmt.Errorf("Error marshalling yaml: %v", err)
+		return fmt.Errorf("error marshalling yaml: %v", err)
 	}
 	err = os.WriteFile(c.signalGroupFile, y, 0644)
 	if err != nil {
-		return fmt.Errorf("Error writing yaml: %v", err)
+		return fmt.Errorf("error writing yaml: %v", err)
 	}
 	return nil
 }
@@ -77,23 +77,23 @@ func patchSignals(sigGroup *kind.SignalGroup, patchFile string, removeUnknown bo
 	// Load the CSV patch file.
 	f, err := os.Open(patchFile)
 	if err != nil {
-		return fmt.Errorf("Unable to open patch file: %s (%w)", patchFile, err)
+		return fmt.Errorf("unable to open patch file: %s (%w)", patchFile, err)
 	}
 	r := csv.NewReader(f)
 	r.Comma = ','
 	r.TrimLeadingSpace = true
 	record, err := r.Read()
 	if err != nil {
-		return fmt.Errorf("Unable to read csv (%w)", err)
+		return fmt.Errorf("unable to read csv (%w)", err)
 	}
 	if record[0] != "source" || record[1] != "target" {
-		return fmt.Errorf("Unexpected csv columns (%v)", record)
+		return fmt.Errorf("unexpected csv columns (%v)", record)
 	}
 
 	// Load the patch map.
 	records, err := r.ReadAll()
 	if err != nil {
-		return fmt.Errorf("Unable to read csv (%w)", err)
+		return fmt.Errorf("unable to read csv (%w)", err)
 	}
 
 	// Replace the source signal with target signal.
@@ -112,7 +112,7 @@ func patchSignals(sigGroup *kind.SignalGroup, patchFile string, removeUnknown bo
 	for _, s := range signals {
 		if target, ok := patch[s.Signal]; ok {
 			if target != "inactive" {
-				slog.Info(fmt.Sprintf("Patch Signals: patch: %s -> %s", s.Signal, target))
+				slog.Info(fmt.Sprintf("patch Signals: patch: %s -> %s", s.Signal, target))
 				s.Signal = target
 				signals[i] = s
 				i++
@@ -125,7 +125,7 @@ func patchSignals(sigGroup *kind.SignalGroup, patchFile string, removeUnknown bo
 				continue
 			}
 		}
-		slog.Info(fmt.Sprintf("Patch Signals: remove: %s", s.Signal))
+		slog.Info(fmt.Sprintf("patch Signals: remove: %s", s.Signal))
 	}
 
 	// Trim the slice to only include retained signals.

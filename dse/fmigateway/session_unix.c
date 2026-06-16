@@ -3,11 +3,27 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <stdlib.h>
-#include <errno.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <dse/fmu/fmu.h>
 #include <dse/fmigateway/fmigateway.h>
+
+
+char* fmigateway_file_exists(FmuInstanceData* fmu, const char* name)
+{
+    static const char* const extensions[] = { "sh", NULL };
+    char                     path[PATH_MAX];
+    for (const char* const* ext = extensions; *ext; ext++) {
+        snprintf(path, sizeof(path), "%s/../%s.%s",
+            fmu->instance.resource_location, name, *ext);
+        if (access(path, F_OK) == 0) return strdup(path);
+    }
+    return NULL;
+}
 
 
 int fmigateway_setenv(const char* name, const char* value)
@@ -16,6 +32,7 @@ int fmigateway_setenv(const char* name, const char* value)
 
     return setenv(name, value, true);
 }
+
 
 void fmigateway_start_models(FmuInstanceData* fmu)
 {
@@ -33,6 +50,12 @@ void fmigateway_shutdown_models(FmuInstanceData* fmu)
 
 
 void fmigateway_parallelize(FmuInstanceData* fmu)
+{
+    UNUSED(fmu);
+}
+
+
+void fmigateway_teardown(FmuInstanceData* fmu)
 {
     UNUSED(fmu);
 }
@@ -70,4 +93,18 @@ int fmigateway_run_cmd(FmuInstanceData* fmu, const char* cmd_string)
         return ECANCELED;
     }
     return 0;
+}
+
+
+void fmigateway_run_simer(FmuInstanceData* fmu)
+{
+    UNUSED(fmu);  // No-op for now.
+    return;
+}
+
+
+void fmigateway_stop_simer(FmuInstanceData* fmu)
+{
+    UNUSED(fmu);  // No-op for now.
+    return;
 }

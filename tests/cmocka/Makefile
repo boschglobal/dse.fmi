@@ -37,7 +37,8 @@ run:
 	@cd build/_out; $(GDB_CMD) bin/test_fmu
 	@cd build/_out; $(GDB_CMD) bin/test_fmi2fmu
 	@cd build/_out; $(GDB_CMD) bin/test_fmi3fmu
-	@cd build/_out; $(GDB_CMD) bin/test_fmigateway
+	@cd build/_out; $(GDB_CMD) bin/test_fmi2gateway
+	@cd build/_out; $(GDB_CMD) bin/test_fmi3gateway
 	@echo "[----------]"
 	@echo "[ GDB_CMD  ] $(GDB_CMD)"
 

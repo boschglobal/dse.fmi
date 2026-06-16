@@ -1,0 +1,80 @@
+env NAME=fmigateway
+env IMPORTER=$REPODIR/dse/build/_out/importer/fmuImporter
+env FMU_DIR=$REPODIR/dse/examples/gateway
+env INPUT_DSE=simulation.dse
+
+
+exec cp $FMU_DIR/data/signalgroup_target.yaml $WORKDIR/
+
+# SETUP: Construct working folder layout
+exec cp -r . $WORKDIR
+cd $WORKDIR
+
+# TEST: Build the Simulation and ModelC FMU
+env
+exec ls -al
+exec sh -e build.sh
+
+exists out/fmu/gateway.fmu
+exists out/fmu/gateway/modelDescription.xml
+exists out/fmu/gateway/resources/sim/model/gateway/data/model.yaml
+exists out/fmu/gateway/resources/sim/model/gateway/data/fmu.yaml
+
+
+-- simulation.dse --
+simulation
+channel in
+channel out
+
+uses
+dse.fmi    file:///repo
+router_lua file:///repo/dse/examples/gateway/model_router/model.lua
+
+
+model router router_lua
+channel in in
+channel out out
+file router.yaml /repo/dse/examples/gateway/model_router/router.yaml
+
+stack remote
+model gateway dse.fmi.mcl external=true
+channel in in
+channel out out
+
+workflow generate-gatewayfmu
+    var SIGNAL_GROUPS model/router/data/router.yaml
+    var FMU_NAME gateway
+    var FMI_VERSION 2
+    var VERSION 1.0.0
+    var PLATFORM linux-amd64
+    var RUNTIME simer
+
+-- build.sh --
+env
+pwd
+echo "==========================="
+
+echo "Docker Containers"
+echo "================="
+echo "DSE_BUILDER_IMAGE=${DSE_BUILDER_IMAGE}"
+echo "DSE_SIMER_IMAGE=${DSE_SIMER_IMAGE}"
+echo "FMI_IMAGE=${FMI_IMAGE}"
+echo ""
+
+
+echo "[INFO] Running builder..."
+# Expand envars.
+envsubst < "$INPUT_DSE" > "${INPUT_DSE}.tmp"
+mv "${INPUT_DSE}.tmp" "$INPUT_DSE"
+# Run the Builder.
+docker run --name builder -i --rm \
+    --network=host \
+    --user "$(id -u):$(id -g)" \
+    -v $ENTRYWORKDIR:/workdir \
+    -v $ENTRYHOSTDIR:/repo \
+    -e AR_USER -e AR_TOKEN -e GHE_USER -e GHE_TOKEN -e GHE_PAT \
+    -e http_proxy -e https_proxy -e no_proxy \
+    $DSE_BUILDER_IMAGE "$INPUT_DSE"
+# Run Task to finalize the simulation.
+echo "[INFO] Running task..."
+task -y -v -t out/Taskfile.yml

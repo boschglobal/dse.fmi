@@ -57,22 +57,22 @@ func (c *GenFmuAnnotationCommand) Run() error {
 	// Load the Signal Group.
 	inputYaml, err := os.ReadFile(c.inputFile)
 	if err != nil {
-		return fmt.Errorf("Unable to read input file: %s (%w)", c.inputFile, err)
+		return fmt.Errorf("unable to read input file: %s (%w)", c.inputFile, err)
 	}
 	signalgroup := schema_kind.SignalGroup{}
 	if err := yaml.Unmarshal(inputYaml, &signalgroup); err != nil {
-		return fmt.Errorf("Unable to unmarshal signalgroup yaml: %s (%w)", c.inputFile, err)
+		return fmt.Errorf("unable to unmarshal signalgroup yaml: %s (%w)", c.inputFile, err)
 	}
 
 	// Apply annotations.
 	if c.ruleFile != "" {
 		if err := c.applyRule(c.ruleFile, &signalgroup); err != nil {
-			return fmt.Errorf("Could not apply rules. (%w)", err)
+			return fmt.Errorf("could not apply rules. (%w)", err)
 		}
 	}
 	if c.mappingFile != "" {
 		if err := c.applyMapping(c.mappingFile, &signalgroup); err != nil {
-			return fmt.Errorf("Could not apply mapping. (%w)", err)
+			return fmt.Errorf("could not apply mapping. (%w)", err)
 		}
 	}
 	return writeYaml(&signalgroup, c.outputFile, false)
@@ -86,12 +86,12 @@ func (c *GenFmuAnnotationCommand) applyRule(ruleFile string, signalgroup *schema
 
 	rules, err := operations.LoadCsv(ruleFile)
 	if err != nil {
-		return fmt.Errorf("Unable to load CSV: %s (%w)", ruleFile, err)
+		return fmt.Errorf("unable to load CSV: %s (%w)", ruleFile, err)
 	}
 	if signalgroup.Metadata.Annotations != nil {
 		if sg_type := (*signalgroup.Metadata.Annotations)["vector_type"]; sg_type != nil {
 			if sg_type == "binary" {
-				return fmt.Errorf("Binary not supported: %s (%w)", ruleFile, err)
+				return fmt.Errorf("binary not supported: %s (%w)", ruleFile, err)
 			}
 		}
 	}

@@ -7,7 +7,6 @@ package fmi2
 import (
 	"encoding/xml"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"log/slog"
@@ -31,15 +30,22 @@ type Annotations struct {
 	Tool []Tool `xml:"Tool"`
 }
 
+// VendorAnnotations holds the Tool-level vendor annotations under VendorAnnotations.
 type VendorAnnotations struct {
 	Tool []VendorTool `xml:"Tool"`
 }
 
+// VendorTool represents a vendor-specific Tool entry.
+// Annotations is placed in the DSE namespace, acting as the single child element
+// required by the FMI 2.0 xs:any (maxOccurs=1) constraint inside Tool.
 type VendorTool struct {
-	Name       string `xml:"name,attr"`
-	Annotation struct {
-		InnerXML string `xml:",innerxml"`
-	} `xml:"annotation"`
+	Name        string          `xml:"name,attr"`
+	Annotations *DseAnnotations `xml:"https://github.com/boschglobal/dse.fmi annotations,omitempty"`
+}
+
+// DseAnnotations is the namespaced wrapper element containing key/value Annotation entries.
+type DseAnnotations struct {
+	Annotation []Annotation `xml:"Annotation"`
 }
 
 type Tool struct {
@@ -200,6 +206,26 @@ func expandModelStructure(fmiXml *ModelDescription, vref string) error {
 	return nil
 }
 
+func annotationsFromSignal(signal schema_kind.Signal) *Annotations {
+	v := (*signal.Annotations)["fmi_annotations"]
+	if v == nil {
+		return nil
+	}
+	m, ok := v.(map[string]interface{})
+	if !ok || len(m) == 0 {
+		return nil
+	}
+	var tools []Tool
+	for name, val := range m {
+		tool := Tool{Name: name}
+		if val != nil {
+			tool.Annotation = []Annotation{{Name: "value", Text: fmt.Sprintf("%v", val)}}
+		}
+		tools = append(tools, tool)
+	}
+	return &Annotations{Tool: tools}
+}
+
 func ScalarSignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGroupSpec) error {
 	for _, signal := range signalGroupSpec.Signals {
 		v := (*signal.Annotations)["fmi_variable_causality"]
@@ -242,6 +268,7 @@ func ScalarSignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGr
 				Real: &FmiReal{
 					Start: start,
 				},
+				Annotations: annotationsFromSignal(signal),
 			}
 			FmiXml.ModelVariables.ScalarVariable = append(FmiXml.ModelVariables.ScalarVariable, ScalarVariable)
 
@@ -272,7 +299,7 @@ func buildBinarySignal(FmiXml *ModelDescription, signal schema_kind.Signal, vref
 	} else {
 		_causality = "output"
 	}
-	var variability *string = stringPtr("discrete")
+	var variability = stringPtr("discrete")
 
 	tool := []Tool{
 		{
@@ -313,6 +340,21 @@ func buildBinarySignal(FmiXml *ModelDescription, signal schema_kind.Signal, vref
 	return ScalarVariable
 }
 
+// toIntSlice converts an annotation value that may be []int or []interface{} to []int.
+func toIntSlice(v interface{}) ([]int, bool) {
+	switch val := v.(type) {
+	case []int:
+		return val, true
+	case []interface{}:
+		result := make([]int, len(val))
+		for i, item := range val {
+			result[i] = item.(int)
+		}
+		return result, true
+	}
+	return nil, false
+}
+
 func BinarySignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGroupSpec) error {
 	for _, signal := range signalGroupSpec.Signals {
 		var v any
@@ -320,17 +362,23 @@ func BinarySignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGr
 		if v = (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.rx_vref"]; v == nil {
 			return fmt.Errorf("could not get rx_vref for signal %s", signal.Signal)
 		}
-		rx_vref := v.([]interface{})
+		rx_vref, ok := toIntSlice(v)
+		if !ok {
+			return fmt.Errorf("could not get rx_vref for signal %s", signal.Signal)
+		}
 		if v = (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.tx_vref"]; v == nil {
 			return fmt.Errorf("could not get tx_vref for signal %s", signal.Signal)
 		}
-		tx_vref := v.([]interface{})
+		tx_vref, ok := toIntSlice(v)
+		if !ok {
+			return fmt.Errorf("could not get tx_vref for signal %s", signal.Signal)
+		}
 		if len(rx_vref) != len(tx_vref) {
 			return errors.New("rx-tx mismatch")
 		}
 		for x := 0; x < len(rx_vref); x++ {
-			rx := strconv.Itoa(rx_vref[x].(int))
-			tx := strconv.Itoa(tx_vref[x].(int))
+			rx := strconv.Itoa(rx_vref[x])
+			tx := strconv.Itoa(tx_vref[x])
 			buildBinarySignal(FmiXml, signal, rx, "rx", x+1)
 			buildBinarySignal(FmiXml, signal, tx, "tx", x+1)
 		}
@@ -367,6 +415,7 @@ func StringSignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGr
 				String: &FmiString{
 					Start: start,
 				},
+				Annotations: annotationsFromSignal(signal),
 			}
 			FmiXml.ModelVariables.ScalarVariable = append(FmiXml.ModelVariables.ScalarVariable, ScalarVariable)
 		} else {
@@ -407,44 +456,20 @@ func SetGeneralFmuXmlFields(fmiConfig fmi.FmiConfig, fmuXml *ModelDescription) e
 		{Name: "Debug", Description: "Log debug messages"},
 	}
 
-	// Add VendorAnnotations if provided.
-	fmuXml.VendorAnnotations = buildAnnotations(fmiConfig.Annotations)
+	// Add VendorAnnotations under dse.fmi.config Tool.
+	// DseAnnotations wraps all entries in a single namespaced element, satisfying
+	// the FMI 2.0 xs:any (maxOccurs=1) constraint inside Tool.
+	if len(fmiConfig.Annotations) > 0 {
+		anns := &DseAnnotations{}
+		for key, value := range fmiConfig.Annotations {
+			anns.Annotation = append(anns.Annotation, Annotation{Name: key, Text: value})
+		}
+		fmuXml.VendorAnnotations = &VendorAnnotations{
+			Tool: []VendorTool{{Name: "dse.fmi.config", Annotations: anns}},
+		}
+	}
 
 	return nil
-}
-
-// Helper function to build vendor annotations from map
-func buildAnnotations(annotationsMap map[string]string) *VendorAnnotations {
-	if len(annotationsMap) == 0 {
-		return nil
-	}
-	var xmlContent strings.Builder
-	for key, value := range annotationsMap {
-		// Escape XML special characters
-		escapedKey := escapeXML(key)
-		escapedValue := escapeXML(value)
-		xmlContent.WriteString(fmt.Sprintf("\n\t\t\t\t<%s>%s</%s>", escapedKey, escapedValue, escapedKey))
-	}
-	xmlContent.WriteString("\n\t\t\t")
-
-	tool := VendorTool{
-		Name: "dse.fmi.config",
-	}
-	tool.Annotation.InnerXML = xmlContent.String()
-
-	return &VendorAnnotations{
-		Tool: []VendorTool{tool},
-	}
-}
-
-// Helper function to escape XML special characters
-func escapeXML(s string) string {
-	s = strings.ReplaceAll(s, "&", "&amp;")
-	s = strings.ReplaceAll(s, "<", "&lt;")
-	s = strings.ReplaceAll(s, ">", "&gt;")
-	s = strings.ReplaceAll(s, "\"", "&quot;")
-	s = strings.ReplaceAll(s, "'", "&apos;")
-	return s
 }
 
 func VariablesFromSignalgroups(
@@ -464,7 +489,7 @@ func VariablesFromSignalgroups(
 				continue
 			}
 
-			fmt.Fprintf(flag.CommandLine.Output(), "Adding SignalGroup: %s (%s)\n", doc.Metadata.Name, doc.File)
+			slog.Info(fmt.Sprintf("Adding SignalGroup: %s (%s)", doc.Metadata.Name, doc.File))
 			signalGroupSpec := doc.Spec.(*schema_kind.SignalGroupSpec)
 			if doc.Metadata.Annotations["vector_type"] == "binary" {
 				if err := BinarySignal(FmiXml, *signalGroupSpec); err != nil {
@@ -478,6 +503,36 @@ func VariablesFromSignalgroups(
 			if !slices.Contains(channels, doc.Metadata.Labels["channel"]) {
 				channels = append(channels, doc.Metadata.Labels["channel"])
 				slog.Debug(fmt.Sprintf("added %s", doc.Metadata.Labels["channel"]))
+			}
+		}
+	}
+	return channels, nil
+}
+
+func VariablesFromSignalGroupObject(
+	FmiXml *ModelDescription, signalGroupObject []schema_kind.SignalGroup) ([]string, error) {
+	var channels []string
+	if len(signalGroupObject) == 0 {
+		return channels, nil
+	}
+	for _, signalGroup := range signalGroupObject {
+		slog.Info(fmt.Sprintf("Adding SignalGroup: %s", *signalGroup.Metadata.Name))
+		isBinary := signalGroup.Metadata.Annotations != nil &&
+			*signalGroup.Metadata.Annotations != nil &&
+			(*signalGroup.Metadata.Annotations)["vector_type"] == "binary"
+		if isBinary {
+			if err := BinarySignal(FmiXml, signalGroup.Spec); err != nil {
+				slog.Warn(fmt.Sprintf("Skipped BinarySignal (Error: %s)", err.Error()))
+			}
+		} else {
+			if err := ScalarSignal(FmiXml, signalGroup.Spec); err != nil {
+				slog.Warn(fmt.Sprintf("Skipped Scalarsignal (Error: %s)", err.Error()))
+			}
+		}
+		if signalGroup.Metadata.Labels != nil && *signalGroup.Metadata.Labels != nil {
+			if !slices.Contains(channels, (*signalGroup.Metadata.Labels)["channel"]) {
+				channels = append(channels, (*signalGroup.Metadata.Labels)["channel"])
+				slog.Debug(fmt.Sprintf("added %s", (*signalGroup.Metadata.Labels)["channel"]))
 			}
 		}
 	}

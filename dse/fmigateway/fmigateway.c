@@ -3,6 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <assert.h>
+#include <limits.h>
+#include <stdio.h>
+#include <string.h>
 #include <dse/clib/util/strings.h>
 #include <dse/fmu/fmu.h>
 #include <dse/fmigateway/fmigateway.h>
@@ -51,21 +54,39 @@ FmuInstanceData* fmu_create(FmuInstanceData* fmu)
         .model = calloc(1, sizeof(ModelGatewayDesc)),
         .settings.yaml_files = calloc(4, sizeof(char*)),
     };
+    fmu->data = (void*)fmi_gw;
 
     /* Windows specific parallelization. */
     fmigateway_parallelize(fmu);
 
-    /* Allocate a NTL for the required files. */
-    fmi_gw->settings.yaml_files[0] =
-        dse_path_cat(fmu->instance.resource_location, "model.yaml");
-    fmi_gw->settings.yaml_files[1] =
-        dse_path_cat(fmu->instance.resource_location, "fmu.yaml");
-    fmi_gw->settings.yaml_files[2] =
-        dse_path_cat(fmu->instance.resource_location, "stack.yaml");
-    fmu->data = (void*)fmi_gw;
+    /* Read ModelDescription.xml first to determine runtime and model name. */
+    fmigateway_parse_xml(fmu);
 
-    /* Parse the yaml files. */
-    fmigateway_parse(fmu);
+    /* Set yaml file paths based on runtime type. */
+    if (fmi_gw->settings.runtime.type == FMIGATEWAY_RUNTIME_SIMER) {
+        /* Simer layout: resources/sim/model/<name>/data/ */
+        char path[PATH_MAX];
+        snprintf(path, sizeof(path), "%s/sim/model/%s/data/model.yaml",
+            fmu->instance.resource_location, fmi_gw->settings.model_name);
+        fmi_gw->settings.yaml_files[0] = strdup(path);
+        snprintf(path, sizeof(path), "%s/sim/model/%s/data/fmu.yaml",
+            fmu->instance.resource_location, fmi_gw->settings.model_name);
+        fmi_gw->settings.yaml_files[1] = strdup(path);
+        fmi_gw->settings.yaml_files[2] = dse_path_cat(
+            fmu->instance.resource_location, "sim/data/simulation.yaml");
+
+    } else {
+        /* Legacy layout: files at resource_location root. */
+        fmi_gw->settings.yaml_files[0] =
+            dse_path_cat(fmu->instance.resource_location, "model.yaml");
+        fmi_gw->settings.yaml_files[1] =
+            dse_path_cat(fmu->instance.resource_location, "fmu.yaml");
+        fmi_gw->settings.yaml_files[2] =
+            dse_path_cat(fmu->instance.resource_location, "stack.yaml");
+
+        /* Parse the yaml files. */
+        fmigateway_parse(fmu);
+    }
 
     return fmu;
 }
@@ -213,6 +234,13 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
     for (size_t i = 0; fmi_gw->settings.yaml_files[i]; i++) {
         free((char*)fmi_gw->settings.yaml_files[i]);
     }
+    /* Cleanup runtime. */
+    free((char*)fmi_gw->settings.model_name);
+    free((char*)fmi_gw->settings.runtime.log_location);
+    for (size_t i = 0; i < vector_len(&fmi_gw->settings.runtime.cmds); i++) {
+        free(*(char**)vector_at(&fmi_gw->settings.runtime.cmds, i, NULL));
+    }
+    vector_reset(&fmi_gw->settings.runtime.cmds);
 
     FmiGatewaySession* session = fmi_gw->settings.session;
     if (session) {
@@ -237,13 +265,15 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
         }
         free(session->w_models);
 
-        for (FmiGatewayEnvvar* e = session->envar; e && e->name; e++) {
-            free(e->vref);
-            free(e->default_value);
-        }
-        free(session->envar);
         free(session);
     }
+    for (FmiGatewayParameter* e = fmi_gw->settings.scripts.envar; e && e->name;
+        e++) {
+        free(e->vref);
+        free((char*)e->name);
+        free(e->default_value);
+    }
+    free(fmi_gw->settings.scripts.envar);
     free(fmi_gw->settings.yaml_files);
     free(gw);
     free(fmi_gw);

@@ -23,10 +23,12 @@ export DSE_NCODEC_URL ?= $(DSE_NCODEC_REPO)/archive/refs/tags/v$(DSE_NCODEC_VERS
 
 ###############
 ## Docker Images.
-GCC_BUILDER_IMAGE ?= ghcr.io/boschglobal/dse-gcc-builder:latest
-TESTSCRIPT_IMAGE ?= ghcr.io/boschglobal/dse-testscript:latest
-SIMER_IMAGE ?= ghcr.io/boschglobal/dse-simer:$(DSE_MODELC_VERSION)
+GCC_BUILDER_IMAGE      ?= ghcr.io/boschglobal/dse-gcc-builder:latest
+TESTSCRIPT_IMAGE       ?= ghcr.io/boschglobal/dse-testscript:latest
+DSE_SIMER_IMAGE        ?= ghcr.io/boschglobal/dse-simer:$(DSE_MODELC_VERSION)
 DSE_CLANG_FORMAT_IMAGE ?= ghcr.io/boschglobal/dse-clang-format:latest
+DSE_BUILDER_IMAGE      ?= ghcr.io/boschglobal/dse-builder:latest
+FMI_IMAGE              ?= ghcr.io/boschglobal/dse-fmi:latest
 
 
 ###############
@@ -62,7 +64,15 @@ PACKAGE_PATH = $(NAMESPACE)/dist
 export HOST_DOCKER_WORKSPACE ?= $(shell pwd -P)
 export TESTSCRIPT_E2E_DIR ?= tests/testscript/e2e
 TESTSCRIPT_E2E_FILES = $(wildcard $(TESTSCRIPT_E2E_DIR)/*.txtar)
-
+ifdef TEST
+TESTSCRIPT_E2E_FILES := $(TEST)
+endif
+ifdef SAVE
+TESTSCRIPT_E2E_SAVE := -work
+endif
+ifdef LOG
+TESTSCRIPT_E2E_LOG := -v
+endif
 
 ifneq ($(CI), true)
 DOCKER_BUILDER_CMD := \
@@ -89,6 +99,23 @@ DSE_CLANG_FORMAT_CMD := docker run -it --rm \
 
 default: build
 
+.PHONY: help
+help:
+	@echo "Available targets:"
+	@echo "  build         Build all project subdirectories and copy example outputs to out/examples."
+	@echo "  tools         Build FMI tools and create a Docker image."
+	@echo "  test          Run tests in all project subdirectories."
+	@echo "  generate      Build documentation and generate e2e test data."
+	@echo "  clean         Clean build artifacts in all subdirectories and remove out/."
+	@echo "  cleanall      Run clean, then also clean all subdirectories and remove build/."
+	@echo "  super-linter  Run super-linter against the repository."
+	@echo "Local development commands:"
+	@echo "  export DSE_SIMER_IMAGE=simer:test"
+	@echo "  export FMI_IMAGE=fmi:test"
+	@echo "  make tools"
+	@echo "  make test_cmocka"
+	@echo "  make test_e2e TEST=tests/testscript/e2e/example_fmu_counter.txtar"
+
 .PHONY: build
 build:
 	@${DOCKER_BUILDER_CMD} $(MAKE) do-build
@@ -113,14 +140,17 @@ fmi: build package
 	mkdir -p extra/tools/fmi/build/stage/package/linux-i386
 	@if [ ${PACKAGE_ARCH} = "linux-amd64" ]; then \
 		cp -r dse/build/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-amd64 ;\
+		cp -r dse/build/_out/fmigateway extra/tools/fmi/build/stage/package/linux-amd64 ;\
 		cp -r dse/build/_out/examples extra/tools/fmi/build/stage ;\
 		cp -r licenses -t extra/tools/fmi/build/stage ;\
 	fi
 	@if [ ${PACKAGE_ARCH} = "linux-x86" ]; then \
 		cp -r dse/build/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-x86 ;\
+		cp -r dse/build/_out/fmigateway extra/tools/fmi/build/stage/package/linux-x86 ;\
 	fi
 	@if [ ${PACKAGE_ARCH} = "linux-i386" ]; then \
 		cp -r dse/build/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-i386 ;\
+		cp -r dse/build/_out/fmigateway extra/tools/fmi/build/stage/package/linux-i386 ;\
 	fi
 
 .PHONY: tools
@@ -155,24 +185,25 @@ do-test_testscript-e2e:
 #   Build local packages: $ make package
 ifeq ($(PACKAGE_ARCH), linux-amd64)
 	@-docker kill simer 2>/dev/null ; true
-	@set -eu; for t in $(TESTSCRIPT_E2E_FILES) ;\
-	do \
+	@set -eu; \
+	for t in $(TESTSCRIPT_E2E_FILES); do \
+		echo "Running E2E Test: $$t"; \
 		export ENTRYWORKDIR=$$(mktemp -d) ;\
-		echo "Running E2E Test: $$t (in $${ENTRYWORKDIR})" ;\
 		docker run -i --rm \
+			--network=host \
 			-e ENTRYHOSTDIR=$(HOST_DOCKER_WORKSPACE) \
 			-e ENTRYWORKDIR=$${ENTRYWORKDIR} \
 			-v /var/run/docker.sock:/var/run/docker.sock \
 			-v $(HOST_DOCKER_WORKSPACE):/repo \
 			-v $${ENTRYWORKDIR}:/workdir \
-			$(TESTSCRIPT_IMAGE) \
+			$(TESTSCRIPT_IMAGE) $(TESTSCRIPT_E2E_LOG) $(TESTSCRIPT_E2E_SAVE) \
 				-e ENTRYHOSTDIR=$(HOST_DOCKER_WORKSPACE) \
 				-e ENTRYWORKDIR=$${ENTRYWORKDIR} \
 				-e REPODIR=/repo \
 				-e WORKDIR=/workdir \
-				-e SIMER_IMAGE=$(SIMER_IMAGE) \
+				-e DSE_SIMER_IMAGE=$(DSE_SIMER_IMAGE) \
 				-e FMI_IMAGE=$(FMI_IMAGE) \
-				-e BUILDER_IMAGE=$(BUILDER_IMAGE) \
+				-e DSE_BUILDER_IMAGE=$(DSE_BUILDER_IMAGE) \
 				-e PACKAGE_VERSION=$(PACKAGE_VERSION) \
 				$$t ;\
 	done;
@@ -230,6 +261,14 @@ do-cleanall: do-clean
 do-oss:
 	$(MAKE) -C extra/external oss
 
+.PHONY: arch
+arch:
+	PACKAGE_ARCH=linux-x86 $(MAKE) cleanall build
+	PACKAGE_ARCH=linux-i386 $(MAKE) cleanall build
+	PACKAGE_ARCH=windows-x64 $(MAKE) cleanall build
+	PACKAGE_ARCH=windows-x86 $(MAKE) cleanall build
+	$(MAKE) cleanall build
+
 .PHONY: generate
 generate:
 	$(MAKE) -C doc generate
@@ -251,3 +290,6 @@ super-linter:
 		--env VALIDATE_MARKDOWN=true \
 		--env VALIDATE_YAML=true \
 		ghcr.io/super-linter/super-linter:slim-v8
+
+	$(MAKE) -C extra/tools/fmi lint
+

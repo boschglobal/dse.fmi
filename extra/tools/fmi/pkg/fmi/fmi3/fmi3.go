@@ -7,7 +7,6 @@ package fmi3
 import (
 	"encoding/xml"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"log/slog"
@@ -183,9 +182,9 @@ type ModelDescription struct {
 	CoSimulation             CoSimulation      `xml:"CoSimulation"`
 	LogCategories            *LogCategories    `xml:"LogCategories,omitempty"`
 	DefaultExperiment        DefaultExperiment `xml:"DefaultExperiment"`
+	Annotations              *Annotations      `xml:"Annotations,omitempty"`
 	ModelVariables           ModelVariables    `xml:"ModelVariables"`
 	ModelStructure           ModelStructure    `xml:"ModelStructure"`
-	Annotations              *Annotations      `xml:"Annotations,omitempty"`
 }
 
 // XML Detect & Imports
@@ -235,6 +234,26 @@ func outputModelStructure(FmiXml *ModelDescription, vr string) error {
 	return nil
 }
 
+func annotationsFromSignal(signal schema_kind.Signal) *Annotations {
+	v := (*signal.Annotations)["fmi_annotations"]
+	if v == nil {
+		return nil
+	}
+	m, ok := v.(map[string]interface{})
+	if !ok || len(m) == 0 {
+		return nil
+	}
+	var items []Annotation
+	for typeName, val := range m {
+		item := Annotation{Type: typeName}
+		if val != nil {
+			item.Text = fmt.Sprintf("%v", val)
+		}
+		items = append(items, item)
+	}
+	return &Annotations{Annotation: items}
+}
+
 func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDescription) error {
 	if FmiXml.ModelVariables.Float64 == nil {
 		float := []Float{}
@@ -245,7 +264,7 @@ func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 
 		causality := (*signal.Annotations)["fmi_variable_causality"].(string)
 		start := ""
-		var variability *string = stringPtr("discrete")
+		var variability = stringPtr("discrete")
 		if causality == "input" || causality == "parameter" {
 			start = "0.0"
 		}
@@ -267,6 +286,7 @@ func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 			Causality:      causality,
 			Variability:    variability,
 			Start:          start,
+			Annotations:    annotationsFromSignal(signal),
 		}
 		*(FmiXml.ModelVariables.Float64) = append(*(FmiXml.ModelVariables.Float64), ScalarVariable)
 
@@ -275,6 +295,21 @@ func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 		}
 	}
 	return nil
+}
+
+// toIntSlice converts an annotation value that may be []int or []interface{} to []int.
+func toIntSlice(v interface{}) ([]int, bool) {
+	switch val := v.(type) {
+	case []int:
+		return val, true
+	case []interface{}:
+		result := make([]int, len(val))
+		for i, item := range val {
+			result[i] = item.(int)
+		}
+		return result, true
+	}
+	return nil, false
 }
 
 func buildBinarySignal(signal schema_kind.Signal, vref any, causality string, id int) Binary {
@@ -294,7 +329,7 @@ func buildBinarySignal(signal schema_kind.Signal, vref any, causality string, id
 	} else {
 		_causality = "output"
 	}
-	var variability *string = stringPtr("discrete")
+	var variability = stringPtr("discrete")
 
 	annotation := []Annotation{
 		{
@@ -338,27 +373,32 @@ func BinarySignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 	}
 
 	for _, signal := range signalGroupSpec.Signals {
-		var rx_vref []interface{}
-		var tx_vref []interface{}
-		if rx_vref = (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.rx_vref"].([]interface{}); rx_vref == nil {
+		v := (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.rx_vref"]
+		if v == nil {
 			return fmt.Errorf("could not get rx_vref for signal %s", signal.Signal)
 		}
-		if tx_vref = (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.tx_vref"].([]interface{}); tx_vref == nil {
+		rx_vref, ok := toIntSlice(v)
+		if !ok {
+			return fmt.Errorf("could not get rx_vref for signal %s", signal.Signal)
+		}
+		v = (*signal.Annotations)["dse.standards.fmi-ls-bus-topology.tx_vref"]
+		if v == nil {
+			return fmt.Errorf("could not get tx_vref for signal %s", signal.Signal)
+		}
+		tx_vref, ok := toIntSlice(v)
+		if !ok {
 			return fmt.Errorf("could not get tx_vref for signal %s", signal.Signal)
 		}
 		if len(rx_vref) != len(tx_vref) {
 			return errors.New("rx-tx mismatch")
 		}
 		for x := 0; x < len(rx_vref); x++ {
-			rx := rx_vref[x]
-			tx := tx_vref[x]
-
 			*(FmiXml.ModelVariables.Binary) = append(
 				*(FmiXml.ModelVariables.Binary),
-				buildBinarySignal(signal, rx, "rx", x+1),
-				buildBinarySignal(signal, tx, "tx", x+1),
+				buildBinarySignal(signal, rx_vref[x], "rx", x+1),
+				buildBinarySignal(signal, tx_vref[x], "tx", x+1),
 			)
-			outputModelStructure(FmiXml, strconv.Itoa(tx.(int)))
+			outputModelStructure(FmiXml, strconv.Itoa(tx_vref[x]))
 		}
 
 	}
@@ -376,7 +416,7 @@ func StringSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 		causality := (*signal.Annotations)["fmi_variable_causality"].(string)
 		_start := (*signal.Annotations)["fmi_variable_start_value"]
 		start := ""
-		var variability *string = stringPtr("discrete")
+		var variability = stringPtr("discrete")
 
 		if causality == "input" || causality == "parameter" {
 			if _start != nil {
@@ -401,6 +441,7 @@ func StringSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 			Start: &Start{
 				Value: start,
 			},
+			Annotations: annotationsFromSignal(signal),
 		}
 		*(FmiXml.ModelVariables.String) = append(*(FmiXml.ModelVariables.String), ScalarVariable)
 		if causality == "output" {
@@ -430,28 +471,15 @@ func SetGeneralFmuXmlFields(fmiConfig fmi.FmiConfig, fmuXml *ModelDescription) e
 	fmuXml.CoSimulation.ModelIdentifier = fmiConfig.ModelIdentifier // This is the packaged SO/DLL file.
 
 	// Add Annotations if provided.
-	fmuXml.Annotations = buildAnnotations(fmiConfig.Annotations)
+	var items []Annotation
+	for key, value := range fmiConfig.Annotations {
+		items = append(items, Annotation{Type: key, Text: value})
+	}
+	if len(items) > 0 {
+		fmuXml.Annotations = &Annotations{Annotation: items}
+	}
 
 	return nil
-}
-
-// Helper function to build annotations from map
-func buildAnnotations(annotationsMap map[string]string) *Annotations {
-	if len(annotationsMap) == 0 {
-		return nil
-	}
-
-	annotations := []Annotation{}
-	for key, value := range annotationsMap {
-		annotations = append(annotations, Annotation{
-			Type: key,
-			Text: value,
-		})
-	}
-
-	return &Annotations{
-		Annotation: annotations,
-	}
 }
 
 func VariablesFromSignalgroups(
@@ -481,7 +509,7 @@ func VariablesFromSignalgroups(
 			if len(filter) > 0 && !slices.Contains(filter, doc.Metadata.Name) {
 				continue
 			}
-			fmt.Fprintf(flag.CommandLine.Output(), "Adding SignalGroup: %s (%s)\n", doc.Metadata.Name, doc.File)
+			slog.Info(fmt.Sprintf("Adding SignalGroup: %s (%s)\n", doc.Metadata.Name, doc.File))
 			signalGroupSpec := doc.Spec.(*schema_kind.SignalGroupSpec)
 			if doc.Metadata.Annotations["vector_type"] == "binary" {
 				if err := BinarySignal(*signalGroupSpec, FmiXml); err != nil {
@@ -496,6 +524,31 @@ func VariablesFromSignalgroups(
 				channels = append(channels, doc.Metadata.Labels["channel"])
 				slog.Debug(fmt.Sprintf("added %s", doc.Metadata.Labels["channel"]))
 			}
+		}
+	}
+	return channels, nil
+}
+
+func VariablesFromSignalGroupObject(
+	FmiXml *ModelDescription, signalGroupObject []schema_kind.SignalGroup) ([]string, error) {
+	var channels []string
+	if len(signalGroupObject) == 0 {
+		return channels, nil
+	}
+	for _, signalGroup := range signalGroupObject {
+		slog.Info(fmt.Sprintf("Adding SignalGroup: %s", *signalGroup.Metadata.Name))
+		if signalGroup.Metadata.Annotations != nil && (*signalGroup.Metadata.Annotations)["vector_type"] == "binary" {
+			if err := BinarySignal(signalGroup.Spec, FmiXml); err != nil {
+				slog.Warn(fmt.Sprintf("Skipped BinarySignal (Error: %s)", err.Error()))
+			}
+		} else {
+			if err := ScalarSignal(signalGroup.Spec, FmiXml); err != nil {
+				slog.Warn(fmt.Sprintf("Skipped Scalarsignal (Error: %s)", err.Error()))
+			}
+		}
+		if signalGroup.Metadata.Labels != nil && !slices.Contains(channels, (*signalGroup.Metadata.Labels)["channel"]) {
+			channels = append(channels, (*signalGroup.Metadata.Labels)["channel"])
+			slog.Debug(fmt.Sprintf("added %s", (*signalGroup.Metadata.Labels)["channel"]))
 		}
 	}
 	return channels, nil

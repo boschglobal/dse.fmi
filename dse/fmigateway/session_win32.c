@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <string.h>
 #include <errno.h>
 #include <windows.h>
@@ -48,40 +49,43 @@ static char* _build_cmd(WindowsModel* w_model, const char* path)
     int    offset =
         snprintf(cmd, max_len, "cmd /C cd %s && %s", path, w_model->exe);
 
-    offset += snprintf(cmd + offset, max_len, " --name %s", w_model->name);
     offset +=
-        snprintf(cmd + offset, max_len, " --endtime %lf", w_model->end_time);
-    offset +=
-        snprintf(cmd + offset, max_len, " --stepsize %lf", w_model->step_size);
-    offset +=
-        snprintf(cmd + offset, max_len, " --logger %d", w_model->log_level);
-    offset +=
-        snprintf(cmd + offset, max_len, " --timeout %lf", w_model->timeout);
+        snprintf(cmd + offset, max_len - offset, " --name %s", w_model->name);
+    offset += snprintf(
+        cmd + offset, max_len - offset, " --endtime %lf", w_model->end_time);
+    offset += snprintf(
+        cmd + offset, max_len - offset, " --stepsize %lf", w_model->step_size);
+    offset += snprintf(
+        cmd + offset, max_len - offset, " --logger %d", w_model->log_level);
+    offset += snprintf(
+        cmd + offset, max_len - offset, " --timeout %lf", w_model->timeout);
 
     if (w_model->yaml) {
-        offset += snprintf(cmd + offset, max_len, " %s", w_model->yaml);
+        offset +=
+            snprintf(cmd + offset, max_len - offset, " %s", w_model->yaml);
     }
 
     return strdup(cmd);
 }
 
 
-/*
-_create_file
-============
+char* fmigateway_file_exists(FmuInstanceData* fmu, const char* name)
+{
+    static const char* const extensions[] = { "bat", "ps1", NULL };
+    char                     path[PATH_MAX];
+    for (const char* const* ext = extensions; *ext; ext++) {
+        snprintf(path, sizeof(path), "%s\\..\\%s.%s",
+            fmu->instance.resource_location, name, *ext);
+        DWORD attr = GetFileAttributesA(path);
+        if (attr != INVALID_FILE_ATTRIBUTES &&
+            !(attr & FILE_ATTRIBUTE_DIRECTORY)) {
+            return strdup(path);
+        }
+    }
+    return NULL;
+}
 
-Creates a file on a windows operating system.
 
-Parameters
-----------
-name (char*)
-: name of the file to be created.
-
-Returns
--------
-HANDLE
-: open handle to the specified file
-*/
 static HANDLE _create_file(char* name)
 {
     SECURITY_ATTRIBUTES sa;
@@ -89,7 +93,7 @@ static HANDLE _create_file(char* name)
     sa.lpSecurityDescriptor = NULL;
     sa.bInheritHandle = TRUE;
 
-    return CreateFile(name, FILE_WRITE_DATA, FILE_SHARE_WRITE | FILE_SHARE_READ,
+    return CreateFile(name, GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ,
         &sa,                    // default security
         CREATE_ALWAYS,          // create new file always
         FILE_ATTRIBUTE_NORMAL,  // normal file
@@ -135,21 +139,18 @@ static void _gracefully_terminate_process(
         w_model->name);
 
     /* Verify process is still valid before console manipulation */
-    DWORD result = WaitForSingleObject(w_process->p_info.hProcess, 0);
-    if (result == WAIT_OBJECT_0) {
+    if (WaitForSingleObject(w_process->p_info.hProcess, 0) == WAIT_OBJECT_0) {
         fmu_log(fmu, FmiLogOk, "Info",
             "Process %s terminated before sending signal", w_model->name);
         return;
     }
 
-    /* Sequence of functions to attach to the running models and send a SIGINT
-     */
+    /* Attach to the target's console group and raise CTRL_BREAK_EVENT. */
     FreeConsole();
     if (!AttachConsole(w_process->p_info.dwProcessId)) {
-        DWORD error = GetLastError();
         fmu_log(fmu, FmiLogError, "Error",
             "Failed to attach to console of process %s (error %d)",
-            w_model->name, error);
+            w_model->name, GetLastError());
         goto cleanup;
     }
 
@@ -162,7 +163,7 @@ static void _gracefully_terminate_process(
     }
     FreeConsole();
 
-    /* Wait for the process to handle the SIGINT and reattach to host. */
+    /* Wait for the process to handle the signal. */
     Sleep(1000);
 
     fmu_log(fmu, FmiLogOk, "Debug", "Terminated process %s via SIGINT.",
@@ -170,10 +171,13 @@ static void _gracefully_terminate_process(
 
 cleanup:
     SetConsoleCtrlHandler(NULL, false);
-    if (!AttachConsole(-1)) {
-        /* If we can't reattach, try to allocate a new console for safety */
-        AllocConsole();
-    }
+    /* Reattach to the parent console if there is one. If the parent
+       (e.g. MATLAB) has no console, AttachConsole(-1) returns FALSE and
+       we MUST NOT call AllocConsole(): doing so would create a brand-new
+       console owned by this process which is then inherited by every
+       subsequent child (init_cmd / shutdown_cmd), producing the spurious
+       "MATLAB-attached" terminal window. */
+    AttachConsole(ATTACH_PARENT_PROCESS);
 }
 
 
@@ -248,7 +252,7 @@ static char* _build_env(WindowsModel* m)
     parentEnvSize++;  // for the final extra null
 
     uint32_t env_size = 0;
-    for (FmiGatewayEnvvar* e = m->envar; e && e->name; e++) {
+    for (FmiGatewayParameter* e = m->envar; e && e->name; e++) {
         /* Calculate the size needed for each environment variable
            + 1 for the "=" and + 1 for the Nullterminator. */
         env_size += strlen(e->name) + 1 + strlen(e->default_value) + 1;
@@ -258,7 +262,7 @@ static char* _build_env(WindowsModel* m)
     char* envBlock = calloc(env_size, sizeof(char));
     char* ptr = envBlock;
 
-    for (FmiGatewayEnvvar* e = m->envar; e && e->name; e++) {
+    for (FmiGatewayParameter* e = m->envar; e && e->name; e++) {
         int len = snprintf(ptr, env_size, "%s=%s", e->name, e->default_value);
         ptr += len + 1;  // Move pointer past the null terminator
     }
@@ -271,6 +275,7 @@ static char* _build_env(WindowsModel* m)
     combinedEnv[parentEnvSize - 1] = '\0';
     memcpy(combinedEnv + parentEnvSize - 1, envBlock, env_size);
     free(envBlock);
+    FreeEnvironmentStrings(parentEnv);
 
     return combinedEnv;
 }
@@ -298,15 +303,17 @@ static void _start_model(FmuInstanceData* fmu, WindowsModel* m)
     FmiGateway*     fmi_gw = fmu->data;
     WindowsProcess* w_process = m->w_process;
     char*           cmd = _build_cmd(m, fmu->instance.resource_location);
-    HANDLE          _log;
+    HANDLE          _log = INVALID_HANDLE_VALUE;
 
-    if (fmi_gw->settings.session->logging) {
+    if (fmi_gw->settings.session->logging &&
+        fmi_gw->settings.runtime.log_location &&
+        strlen(fmi_gw->settings.runtime.log_location) > 0) {
         /* Create logfile for modelC models. */
         char log[PATH_MAX];
         snprintf(log, sizeof(log), "%s/%s_log.txt",
-            fmi_gw->settings.session->log_location, m->name);
+            fmi_gw->settings.runtime.log_location, m->name);
         _log = _create_file(log);
-        if (_log) {
+        if (_log != INVALID_HANDLE_VALUE) {
             w_process->s_info.hStdInput = NULL;
             w_process->s_info.hStdError = _log;
             w_process->s_info.hStdOutput = _log;
@@ -317,7 +324,8 @@ static void _start_model(FmuInstanceData* fmu, WindowsModel* m)
     char* env = _build_env(m);
 
     /* ModelC models. */
-    if (!CreateProcess(NULL, cmd, NULL, NULL, ((_log) ? TRUE : FALSE),
+    if (!CreateProcess(NULL, cmd, NULL, NULL,
+            ((_log != INVALID_HANDLE_VALUE) ? TRUE : FALSE),
             CREATE_NEW_CONSOLE | CREATE_NEW_PROCESS_GROUP, env, NULL,
             &(w_process->s_info), &(w_process->p_info))) {
         fmu_log(fmu, FmiLogError, "Error", "Could not start %s (error %d)",
@@ -432,7 +440,10 @@ static int32_t _check_shutdown(
     DWORD result = WaitForSingleObject(w_process->p_info.hProcess, sec * 1000);
 
     if (result == WAIT_OBJECT_0) {
-        fmu_log(fmu, FmiLogOk, "Info", "%s is shut down.", w_model->name);
+        DWORD exitCode = 0;
+        GetExitCodeProcess(w_process->p_info.hProcess, &exitCode);
+        fmu_log(fmu, FmiLogOk, "Info", "%s is shut down (exit code: %lu).",
+            w_model->name, exitCode);
     } else {
         fmu_log(
             fmu, FmiLogError, "Error", "%s is still active.", w_model->name);
@@ -443,6 +454,7 @@ static int32_t _check_shutdown(
     CloseHandle(w_process->p_info.hProcess);
     CloseHandle(w_process->p_info.hThread);
     free(w_model->w_process);
+    w_model->w_process = NULL;
     return 0;
 }
 
@@ -464,6 +476,7 @@ void fmigateway_start_models(FmuInstanceData* fmu)
 {
     FmiGateway*        fmi_gw = fmu->data;
     FmiGatewaySession* session = fmi_gw->settings.session;
+    if (session == NULL) return;
 
     /* Transport process. */
     if (session->transport) {
@@ -525,19 +538,6 @@ static void _sync_extra_step(FmuInstanceData* fmu)
 }
 
 
-/**
-fmigateway_shutdown_models
-==========================
-
-Terminates all previously started windows processes.
-After sending the termination signals, one additional
-step is made by the gateway to close the simulation.
-
-Parameters
-----------
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
- */
 static void _shutdown_models(FmuInstanceData* fmu)
 {
     FmiGateway*        fmi_gw = fmu->data;
@@ -594,6 +594,8 @@ void fmigateway_shutdown_models(FmuInstanceData* fmu)
         model_gw_exit(gw);
         fmu_log(fmu, FmiLogOk, "Debug", "Gateway exited...");
     }
+
+    if (session == NULL) return;
 
     /* Loop through processes and confirm that all are closed. */
     for (WindowsModel* m = session->w_models; m && m->name; m++) {
@@ -659,9 +661,9 @@ static char* fmigateway_run_parallelisation(
 {
     /* Use a unique temp file per call to avoid handle inheritance issues
        when multiple FMU instances call this concurrently. */
-    char tmp_dir[MAX_PATH];
-    char tmp_file[MAX_PATH];
-    char output[MAX_PATH];
+    char tmp_dir[MAX_PATH] = { 0 };
+    char tmp_file[MAX_PATH] = { 0 };
+    char output[MAX_PATH] = { 0 };
 
     if (!GetTempPathA(MAX_PATH, tmp_dir) ||
         !GetTempFileNameA(tmp_dir, "fgw", 0, tmp_file)) {
@@ -671,13 +673,18 @@ static char* fmigateway_run_parallelisation(
         return NULL;
     }
 
-    char cmd[MAX_CMD_LENGTH];
-    /* -NonInteractive suppresses prompts; -File runs the script directly
-       so Write-Output goes to stdout which is redirected to tmp_file. */
-    snprintf(cmd, sizeof cmd,
-        "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass"
-        " -File \"%s\" > \"%s\"",
-        script_path, tmp_file);
+    char        cmd[MAX_CMD_LENGTH] = { 0 };
+    const char* ext = strrchr(script_path, '.');
+    if (ext && _stricmp(ext, ".ps1") == 0) {
+        /* PowerShell: -File runs the script, stdout redirected to tmp_file. */
+        snprintf(cmd, sizeof cmd,
+            "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass"
+            " -File \"%s\" > \"%s\"",
+            script_path, tmp_file);
+    } else {
+        /* Batch file: run directly via cmd, redirect stdout to tmp_file. */
+        snprintf(cmd, sizeof cmd, "\"%s\" > \"%s\"", script_path, tmp_file);
+    }
 
     if (fmigateway_run_cmd(fmu, cmd) != 0) {
         DeleteFileA(tmp_file);
@@ -717,23 +724,31 @@ fmu (FmuInstanceData*)
 */
 void fmigateway_parallelize(FmuInstanceData* fmu)
 {
-    /* Run parallelisation.ps1 (if present) and capture its output. */
-    char* ps1_path =
-        dse_path_cat(fmu->instance.resource_location, "parallelisation.ps1");
-    char* script_output = NULL;
+    char* script_path = fmigateway_file_exists(fmu, "parallelisation");
+    if (script_path == NULL) return;
 
-    if (access(ps1_path, F_OK) == 0) {
-        script_output = fmigateway_run_parallelisation(fmu, ps1_path);
-        if (script_output) {
-            fmu_log(fmu, 0, "Debug", "parallelisation.ps1 returned: %s",
-                script_output);
-            fmu->instance.resource_location = script_output;
-            fmu_log(fmu, 0, "Debug", "Using new resource location: %s",
-                fmu->instance.resource_location);
-        }
+    char* script_output = fmigateway_run_parallelisation(fmu, script_path);
+    if (script_output) {
+        fmu_log(fmu, 0, "Debug", "parallelisation script returned: %s",
+            script_output);
+        fmu->instance.resource_location = script_output;
+        fmu_log(fmu, 0, "Debug", "Using new resource location: %s",
+            fmu->instance.resource_location);
     }
 
-    free(ps1_path);
+    free(script_path);
+}
+
+
+void fmigateway_teardown(FmuInstanceData* fmu)
+{
+    char* path = dse_path_cat(fmu->instance.resource_location, "teardown.bat");
+    if (access(path, F_OK) == 0) {
+        int rc = fmigateway_run_cmd(fmu, path);
+        if (rc) {
+            fmu_log(fmu, 0, "Debug", "teardown.bat failed: %d", rc);
+        }
+    }
 }
 
 
@@ -762,6 +777,8 @@ int fmigateway_run_cmd(FmuInstanceData* fmu, const char* cmd_string)
     ZeroMemory(&si, sizeof(si));
     ZeroMemory(&pi, sizeof(pi));
     si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
 
     /* Wrap in cmd /C to support shell features (pipes, &&, batch scripts).
        The working directory is set via lpCurrentDirectory, not via 'cd'. */
@@ -776,7 +793,7 @@ int fmigateway_run_cmd(FmuInstanceData* fmu, const char* cmd_string)
     fmu_log(fmu, FmiLogOk, "Debug", "Run cmd: %s (cwd: %s)", cmd_string,
         fmu->instance.resource_location);
 
-    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, 0, NULL,
+    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL,
             fmu->instance.resource_location, &si, &pi)) {
         fmu_log(fmu, FmiLogError, "Error",
             "Could not execute cmd '%s' (error %d)", cmd_string,
@@ -797,4 +814,139 @@ int fmigateway_run_cmd(FmuInstanceData* fmu, const char* cmd_string)
     }
 
     return 0;
+}
+
+void fmigateway_run_simer(FmuInstanceData* fmu)
+{
+    FmiGateway* fmi_gw = fmu->data;
+
+    const char* simer_cmd =
+        hashmap_get(&fmu->variables.string.input, "0");  // NOLINT
+    if (simer_cmd == NULL || strlen(simer_cmd) == 0) {
+        double* simer_cmd_sel = hashmap_get(&fmu->variables.scalar.input, "1");
+        size_t  idx = (simer_cmd_sel && *simer_cmd_sel >= 0)
+                          ? (size_t)(*simer_cmd_sel)
+                          : 0;
+        if (idx < vector_len(&fmi_gw->settings.runtime.cmds)) {
+            simer_cmd =
+                *(char**)vector_at(&fmi_gw->settings.runtime.cmds, idx, NULL);
+        }
+    }
+
+    WindowsProcess* w_process = calloc(1, sizeof(WindowsProcess));
+    _configure_process(w_process, true, "SIMER");
+
+    /* Create logfile for SIMER (only if log_location is configured). */
+    HANDLE _log = INVALID_HANDLE_VALUE;
+    char   log[PATH_MAX];
+    if (fmi_gw->settings.runtime.log_location &&
+        strlen(fmi_gw->settings.runtime.log_location) > 0) {
+        snprintf(log, sizeof(log), "%s/SIMER_log.txt",
+            fmi_gw->settings.runtime.log_location);
+        _log = _create_file(log);
+        if (_log == INVALID_HANDLE_VALUE) {
+            fmu_log(fmu, FmiLogError, "Error",
+                "Could not create SIMER log file (error %d)", GetLastError());
+        } else {
+            w_process->s_info.hStdInput = NULL;
+            w_process->s_info.hStdError = _log;
+            w_process->s_info.hStdOutput = _log;
+        }
+    }
+
+    char work_dir[PATH_MAX];
+    snprintf(
+        work_dir, sizeof(work_dir), "%s/sim", fmu->instance.resource_location);
+
+    /* Build an absolute path for the exe so CreateProcess can find it,
+       while keeping work_dir as lpCurrentDirectory so SIMER runs from there.
+       lpApplicationName resolves the exe; lpCommandLine is passed as-is
+       so SIMER receives the original argv. p_info refers directly to SIMER. */
+    char exe_path[PATH_MAX];
+    snprintf(exe_path, sizeof(exe_path), "%s\\bin\\simer.exe", work_dir);
+
+    /* CreateProcess requires a mutable command-line buffer.
+       argv[0] is the exe name (lpApplicationName handles the actual lookup). */
+    char cmd[MAX_CMD_LENGTH];
+    snprintf(cmd, sizeof(cmd), "simer.exe %s", simer_cmd);
+
+    fmu_log(fmu, FmiLogOk, "Debug", "Starting SIMER: %s ", exe_path);
+    fmu_log(fmu, FmiLogOk, "Debug", "  SIMER cmd: %s", cmd);
+    fmu_log(fmu, FmiLogOk, "Debug", "  SIMER work dir: %s", work_dir);
+    if (_log != INVALID_HANDLE_VALUE) {
+        fmu_log(fmu, FmiLogOk, "Debug", "  SIMER log file: %s", log);
+    }
+
+    if (!CreateProcess(exe_path, cmd, NULL, NULL,
+            ((_log != INVALID_HANDLE_VALUE) ? TRUE : FALSE),
+            CREATE_NEW_CONSOLE | CREATE_NEW_PROCESS_GROUP, NULL, work_dir,
+            &(w_process->s_info), &(w_process->p_info))) {
+        fmu_log(fmu, FmiLogError, "Error", "Could not start SIMER (error %d)",
+            GetLastError());
+        free(w_process);
+        return;
+    }
+
+    fmi_gw->settings.runtime.simer_process = w_process;
+    fmu_log(fmu, FmiLogOk, "Debug", "SIMER started (PID %lu)",
+        w_process->p_info.dwProcessId);
+}
+
+
+void fmigateway_stop_simer(FmuInstanceData* fmu)
+{
+    FmiGateway*     fmi_gw = fmu->data;
+    WindowsProcess* w_process = fmi_gw->settings.runtime.simer_process;
+
+    if (w_process == NULL) return;
+
+    /* Check if already exited. */
+    DWORD exitCode;
+    if (GetExitCodeProcess(w_process->p_info.hProcess, &exitCode) &&
+        exitCode != STILL_ACTIVE) {
+        fmu_log(fmu, FmiLogOk, "Info", "SIMER already exited.");
+        goto cleanup;
+    }
+
+    /* Send CTRL_BREAK_EVENT (SIGINT equivalent) to the process group. */
+    fmu_log(fmu, FmiLogOk, "Debug", "Sending SIGINT to SIMER (PID %lu)...",
+        w_process->p_info.dwProcessId);
+
+    FreeConsole();
+    if (AttachConsole(w_process->p_info.dwProcessId)) {
+        SetConsoleCtrlHandler(NULL, TRUE);
+        if (!GenerateConsoleCtrlEvent(
+                CTRL_BREAK_EVENT, w_process->p_info.dwProcessId)) {
+            fmu_log(fmu, FmiLogError, "Error",
+                "Failed to send CTRL_BREAK_EVENT to SIMER (error %d)",
+                GetLastError());
+        }
+        FreeConsole();
+        Sleep(1000);
+    } else {
+        /* Fallback: forcefully terminate if we cannot attach. */
+        fmu_log(fmu, FmiLogError, "Error",
+            "Could not attach to SIMER console (error %d), terminating.",
+            GetLastError());
+        TerminateProcess(w_process->p_info.hProcess, 1);
+    }
+
+    SetConsoleCtrlHandler(NULL, FALSE);
+    if (!AttachConsole((DWORD)-1)) AllocConsole();
+
+    /* Wait up to 10 s for graceful exit, then force-kill. */
+    if (WaitForSingleObject(w_process->p_info.hProcess, 10000) !=
+        WAIT_OBJECT_0) {
+        fmu_log(fmu, FmiLogError, "Error",
+            "SIMER did not exit in time, terminating forcefully.");
+        TerminateProcess(w_process->p_info.hProcess, 1);
+    }
+
+    fmu_log(fmu, FmiLogOk, "Debug", "SIMER stopped.");
+
+cleanup:
+    CloseHandle(w_process->p_info.hProcess);
+    CloseHandle(w_process->p_info.hThread);
+    free(w_process);
+    fmi_gw->settings.runtime.simer_process = NULL;
 }

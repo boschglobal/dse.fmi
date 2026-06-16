@@ -144,7 +144,7 @@ func Zip(source, destination string) error {
 func CopyDirectory(scrDir string, dest string) error {
 
 	if _, err := os.Stat(scrDir); err != nil {
-		return fmt.Errorf("Directory does not exist (%s)", err)
+		return fmt.Errorf("directory does not exist (%s)", err)
 	}
 
 	entries, err := os.ReadDir(scrDir)
@@ -164,7 +164,7 @@ func CopyDirectory(scrDir string, dest string) error {
 		if fileInfo.IsDir() {
 			if _, err := os.Stat(destPath); os.IsNotExist(err) {
 				if err := os.MkdirAll(destPath, 0755); err != nil {
-					return fmt.Errorf("Error: %s", err)
+					return fmt.Errorf("error: %s", err)
 				}
 			}
 			if err := CopyDirectory(sourcePath, destPath); err != nil {

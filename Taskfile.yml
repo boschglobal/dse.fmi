@@ -213,7 +213,6 @@ tasks:
         vars:
           SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
           OUT_DIR: '{{.OUT_DIR}}'
-          SESSION: '{{.SESSION}}'
           VERSION: '{{.VERSION}}'
           FMI_VERSION: '{{.FMI_VERSION}}'
           UUID: '{{.UUID}}'
@@ -221,6 +220,7 @@ tasks:
           MODEL_IDENTIFIER: '{{.MODEL_IDENTIFIER}}'
           ANNOTATIONS: '{{.ANNOTATIONS}}'
           STACK: '{{.STACK}}'
+          RUNTIME: '{{.RUNTIME}}'
     requires:
       vars: [SIGNAL_GROUPS]
     metadata:
@@ -232,9 +232,9 @@ tasks:
           required: false
           hint: Path where the FMU should be created.
           default: out
-        SESSION:
+        RUNTIME:
           required: false
-          hint: Generate session handling.
+          hint: Runtime environment for the FMU.
         VERSION:
           required: false
           hint: Version of the generated FMU.
@@ -366,9 +366,9 @@ tasks:
     dir: '{{.USER_WORKING_DIR}}'
     label: dse:fmi:gen-gateway
     vars:
-      # SIGNAL_GROUPS: '{{.SIGNAL_GROUPS}}'
-      OUT_DIR: '{{.OUT_DIR | default "out"}}'
-      SESSION: "{{if .SESSION}}--session '{{.SESSION}}'{{else}}{{end}}"
+      SIGNAL_GROUPS: "{{if .SIGNAL_GROUPS}}--signalgroups '{{.SIGNAL_GROUPS}}'{{else}}{{end}}"
+      OUT_DIR: "{{if .OUT_DIR}}--outdir '{{.OUT_DIR}}'{{else}}{{end}}"
+      RUNTIME: "{{if .RUNTIME}}--runtime '{{.RUNTIME}}'{{else}}{{end}}"
       VERSION: "{{if .VERSION}}--version '{{.VERSION}}'{{else}}{{end}}"
       FMI_VERSION: "{{if .FMI_VERSION}}--fmiVersion '{{.FMI_VERSION}}'{{else}}{{end}}"
       UUID: "{{if .UUID}}--uuid '{{.UUID}}'{{else}}{{end}}"
@@ -378,14 +378,16 @@ tasks:
       STACK: "{{if .STACK}}--stack '{{.STACK}}'{{else}}{{end}}"
     cmds:
       - echo "USING {{.FMI_IMAGE}} CMD {{.TASK}}"
+      - mkdir -p {{.FMI_SIMDIR}}/../fmu
       - docker run --rm
           --user {{.FMI_USER}}:{{.FMI_GROUP}}
           -v {{.FMI_SIMDIR}}:/sim
+          -v {{.FMI_SIMDIR}}/../fmu:/out
           {{.FMI_IMAGE}}
           gen-gatewayfmu
-            --signalgroups {{.SIGNAL_GROUPS}}
-            --outdir {{.OUT_DIR}}
-            {{.SESSION}}
+            {{.SIGNAL_GROUPS}}
+            {{.OUT_DIR}}
+            {{.RUNTIME}}
             {{.VERSION}}
             {{.FMI_VERSION}}
             {{.UUID}}

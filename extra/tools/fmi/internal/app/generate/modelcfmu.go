@@ -123,7 +123,7 @@ func (c *GenModelCFmuCommand) Run() error {
 		return err
 	}
 
-	fmuBinDir := c.getFmuBinaryDirName(c.platform)
+	fmuBinDir := fmi.GetFmuBinaryDirName(c.platform, c.fmiVersion)
 	if fmuBinDir == "" {
 		return fmt.Errorf("platform not supported (%s)", c.platform)
 	}
@@ -134,18 +134,18 @@ func (c *GenModelCFmuCommand) Run() error {
 
 	// Copy the necessary binaries from the FMI package.
 	// libfmi2modelcfmu.so => fmi2modelcfmu.so
-	src := c.getFmuLibPath(c.fmiPackage, fmt.Sprintf("lib%s", c.modelIdentifier), c.platform)
+	src := fmi.GetFmuLibPath(c.fmiPackage, fmt.Sprintf("lib%s", c.modelIdentifier), c.platform)
 	if _, err := os.Stat(src); err != nil {
 		// Also try without "lib" prefix.
-		src = c.getFmuLibPath(c.fmiPackage, fmt.Sprintf("%s", c.modelIdentifier), c.platform)
+		src = fmi.GetFmuLibPath(c.fmiPackage, c.modelIdentifier, c.platform)
 	}
-	tgt := c.getFmuBinPath(fmuBinPath, c.modelIdentifier, c.platform)
+	tgt := fmi.GetFmuBinPath(fmuBinPath, c.modelIdentifier, c.platform)
 	if err := operations.Copy(src, tgt); err != nil {
 		return fmt.Errorf("could not copy FMU binary (%v)", err)
 	}
 	// libmodelc.so => libmodelc.so
-	src = c.getFmuLibPath(c.fmiPackage, "libmodelc", c.platform)
-	tgt = c.getFmuBinPath(fmuBinPath, "libmodelc", c.platform)
+	src = fmi.GetFmuLibPath(c.fmiPackage, "libmodelc", c.platform)
+	tgt = fmi.GetFmuBinPath(fmuBinPath, "libmodelc", c.platform)
 	if err := operations.Copy(src, tgt); err != nil {
 		return fmt.Errorf("could not copy modelc binary (%v)", err)
 	}
@@ -154,8 +154,8 @@ func (c *GenModelCFmuCommand) Run() error {
 		return fmt.Errorf("could not copy FMU resources (%v)", err)
 	}
 	// /licenses => resources/licenses
-	if _, err := os.Stat(c.getFmuLicensesPath()); err == nil {
-		if err := operations.CopyDirectory(c.getFmuLicensesPath(), filepath.Join(fmuOutDir, "resources/licenses")); err != nil {
+	if _, err := os.Stat(fmi.GetFmuLicensesPath()); err == nil {
+		if err := operations.CopyDirectory(fmi.GetFmuLicensesPath(), filepath.Join(fmuOutDir, "resources/licenses")); err != nil {
 			return fmt.Errorf("could not copy licenses (%v)", err)
 		}
 	}
@@ -176,84 +176,6 @@ func (c *GenModelCFmuCommand) Run() error {
 	}
 
 	return nil
-}
-
-func (c *GenModelCFmuCommand) getFmuBinaryDirName(platform string) (dir string) {
-	os, arch, found := strings.Cut(platform, "-")
-	if !found {
-		return
-	}
-
-	switch os {
-	case "linux":
-		switch arch {
-		case "amd64":
-			switch c.fmiVersion {
-			case "2":
-				dir = "linux64"
-			case "3":
-				dir = "x86_64-linux"
-			}
-		case "x86", "i386":
-			switch c.fmiVersion {
-			case "2":
-				dir = "linux32"
-			case "3":
-				dir = "x86-linux"
-			}
-		}
-	case "windows":
-		switch arch {
-		case "x64":
-			switch c.fmiVersion {
-			case "2":
-				dir = "win64"
-			case "3":
-				dir = "x86_64-windows"
-			}
-		case "x86":
-			switch c.fmiVersion {
-			case "2":
-				dir = "win32"
-			case "3":
-				dir = "x86-windows"
-			}
-		}
-	}
-	return
-}
-
-func (c *GenModelCFmuCommand) getFmuLibPath(packagePath string, modelIdentifier string, platform string) string {
-	var libpath string
-	extension := "so"
-
-	os, _, found := strings.Cut(platform, "-")
-	if found {
-		switch os {
-		case "linux":
-			libpath = "lib"
-		case "windows":
-			libpath = "lib"
-			extension = "dll"
-		}
-	}
-	return filepath.Join(packagePath, libpath, fmt.Sprintf("%s.%s", modelIdentifier, extension))
-}
-
-func (c *GenModelCFmuCommand) getFmuLicensesPath() string {
-	return filepath.Join("/licenses")
-}
-
-func (c *GenModelCFmuCommand) getFmuBinPath(fmuBinPath string, modelIdentifier string, platform string) string {
-	extension := "so"
-	os, _, found := strings.Cut(platform, "-")
-	if found {
-		switch os {
-		case "windows":
-			extension = "dll"
-		}
-	}
-	return filepath.Join(fmuBinPath, fmt.Sprintf("%s.%s", modelIdentifier, extension))
 }
 
 func (c *GenModelCFmuCommand) createFmuXml(name string, uuid string, version string, signalGroups string, index *index.YamlFileIndex) interface{} {
@@ -345,7 +267,7 @@ func (c *GenModelCFmuAnnotationCommand) Run() error {
 
 	// Check if necessary parameters are present and valid.
 	if len(c.simpath) == 0 {
-		return fmt.Errorf("Nothing to do, provide simpath")
+		return fmt.Errorf("nothing to do, provide simpath")
 	}
 	c.index = index.NewYamlFileIndex()
 	c.index.Scan(c.simpath)
@@ -394,7 +316,7 @@ func (c *GenModelCFmuAnnotationCommand) runAnnotateStack() error {
 
 	// Yaml Files, annotation: model_runtime__yaml_files (list).
 	yamlFiles := []string{}
-	for file, _ := range c.index.FileMap {
+	for file := range c.index.FileMap {
 		if f, err := filepath.Rel(c.simpath, file); err == nil {
 			yamlFiles = append(yamlFiles, f)
 			fmt.Fprintf(flag.CommandLine.Output(), "Model Runtime YAML File: %s -> %s\n", file, f)
@@ -443,7 +365,7 @@ func lookupSimBusChannelName(index *index.YamlFileIndex, sgDoc *kind.KindDoc) (s
 	stackDoc := &index.DocMap["Stack"][0]
 	stackSpec := stackDoc.Spec.(*schema_kind.StackSpec)
 	if stackSpec.Models == nil {
-		return "", fmt.Errorf("Stack contains no models")
+		return "", fmt.Errorf("stack contains no models")
 	}
 	// For each model (instance) in this stack.
 	for _, model := range *stackSpec.Models {
@@ -503,7 +425,7 @@ func lookupSimBusChannelName(index *index.YamlFileIndex, sgDoc *kind.KindDoc) (s
 		}
 	}
 
-	return "", fmt.Errorf("Stack contains no Model:Channel with matching selectors")
+	return "", fmt.Errorf("stack contains no Model:Channel with matching selectors")
 }
 
 func (c *GenModelCFmuAnnotationCommand) runGenerateDirectIndex() error {
@@ -557,7 +479,7 @@ func (c *GenModelCFmuAnnotationCommand) annotateSignalgroup(signalgroupDoc *kind
 	}
 	if len(ruleset.rules) > 0 {
 		if err := c.applyRule(ruleset, signalgroupDoc); err != nil {
-			return fmt.Errorf("Could not apply rules. (%w)", err)
+			return fmt.Errorf("could not apply rules. (%w)", err)
 		}
 
 		// Annotate based on direction (scalar/real).
@@ -597,7 +519,7 @@ func (c *GenModelCFmuAnnotationCommand) getRuleset() (ruleset Ruleset, err error
 	if len(c.ruleFile) > 0 {
 		ruleset.rules, err = operations.LoadCsv(c.ruleFile)
 		if err != nil {
-			err = fmt.Errorf("Unable to load CSV: %s (%w)", c.ruleFile, err)
+			err = fmt.Errorf("unable to load CSV: %s (%w)", c.ruleFile, err)
 		}
 	} else {
 		switch c.ruleset {
@@ -610,7 +532,7 @@ func (c *GenModelCFmuAnnotationCommand) getRuleset() (ruleset Ruleset, err error
 		case "":
 			// Nothing to do ... no ruleset.
 		default:
-			err = fmt.Errorf("Ruleset not supported: %s ", c.ruleset)
+			err = fmt.Errorf("ruleset not supported: %s ", c.ruleset)
 		}
 	}
 	return
@@ -621,7 +543,7 @@ func (c *GenModelCFmuAnnotationCommand) applyRule(ruleset Ruleset, signalgroupDo
 
 	if sg_type := signalgroupDoc.Metadata.Annotations["vector_type"]; sg_type != nil {
 		if sg_type == "binary" {
-			return fmt.Errorf("Binary not supported")
+			return fmt.Errorf("binary not supported")
 		}
 	}
 

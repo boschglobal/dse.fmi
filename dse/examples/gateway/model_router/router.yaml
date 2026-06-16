@@ -1,0 +1,24 @@
+---
+kind: SignalGroup
+metadata:
+  name: router
+  labels:
+    channel: in
+    model: router
+spec:
+  signals:
+    - signal: in
+      annotations:
+        direction: input
+---
+kind: SignalGroup
+metadata:
+  name: router
+  labels:
+    channel: out
+    model: router
+spec:
+  signals:
+    - signal: out
+      annotations:
+        direction: output

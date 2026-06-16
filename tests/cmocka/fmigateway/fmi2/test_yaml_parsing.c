@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <string.h>
 #include <dse/testing.h>
 #include <dse/logger.h>
 #include <dse/clib/util/yaml.h>
@@ -25,9 +26,12 @@ int test_fmigateway__parser_setup(void** state)
     fmu->data = (void*)fmi_gw;
 
     fmu->instance.resource_location =
-        strdup("../../../../tests/cmocka/fmigateway/data");
+        strdup("../../../../tests/cmocka/fmigateway/fmi2/data/fmi2/resources");
 
     fmi_gw->settings.yaml_files = calloc(2, sizeof(char*));
+
+    hashmap_init(&fmu->variables.string.input);
+    hashmap_init(&fmu->variables.scalar.input);
 
     *state = fmu;
     return 0;
@@ -69,15 +73,27 @@ int test_fmigateway__parser_teardown(void** state)
             }
             free(session->w_models);
 
-            for (FmiGatewayEnvvar* e = session->envar; e && e->name; e++) {
+            free(session);
+            for (FmiGatewayParameter* e = fmi_gw->settings.scripts.envar;
+                e && e->name; e++) {
                 free(e->vref);
+                free((char*)e->name);
                 free(e->default_value);
             }
-            free(session->envar);
-            free(session);
+            free(fmi_gw->settings.scripts.envar);
+            free((char*)fmi_gw->settings.runtime.log_location);
+            for (size_t i = 0; i < vector_len(&fmi_gw->settings.runtime.cmds);
+                i++) {
+                free(*(char**)vector_at(
+                    &fmi_gw->settings.runtime.cmds, i, NULL));
+            }
+            vector_reset(&fmi_gw->settings.runtime.cmds);
+            free((char*)fmi_gw->settings.model_name);
             free(fmi_gw->model);
             free(fmi_gw);
         }
+        hashmap_destroy(&fmu->variables.string.input);
+        hashmap_destroy(&fmu->variables.scalar.input);
     }
     free(fmu);
 
@@ -92,6 +108,8 @@ void test_fmigateway__parser_gw_stack_default(void** state)
 
     fmi_gw->settings.yaml_files[0] = dse_path_cat(
         fmu->instance.resource_location, "stack_gw_parser_default.yaml");
+
+    fmigateway_parse_xml(fmu);
 
     // Test conditions.
     WindowsModel simbus = {
@@ -114,15 +132,12 @@ void test_fmigateway__parser_gw_stack_default(void** state)
 
     /* Test Gateway parsing. */
     assert_non_null(fmi_gw->settings.doc_list);
-    assert_double_equal(fmi_gw->settings.end_time, 3600.0, 0.0);
-    assert_double_equal(fmi_gw->settings.step_size, 0.0005, 0.0);
     assert_int_equal(fmi_gw->settings.log_level, 6);
-    assert_string_equal(fmi_gw->settings.session->log_location,
-        fmu->instance.resource_location);
+    assert_string_equal(fmi_gw->settings.runtime.log_location, "./logs");
 
     /* Test script parsing. */
-    assert_null(fmi_gw->settings.session->init_cmd);
-    assert_null(fmi_gw->settings.session->shutdown_cmd);
+    assert_null(fmi_gw->settings.scripts.startup_cmd);
+    assert_null(fmi_gw->settings.scripts.shutdown_cmd);
 
     /* Test Simbus parsing. */
     assert_non_null(fmi_gw->settings.session->simbus);
@@ -135,6 +150,18 @@ void test_fmigateway__parser_gw_stack_default(void** state)
     assert_double_equal(TC_sim->end_time, w_model->end_time, 0.0);
     assert_double_equal(TC_sim->timeout, w_model->timeout, 0.0);
     assert_int_equal(TC_sim->log_level, w_model->log_level);
+
+    /* Test runtime parsing. */
+    assert_int_equal(fmi_gw->settings.runtime.type, FMIGATEWAY_RUNTIME_SIMER);
+    assert_int_equal(vector_len(&fmi_gw->settings.runtime.cmds), 2);
+    assert_string_equal(
+        *(char**)vector_at(&fmi_gw->settings.runtime.cmds, 0, NULL), "cmd0");
+    assert_string_equal(
+        *(char**)vector_at(&fmi_gw->settings.runtime.cmds, 1, NULL), "cmd1");
+    assert_string_equal(
+        (char*)hashmap_get(&fmu->variables.string.input, "0"), "");
+    assert_double_equal(
+        *(double*)hashmap_get(&fmu->variables.scalar.input, "1"), 0.0, 0.0);
 }
 
 
@@ -145,6 +172,8 @@ void test_fmigateway__parser_gw_stack(void** state)
 
     fmi_gw->settings.yaml_files[0] =
         dse_path_cat(fmu->instance.resource_location, "stack_gw_parser.yaml");
+
+    fmigateway_parse_xml(fmu);
 
     // Test conditions.
     WindowsModel simbus = {
@@ -171,17 +200,15 @@ void test_fmigateway__parser_gw_stack(void** state)
 
     /* Test Gateway parsing. */
     assert_non_null(fmi_gw->settings.doc_list);
-    assert_double_equal(fmi_gw->settings.end_time, 0.02, 0.0);
-    assert_double_equal(fmi_gw->settings.step_size, 0.005, 0.0);
     assert_int_equal(fmi_gw->settings.log_level, 4);
-    assert_string_equal(fmi_gw->settings.session->log_location, "./here");
-    assert_string_equal(fmi_gw->settings.session->envar[0].name, "envar0");
-    assert_string_equal(fmi_gw->settings.session->envar[1].name, "envar1");
-    assert_string_equal(fmi_gw->settings.session->envar[2].name, "envar2");
+    assert_string_equal(fmi_gw->settings.runtime.log_location, "./here");
+    assert_string_equal(fmi_gw->settings.scripts.envar[0].name, "envar0");
+    assert_string_equal(fmi_gw->settings.scripts.envar[1].name, "envar1");
+    assert_string_equal(fmi_gw->settings.scripts.envar[2].name, "envar2");
 
     /* Test script parsing. */
-    assert_string_equal(fmi_gw->settings.session->init_cmd, "init_cmd");
-    assert_string_equal(fmi_gw->settings.session->shutdown_cmd, "shutdown_cmd");
+    assert_string_equal(fmi_gw->settings.scripts.startup_cmd, "init_cmd");
+    assert_string_equal(fmi_gw->settings.scripts.shutdown_cmd, "shutdown_cmd");
 
     /* Test Redis parsing. */
     assert_non_null(fmi_gw->settings.session->transport);
@@ -201,6 +228,18 @@ void test_fmigateway__parser_gw_stack(void** state)
     assert_double_equal(TC_sim->end_time, w_model->end_time, 0.0);
     assert_double_equal(TC_sim->timeout, w_model->timeout, 0.0);
     assert_int_equal(TC_sim->log_level, w_model->log_level);
+
+    /* Test runtime parsing. */
+    assert_int_equal(fmi_gw->settings.runtime.type, FMIGATEWAY_RUNTIME_SIMER);
+    assert_int_equal(vector_len(&fmi_gw->settings.runtime.cmds), 2);
+    assert_string_equal(
+        *(char**)vector_at(&fmi_gw->settings.runtime.cmds, 0, NULL), "cmd0");
+    assert_string_equal(
+        *(char**)vector_at(&fmi_gw->settings.runtime.cmds, 1, NULL), "cmd1");
+    assert_string_equal(
+        (char*)hashmap_get(&fmu->variables.string.input, "0"), "");
+    assert_double_equal(
+        *(double*)hashmap_get(&fmu->variables.scalar.input, "1"), 0.0, 0.0);
 }
 
 
@@ -212,6 +251,8 @@ void test_fmigateway__parser_model_stack(void** state)
     fmi_gw->settings.yaml_files[0] =
         dse_path_cat(fmu->instance.resource_location, "stack_gw_parser.yaml");
 
+    fmigateway_parse_xml(fmu);
+
     // Test conditions.
     WindowsModel TC_models[] = {
         {
@@ -222,8 +263,9 @@ void test_fmigateway__parser_model_stack(void** state)
             .timeout = 600.0,
             .exe = "different.exe",
             .yaml = (char*)"stack.yaml model.yaml signalgroup.yaml",
-            .envar = (FmiGatewayEnvvar[3]){ { .name = "NCODEC_TRACE_1",
-                                                .default_value = (char*)"*" },
+            .envar = (FmiGatewayParameter[3]){ { .name = "NCODEC_TRACE_1",
+                                                   .default_value =
+                                                       (char*)"*" },
                 { .name = "NCODEC_TRACE_2", .default_value = (char*)"0x42" } },
         },
         {
@@ -275,17 +317,29 @@ void test_fmigateway__parser_model_stack(void** state)
         assert_int_equal(tc_model->log_level, model->log_level);
         assert_string_equal(tc_model->exe, model->exe);
         int i = 0;
-        for (FmiGatewayEnvvar* env = model->envar; env && env->name; env++) {
+        for (FmiGatewayParameter* env = model->envar; env && env->name; env++) {
             assert_string_equal(tc_model->envar[i].name, env->name);
             assert_string_equal(
                 tc_model->envar[i].default_value, env->default_value);
             i++;
         }
     }
+
+    /* Test runtime parsing. */
+    assert_int_equal(fmi_gw->settings.runtime.type, FMIGATEWAY_RUNTIME_SIMER);
+    assert_int_equal(vector_len(&fmi_gw->settings.runtime.cmds), 2);
+    assert_string_equal(
+        *(char**)vector_at(&fmi_gw->settings.runtime.cmds, 0, NULL), "cmd0");
+    assert_string_equal(
+        *(char**)vector_at(&fmi_gw->settings.runtime.cmds, 1, NULL), "cmd1");
+    assert_string_equal(
+        (char*)hashmap_get(&fmu->variables.string.input, "0"), "");  // NOLINT
+    assert_double_equal(
+        *(double*)hashmap_get(&fmu->variables.scalar.input, "1"), 0.0, 0.0);
 }
 
 
-int run_fmigateway__parser_tests(void)
+int run_fmigateway__yaml_parsing_tests(void)
 {
     void* s = test_fmigateway__parser_setup;
     void* t = test_fmigateway__parser_teardown;

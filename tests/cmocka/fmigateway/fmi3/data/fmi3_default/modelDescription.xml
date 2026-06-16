@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <fmiModelDescription fmiVersion="3.0" modelName="fmugw" instantiationToken="{880ba27a-938d-4e61-9817-2ae18767232a}" description="Gateway to connect to the DSE Simbus" author="Robert Bosch GmbH" version="0.0.1" generationTool="DSE FMI - ModelC FMU" generationDateAndTime="2026-04-28T00:00:00Z">
+      <CoSimulation modelIdentifier="libfmi3gateway"></CoSimulation>
+      <DefaultExperiment startTime="0.000000" stopTime="3600.0" stepSize="0.000500"></DefaultExperiment>
+      <ModelVariables>
+      </ModelVariables>
+  </fmiModelDescription>

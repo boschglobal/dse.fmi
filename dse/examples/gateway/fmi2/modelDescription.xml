@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <fmiModelDescription modelName="fmi2gateway" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" fmiVersion="2.0" guid="{11111111-2222-3333-8888-555555555555}">
 	<CoSimulation modelIdentifier="libfmi2gateway"></CoSimulation>
-	<DefaultExperiment stepSize="0.0005"></DefaultExperiment>
+	<DefaultExperiment stepSize="0.0005"  startTime="0.000000" stopTime="0.002" ></DefaultExperiment>
 	<ModelVariables>
 		<ScalarVariable name="scalar_in" valueReference="1001" causality="input">
 			<Real start="0.0"></Real>

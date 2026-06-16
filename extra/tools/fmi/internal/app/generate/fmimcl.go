@@ -132,7 +132,7 @@ func (c *FmiMclCommand) generateModel(fmiMD fmi2.ModelDescription) error {
 	// Construct various parameters.
 	platformOs, platformArch, found := strings.Cut(c.platform, "-")
 	if !found {
-		return fmt.Errorf("Could not decode platform: (%s)", c.platform)
+		return fmt.Errorf("could not decode platform: (%s)", c.platform)
 	}
 	fmuResourceDir := filepath.Join(c.fmupath, "resources")
 
@@ -170,7 +170,7 @@ func (c *FmiMclCommand) generateModel(fmiMD fmi2.ModelDescription) error {
 	}
 	channels, err := c.generateChannels(fmiMD)
 	if err != nil {
-		return fmt.Errorf("Could not generate channels: (%v)", err)
+		return fmt.Errorf("could not generate channels: (%v)", err)
 	}
 	spec := kind.ModelSpec{
 		Channels: &channels,
@@ -188,12 +188,12 @@ func (c *FmiMclCommand) generateModel(fmiMD fmi2.ModelDescription) error {
 
 	// Write the Model
 	if err := os.MkdirAll(c.outdir, 0755); err != nil {
-		return fmt.Errorf("Error Creating Directory for Yaml output: %v", err)
+		return fmt.Errorf("error Creating Directory for Yaml output: %v", err)
 	}
 	modelYamlPath := filepath.Join(c.outdir, "model.yaml")
 	fmt.Fprintf(flag.CommandLine.Output(), "Creating Model YAML: %s (%s)\n", *model.Metadata.Name, modelYamlPath)
 	if err := writeYaml(&model, modelYamlPath, false); err != nil {
-		return fmt.Errorf("Error writing YAML: %v", err)
+		return fmt.Errorf("error writing YAML: %v", err)
 	}
 
 	return nil

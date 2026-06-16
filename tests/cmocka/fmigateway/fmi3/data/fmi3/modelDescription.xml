@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <fmiModelDescription fmiVersion="3.0" modelName="fmugw" instantiationToken="{880ba27a-938d-4e61-9817-2ae18767232a}" description="Gateway to connect to the DSE Simbus" author="Robert Bosch GmbH" version="0.0.1" generationTool="DSE FMI - ModelC FMU" generationDateAndTime="2026-04-28T00:00:00Z">
+      <CoSimulation modelIdentifier="libfmi3gateway"></CoSimulation>
+      <DefaultExperiment startTime="0.000000" stopTime="3600.0" stepSize="0.000500"></DefaultExperiment>
+      <Annotations>
+          <Annotation type="dse.fmi.gateway.runtime">simer</Annotation>
+          <Annotation type="dse.fmi.gateway.simer.cmd.0">cmd0</Annotation>
+          <Annotation type="dse.fmi.gateway.simer.cmd.1">cmd1</Annotation>
+          <Annotation type="dse.fmi.gateway.loglocation">./logs</Annotation>
+          <Annotation type="dse.fmi.gateway.loglevel">4</Annotation>
+      </Annotations>
+      <ModelVariables>
+          <String name="Simer_Command" valueReference="0" causality="parameter" variability="tunable">
+              <Annotations>
+                  <Annotation type="dse.fmi.gateway.simer.parameter"></Annotation>
+              </Annotations>
+              <Start value=""></Start>
+          </String>
+          <Float64 name="Simer_Command_Selector" valueReference="1" causality="parameter" variability="tunable" start="0.0">
+              <Annotations>
+                  <Annotation type="dse.fmi.gateway.simer.parameter"></Annotation>
+              </Annotations>
+          </Float64>
+          <String name="envar0" valueReference="2" causality="parameter" variability="tunable">
+              <Annotations>
+                  <Annotation type="dse.fmi.gateway.script.parameter"></Annotation>
+              </Annotations>
+              <Start value=""></Start>
+          </String>
+          <Float64 name="envar1" valueReference="3" causality="parameter" variability="tunable" start="0.0">
+              <Annotations>
+                  <Annotation type="dse.fmi.gateway.script.parameter"></Annotation>
+              </Annotations>
+          </Float64>
+          <Float64 name="envar2" valueReference="4" causality="parameter" variability="tunable" start="1.0">
+              <Annotations>
+                  <Annotation type="dse.fmi.gateway.script.parameter"></Annotation>
+              </Annotations>
+          </Float64>
+      </ModelVariables>
+  </fmiModelDescription>

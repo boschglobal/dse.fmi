@@ -173,6 +173,8 @@ fmi3Instance fmi3InstantiateCoSimulation(fmi3String instanceName,
     fmu_log(fmu, fmi3OK, "Debug", "Build indexes...");
     hashmap_init(&fmu->variables.scalar.input);
     hashmap_init(&fmu->variables.scalar.output);
+    hashmap_init(&fmu->variables.string.input);
+    hashmap_init(&fmu->variables.string.output);
     hashmap_init(&fmu->variables.binary.rx);
     hashmap_init(&fmu->variables.binary.tx);
     hashmap_init(&fmu->variables.binary.encode_func);
@@ -249,6 +251,8 @@ void fmi3FreeInstance(fmi3Instance instance)
     fmu_log(fmu, fmi3OK, "Debug", "Destroy the index");
     hashmap_destroy(&fmu->variables.scalar.input);
     hashmap_destroy(&fmu->variables.scalar.output);
+    hashmap_destroy(&fmu->variables.string.input);
+    hashmap_destroy(&fmu->variables.string.output);
     hashmap_destroy(&fmu->variables.binary.rx);
     hashmap_destroy(&fmu->variables.binary.tx);
     hashmap_destroy(&fmu->variables.binary.encode_func);

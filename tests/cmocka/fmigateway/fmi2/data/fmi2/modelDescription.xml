@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <fmiModelDescription fmiVersion="2.0" modelName="gateway" guid="{880ba27a-938d-4e61-9817-2ae18767232a}" description="Gateway to connect to the DSE Simbus" author="Robert Bosch GmbH" version="0.0.1" generationTool="DSE FMI - ModelC FMU" generationDateAndTime="2026-04-21T11:54:09Z">
+      <CoSimulation modelIdentifier="libfmi2gateway" canHandleVariableCommunicationStepSize="true" canInterpolateInputs="true"></CoSimulation>
+      <LogCategories>
+          <Category name="All" description="Log all messages"></Category>
+          <Category name="Fatal" description="Log fatal messages"></Category>
+          <Category name="Error" description="Log error messages"></Category>
+          <Category name="Warning" description="Log warning messages"></Category>
+          <Category name="Info" description="Log informational messages"></Category>
+          <Category name="Debug" description="Log debug messages"></Category>
+      </LogCategories>
+      <DefaultExperiment startTime="0.000000" stopTime="3600.0" stepSize="0.000500"></DefaultExperiment>
+      <VendorAnnotations>
+        <Tool name="dse.fmi.config">
+            <annotations xmlns="https://github.com/boschglobal/dse.fmi">
+                <Annotation name="dse.fmi.gateway.runtime">simer</Annotation>
+                <Annotation name="dse.fmi.gateway.simer.cmd.0">cmd0</Annotation>
+                <Annotation name="dse.fmi.gateway.simer.cmd.1">cmd1</Annotation>
+                <Annotation name="dse.fmi.gateway.loglocation">./logs</Annotation>
+                <Annotation name="dse.fmi.gateway.loglevel">4</Annotation>
+            </annotations>
+        </Tool>
+      </VendorAnnotations>
+      <ModelVariables>
+          <ScalarVariable name="Simer_Command" valueReference="0" causality="parameter" variability="tunable">
+              <String start=""></String>
+              <Annotations>
+                <Tool name="dse.fmi.gateway.simer.parameter"></Tool>
+              </Annotations>
+          </ScalarVariable>
+          <ScalarVariable name="Simer_Command_Selector" valueReference="1" causality="parameter" variability="tunable">
+              <Real start=""></Real>
+              <Annotations>
+                <Tool name="dse.fmi.gateway.simer.parameter"></Tool>
+              </Annotations>
+          </ScalarVariable>
+          <ScalarVariable name="envar0" valueReference="2" causality="parameter" variability="tunable">
+              <String start=""></String>
+              <Annotations>
+                <Tool name="dse.fmi.gateway.script.parameter"></Tool>
+              </Annotations>
+          </ScalarVariable>
+          <ScalarVariable name="envar1" valueReference="3" causality="parameter" variability="tunable">
+              <Real start="0.0"></Real>
+              <Annotations>
+                <Tool name="dse.fmi.gateway.script.parameter"></Tool>
+              </Annotations>
+          </ScalarVariable>
+          <ScalarVariable name="envar2" valueReference="4" causality="parameter" variability="tunable">
+              <Real start="0.0"></Real>
+              <Annotations>
+                <Tool name="dse.fmi.gateway.script.parameter"></Tool>
+              </Annotations>
+          </ScalarVariable>
+          <ScalarVariable name="softecu_name_1_changed" valueReference="5" causality="input">
+              <Real start="0.0"></Real>
+          </ScalarVariable>
+          <ScalarVariable name="softecu_name_2_changed" valueReference="6" causality="output">
+              <Real></Real>
+          </ScalarVariable>
+          <ScalarVariable name="softecu_name_3_changed" valueReference="7" causality="input">
+              <Real start="0.0"></Real>
+          </ScalarVariable>
+          <ScalarVariable name="softecu_name_4_changed" valueReference="8" causality="output">
+              <Real></Real>
+          </ScalarVariable>
+          <ScalarVariable name="softecu_name_5_changed" valueReference="9" causality="input">
+              <Real start="0.0"></Real>
+          </ScalarVariable>
+          <ScalarVariable name="softecu_name_6_changed" valueReference="10" causality="output">
+              <Real></Real>
+          </ScalarVariable>
+          <ScalarVariable name="fmu_signal_1_changed" valueReference="11" causality="input">
+              <Real start="0.0"></Real>
+          </ScalarVariable>
+          <ScalarVariable name="fmu_signal_2_changed" valueReference="12" causality="output">
+              <Real></Real>
+          </ScalarVariable>
+          <ScalarVariable name="signal_1" valueReference="13" causality="input">
+              <Real start="0.0"></Real>
+          </ScalarVariable>
+          <ScalarVariable name="signal_2" valueReference="14" causality="output">
+              <Real></Real>
+          </ScalarVariable>
+          <ScalarVariable name="signal_3" valueReference="15" causality="input">
+              <Real start="0.0"></Real>
+          </ScalarVariable>
+          <ScalarVariable name="signal_4" valueReference="16" causality="output">
+              <Real></Real>
+          </ScalarVariable>
+          <ScalarVariable name="network_1_1_rx" valueReference="17" causality="input" variability="discrete">
+              <String start=""></String>
+              <Annotations>
+                  <Tool name="dse.standards.fmi-ls-binary-codec">
+                      <Annotation name="mimetype">application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; node_id=2; interface_id=0</Annotation>
+                  </Tool>
+                  <Tool name="dse.standards.fmi-ls-binary-to-text">
+                      <Annotation name="encoding">ascii85</Annotation>
+                  </Tool>
+                  <Tool name="dse.standards.fmi-ls-bus-topology">
+                      <Annotation name="bus_id">1</Annotation>
+                  </Tool>
+              </Annotations>
+          </ScalarVariable>
+          <ScalarVariable name="network_1_1_tx" valueReference="18" causality="output" variability="discrete">
+              <String start=""></String>
+              <Annotations>
+                  <Tool name="dse.standards.fmi-ls-binary-codec">
+                      <Annotation name="mimetype">application/x-automotive-bus; interface=stream; type=frame; bus=can; schema=fbs; bus_id=1; node_id=2; interface_id=0</Annotation>
+                  </Tool>
+                  <Tool name="dse.standards.fmi-ls-binary-to-text">
+                      <Annotation name="encoding">ascii85</Annotation>
+                  </Tool>
+                  <Tool name="dse.standards.fmi-ls-bus-topology">
+                      <Annotation name="bus_id">1</Annotation>
+                  </Tool>
+              </Annotations>
+          </ScalarVariable>
+      </ModelVariables>
+      <ModelStructure>
+          <Outputs>
+              <Unknown index="6"></Unknown>
+              <Unknown index="8"></Unknown>
+              <Unknown index="10"></Unknown>
+              <Unknown index="12"></Unknown>
+              <Unknown index="14"></Unknown>
+              <Unknown index="16"></Unknown>
+              <Unknown index="18"></Unknown>
+          </Outputs>
+          <InitialUnknowns>
+              <Unknown index="6"></Unknown>
+              <Unknown index="8"></Unknown>
+              <Unknown index="10"></Unknown>
+              <Unknown index="12"></Unknown>
+              <Unknown index="14"></Unknown>
+              <Unknown index="16"></Unknown>
+              <Unknown index="18"></Unknown>
+          </InitialUnknowns>
+      </ModelStructure>
+  </fmiModelDescription>

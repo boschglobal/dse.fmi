@@ -16,13 +16,13 @@ add_library(fmigateway_runtime OBJECT
     ${REPO_DIR}/dse/fmigateway/session.c
     ${REPO_DIR}/dse/fmigateway/session_unix.c
     ${REPO_DIR}/dse/fmigateway/parser.c
+    ${REPO_DIR}/dse/fmigateway/parse_fmi.c
     ${REPO_DIR}/dse/fmigateway/signal.c
-    ${REPO_DIR}/dse/fmu/fmi2fmu.c
+    ${REPO_DIR}/dse/fmu/xml.c
 )
 target_include_directories(fmigateway_runtime
     PUBLIC
         ${REPO_DIR}
-        ${FMI2_INCLUDE_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
         ${DSE_MODELC_INCLUDE_DIR}
 )
@@ -91,14 +91,20 @@ target_link_libraries(modelcgateway_runtime
 )
 
 
-# Target - test_fmigateway
+# Target - test_fmi2gateway
 # ========================
-add_executable(test_fmigateway
-    __test__.c
-    test_parser.c
-    test_fmi2.c
+add_executable(test_fmi2gateway
+    ${REPO_DIR}/dse/fmu/fmi2fmu.c
+    fmi2/__test__.c
+    fmi2/test_fmi2_xml_parsing.c
+    fmi2/test_yaml_parsing.c
+    fmi2/test_fmi2.c
 )
-target_compile_definitions(test_fmigateway
+target_include_directories(test_fmi2gateway
+    PUBLIC
+        ${FMI2_INCLUDE_DIR}
+)
+target_compile_definitions(test_fmi2gateway
     PUBLIC
         CMOCKA_TESTING
     PRIVATE
@@ -106,7 +112,7 @@ target_compile_definitions(test_fmigateway
         PLATFORM_ARCH="${CDEF_PLATFORM_ARCH}"
         MODELC_VERSION="${DSE_MODELC_VERSION}"
 )
-target_link_libraries(test_fmigateway
+target_link_libraries(test_fmi2gateway
     PUBLIC
         fmigateway_runtime
         modelcgateway_runtime
@@ -117,10 +123,45 @@ target_link_libraries(test_fmigateway
 )
 install(
     TARGETS
-        test_fmigateway
+        test_fmi2gateway
 )
 install(
     FILES
     DESTINATION
         data/fmigateway
+)
+
+
+# Target - test_fmi3gateway
+# ========================
+add_executable(test_fmi3gateway
+    ${REPO_DIR}/dse/fmu/fmi3fmu.c
+    fmi3/__test__.c
+    fmi3/test_fmi3_xml_parsing.c
+    fmi3/test_fmi3.c
+)
+target_include_directories(test_fmi3gateway
+    PUBLIC
+        ${FMI3_INCLUDE_DIR}
+)
+target_compile_definitions(test_fmi3gateway
+    PUBLIC
+        CMOCKA_TESTING
+    PRIVATE
+        PLATFORM_OS="${CDEF_PLATFORM_OS}"
+        PLATFORM_ARCH="${CDEF_PLATFORM_ARCH}"
+        MODELC_VERSION="${DSE_MODELC_VERSION}"
+)
+target_link_libraries(test_fmi3gateway
+    PUBLIC
+        fmigateway_runtime
+        modelcgateway_runtime
+        clib_runtime
+    PRIVATE
+        ab-codec
+        cmocka
+)
+install(
+    TARGETS
+        test_fmi3gateway
 )

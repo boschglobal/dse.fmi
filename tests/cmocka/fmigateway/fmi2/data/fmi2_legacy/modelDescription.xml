@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <fmiModelDescription fmiVersion="2.0" modelName="gateway" guid="{880ba27a-938d-4e61-9817-2ae18767232a}" description="Gateway to connect to the DSE Simbus" author="Robert Bosch GmbH" version="0.0.1" generationTool="DSE FMI - ModelC FMU" generationDateAndTime="2026-04-21T11:54:09Z">
+      <CoSimulation modelIdentifier="libfmi2gateway" canHandleVariableCommunicationStepSize="true" canInterpolateInputs="true"></CoSimulation>
+      <LogCategories>
+          <Category name="All" description="Log all messages"></Category>
+          <Category name="Fatal" description="Log fatal messages"></Category>
+          <Category name="Error" description="Log error messages"></Category>
+          <Category name="Warning" description="Log warning messages"></Category>
+          <Category name="Info" description="Log informational messages"></Category>
+          <Category name="Debug" description="Log debug messages"></Category>
+      </LogCategories>
+      <DefaultExperiment startTime="0.000000" stopTime="3600.0" stepSize="0.000500"></DefaultExperiment>
+      <ModelVariables>
+          <ScalarVariable name="envar0" valueReference="2" causality="parameter" variability="tunable">
+              <String start=""></String>
+              <Annotations>
+                <Tool name="dse.fmi.gateway.script.parameter"></Tool>
+              </Annotations>
+          </ScalarVariable>
+          <ScalarVariable name="envar1" valueReference="3" causality="parameter" variability="tunable">
+              <Real start="0.0"></Real>
+              <Annotations>
+                <Tool name="dse.fmi.gateway.script.parameter"></Tool>
+              </Annotations>
+          </ScalarVariable>
+          <ScalarVariable name="scalar_in" valueReference="1001" causality="input">
+              <Real start="0.0"></Real>
+          </ScalarVariable>
+          <ScalarVariable name="scalar_out" valueReference="1002" causality="output">
+              <Real></Real>
+          </ScalarVariable>
+      </ModelVariables>
+      <ModelStructure>
+          <Outputs>
+              <Unknown index="4"></Unknown>
+          </Outputs>
+          <InitialUnknowns>
+              <Unknown index="4"></Unknown>
+          </InitialUnknowns>
+      </ModelStructure>
+  </fmiModelDescription>

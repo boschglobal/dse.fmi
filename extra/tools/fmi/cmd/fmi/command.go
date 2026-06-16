@@ -127,16 +127,16 @@ func DispatchCommand(name string) error {
 		}
 	}
 	if cmd == nil {
-		return fmt.Errorf("Unknown command: %s", name)
+		return fmt.Errorf("unknown command: %s", name)
 	}
 
 	if cmd.Name() != "help" {
-		fmt.Fprintf(flag.CommandLine.Output(), "Running FMI Toolset command: %s\n", cmd.Name())
+		fmt.Fprintf(flag.CommandLine.Output(), "running FMI Toolset command: %s\n", cmd.Name())
 	}
 	if err := cmd.Parse(os.Args[2:]); err != nil {
 		return err
 	}
-	fmt.Fprintf(flag.CommandLine.Output(), "Options:\n")
+	fmt.Fprintf(flag.CommandLine.Output(), "options:\n")
 	cmd.FlagSet().VisitAll(func(f *flag.Flag) {
 		fmt.Fprintf(flag.CommandLine.Output(), "  %-15s: %s\n", f.Name, f.Value)
 	})

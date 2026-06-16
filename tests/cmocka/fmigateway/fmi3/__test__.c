@@ -9,8 +9,8 @@
 uint8_t __log_level__; /* LOG_ERROR LOG_INFO LOG_DEBUG LOG_TRACE */
 
 
-extern int run_fmigateway__parser_tests(void);
-extern int run_fmigateway__fmi2_tests(void);
+extern int run_fmigateway__fmi3_xml_parsing_tests(void);
+extern int run_fmigateway__fmi3_tests(void);
 
 
 int main()
@@ -18,7 +18,7 @@ int main()
     __log_level__ = LOG_QUIET;  // commit with LOG_QUIET
 
     int rc = 0;
-    rc |= run_fmigateway__parser_tests();
-    rc |= run_fmigateway__fmi2_tests();
+    rc |= run_fmigateway__fmi3_xml_parsing_tests();
+    rc |= run_fmigateway__fmi3_tests();
     return rc;
 }

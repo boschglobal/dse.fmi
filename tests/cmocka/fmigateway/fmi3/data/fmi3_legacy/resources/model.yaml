@@ -1,0 +1,41 @@
+---
+kind: Model
+metadata:
+  name: Gateway
+spec:
+  runtime:
+    gateway: {}
+  channels:
+    - alias: scalar_vector
+      selectors:
+        channel: scalar
+    - alias: binary_vector
+      selectors:
+        channel: binary
+---
+kind: Model
+metadata:
+  name: Target
+spec:
+  runtime:
+    dynlib:
+      - os: linux
+        arch: amd64
+        path: model/libgatewaytarget.so
+      - os: linux
+        arch: x86
+        path: model/libgatewaytarget.so
+      - os: windows
+        arch: x64
+        path: model/libgatewaytarget.dll
+      - os: windows
+        arch: x86
+        path: model/libgatewaytarget.dll
+  channels:
+    - alias: scalar_vector
+      selectors:
+        side: scalar_vector
+    - alias: binary_vector
+      selectors:
+        channel: binary
+---

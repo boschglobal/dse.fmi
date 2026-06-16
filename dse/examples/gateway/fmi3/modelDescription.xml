@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <fmiModelDescription modelName="fmi3gateway" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" fmiVersion="3.0" guid="{11111111-2222-3333-8888-555555555555}">
 	<CoSimulation modelIdentifier="libfmi3gateway"></CoSimulation>
-	<DefaultExperiment stepSize="0.0005"></DefaultExperiment>
+	<DefaultExperiment stepSize="0.0005"  startTime="0.000000" stopTime="0.002"></DefaultExperiment>
 	<ModelVariables>
 		<Float64 name="scalar_in" valueReference="1001" causality="input" start="0.0" />
 		<Float64 name="scalar_out" valueReference="1002" causality="output" />

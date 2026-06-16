@@ -1,0 +1,52 @@
+---
+kind: Stack
+metadata:
+  name: gateway
+spec:
+  connection:
+    transport:
+      redis:
+        uri: redis://localhost:6379
+        timeout: 60
+  models:
+    - name: simbus
+      model:
+        name: simbus
+      channels:
+        - name: scalar
+          expectedModelCount: 2
+        - name: binary
+          expectedModelCount: 2
+    - name: gateway
+      uid: 42
+      model:
+        name: Gateway
+      annotations:
+        step_size: 0.0005
+        end_time: 0.00200
+        log_level: 6
+      channels:
+        - name: scalar
+          alias: scalar_vector
+          selectors:
+            channel: scalar
+        - name: binary
+          alias: binary_vector
+          selectors:
+            channel: binary
+    - name: target_inst
+      uid: 43
+      model:
+        name: Target
+      runtime:
+        files:
+          - fmu/resources/fmu.yaml
+      channels:
+        - name: scalar
+          alias: scalar_vector
+          selectors:
+            channel: scalar
+        - name: binary
+          alias: binary_vector
+          selectors:
+            channel: binary

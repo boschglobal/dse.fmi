@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <fmiModelDescription fmiVersion="3.0" modelName="gateway" instantiationToken="{880ba27a-938d-4e61-9817-2ae18767232a}" description="Gateway to connect to the DSE Simbus" author="Robert Bosch GmbH" version="0.0.1" generationTool="DSE FMI - ModelC FMU" generationDateAndTime="2026-04-28T00:00:00Z">
+      <CoSimulation modelIdentifier="libfmi3gateway"></CoSimulation>
+      <DefaultExperiment startTime="0.000000" stopTime="3600.0" stepSize="0.000500"></DefaultExperiment>
+      <ModelVariables>
+          <String name="envar0" valueReference="2" causality="parameter" variability="tunable">
+              <Annotations>
+                  <Annotation type="dse.fmi.gateway.script.parameter"></Annotation>
+              </Annotations>
+              <Start value=""></Start>
+          </String>
+          <Float64 name="envar1" valueReference="3" causality="parameter" variability="tunable" start="0.0">
+              <Annotations>
+                  <Annotation type="dse.fmi.gateway.script.parameter"></Annotation>
+              </Annotations>
+          </Float64>
+      </ModelVariables>
+  </fmiModelDescription>

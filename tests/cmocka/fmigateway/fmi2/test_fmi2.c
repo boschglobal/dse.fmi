@@ -78,7 +78,8 @@ int test_fmigateway__fmi2_setup(void** state)
     setup->fmu_type = fmi2CoSimulation;
     setup->instance_name = "test_inst";
     setup->visible = fmi2True;
-    setup->fmu_resource_location = "../../../../tests/cmocka/fmigateway/data";
+    setup->fmu_resource_location =
+        "../../../../tests/cmocka/fmigateway/fmi2/data/fmi2/resources";
     setup->functions = calloc(1, sizeof(fmi2CallbackFunctions));
     setup->functions->logger = _fmi2_unit_test_logger;
 
@@ -89,6 +90,29 @@ int test_fmigateway__fmi2_setup(void** state)
 
     *state = setup;
 
+    return 0;
+}
+
+
+int test_fmigateway__fmi2_legacy_setup(void** state)
+{
+    fmi2_setup* setup = calloc(1, sizeof(fmi2_setup));
+    setup->logging_on = fmi2True;
+    setup->fmu_guid = "{1-22-333-4444-55555-666666-7777777}";
+    setup->fmu_type = fmi2CoSimulation;
+    setup->instance_name = "test_inst";
+    setup->visible = fmi2True;
+    setup->fmu_resource_location =
+        "../../../../tests/cmocka/fmigateway/fmi2/data/fmi2_legacy/resources";
+    setup->functions = calloc(1, sizeof(fmi2CallbackFunctions));
+    setup->functions->logger = _fmi2_unit_test_logger;
+
+    setup->controller = calloc(1, sizeof(Controller));
+    setup->controller->adapter = calloc(1, sizeof(Adapter));
+    setup->endpoint = calloc(1, sizeof(Endpoint));
+    stub_setup_objects(setup->controller, setup->endpoint);
+
+    *state = setup;
     return 0;
 }
 
@@ -150,10 +174,8 @@ void test_fmigateway__fmi2_ExitInitializationMode(void** state)
     FmiGateway* fmi_gw = inst->data;
 
     assert_string_equal(fmi_gw->model->mi->name, "gateway");
-    assert_double_equal(fmi_gw->settings.step_size, 0.0005, 0.0);
-    assert_double_equal(fmi_gw->settings.end_time, 0.002, 0.0);
 
-    assert_int_equal(inst->variables.scalar.input.used_nodes, 2);
+    assert_int_equal(inst->variables.scalar.input.used_nodes, 5);
     assert_int_equal(inst->variables.scalar.output.used_nodes, 2);
     for (SignalVector* sv = fmi_gw->model->sv; sv && sv->name; sv++) {
         if (sv->is_binary) continue;
@@ -264,10 +286,118 @@ void test_fmigateway__fmi2_BINARY(void** state)
 }
 
 
+void test_fmigateway__fmi2_runtime_simer(void** state)
+{
+    fmi2_setup* setup = *state;
+
+    FmuInstanceData* inst = fmi2Instantiate(setup->instance_name,
+        setup->fmu_type, setup->fmu_guid, setup->fmu_resource_location,
+        setup->functions, setup->visible, setup->logging_on);
+
+    assert_non_null(inst);
+    FmiGateway* fmi_gw = inst->data;
+
+    /* modelDescription.xml parsed: simer runtime, two cmds, explicit log
+     * location. */
+    assert_int_equal(fmi_gw->settings.runtime.type, FMIGATEWAY_RUNTIME_SIMER);
+    assert_int_equal(vector_len(&fmi_gw->settings.runtime.cmds), 2);
+    assert_string_equal(
+        *(char**)vector_at(&fmi_gw->settings.runtime.cmds, 0, NULL), "cmd0");
+    assert_string_equal(
+        *(char**)vector_at(&fmi_gw->settings.runtime.cmds, 1, NULL), "cmd1");
+    assert_string_equal(fmi_gw->settings.runtime.log_location, "./logs");
+    assert_string_equal(fmi_gw->settings.model_name, "gateway");
+    assert_double_equal(fmi_gw->settings.end_time, 3600.0, 0.0);
+    assert_double_equal(fmi_gw->settings.step_size, 0.0005, 0.0);
+    /* loglevel annotation "4" -> atoi -> LOG_NOTICE. */
+    assert_int_equal(fmi_gw->settings.log_level, LOG_NOTICE);
+
+    /* yaml_files: simer layout uses sim/model/<name>/data/ prefix. */
+    assert_non_null(strstr(
+        fmi_gw->settings.yaml_files[0], "sim/model/gateway/data/model.yaml"));
+    assert_non_null(strstr(
+        fmi_gw->settings.yaml_files[1], "sim/model/gateway/data/fmu.yaml"));
+    assert_non_null(
+        strstr(fmi_gw->settings.yaml_files[2], "sim/data/simulation.yaml"));
+
+    /* Simer runtime parameters registered in input hashmaps during XML parse.
+     */
+    assert_non_null(hashmap_get(&inst->variables.string.input, "0"));
+    assert_non_null(hashmap_get(&inst->variables.scalar.input, "1"));
+
+    /* Script environment variables populated from script.parameter annotations.
+     */
+    FmiGatewayParameter* envar = fmi_gw->settings.scripts.envar;
+    assert_non_null(envar);
+    assert_string_equal(envar[0].name, "envar0");
+    assert_string_equal(envar[0].type, "String");
+    assert_string_equal(envar[0].vref, "2");
+    assert_string_equal(envar[1].name, "envar1");
+    assert_string_equal(envar[1].type, "Real");
+    assert_string_equal(envar[1].vref, "3");
+    assert_string_equal(envar[2].name, "envar2");
+    assert_string_equal(envar[2].type, "Real");
+    assert_string_equal(envar[2].vref, "4");
+    assert_null(envar[3].name); /* NTL terminator */
+
+    fmi2FreeInstance(inst);
+}
+
+
+void test_fmigateway__fmi2_runtime_legacy(void** state)
+{
+    fmi2_setup* setup = *state;
+
+    FmuInstanceData* inst = fmi2Instantiate(setup->instance_name,
+        setup->fmu_type, setup->fmu_guid, setup->fmu_resource_location,
+        setup->functions, setup->visible, setup->logging_on);
+
+    assert_non_null(inst);
+    FmiGateway* fmi_gw = inst->data;
+
+    /* modelDescription.xml parsed: no runtime annotation -> legacy, no cmds. */
+    assert_int_equal(fmi_gw->settings.runtime.type, FMIGATEWAY_RUNTIME_LEGACY);
+    assert_int_equal(vector_len(&fmi_gw->settings.runtime.cmds), 0);
+    assert_string_equal(
+        fmi_gw->settings.runtime.log_location, setup->fmu_resource_location);
+    assert_string_equal(fmi_gw->settings.model_name, "gateway");
+    assert_double_equal(fmi_gw->settings.end_time, 3600.0, 0.0);
+    assert_double_equal(fmi_gw->settings.step_size, 0.0005, 0.0);
+    /* No loglevel annotation: stays at LOG_ERROR default. */
+    assert_int_equal(fmi_gw->settings.log_level, LOG_ERROR);
+
+    /* yaml_files: legacy layout uses resource_location root (no sim/ prefix).
+     */
+    assert_null(strstr(fmi_gw->settings.yaml_files[0], "sim/"));
+    assert_non_null(strstr(fmi_gw->settings.yaml_files[0], "model.yaml"));
+    assert_non_null(strstr(fmi_gw->settings.yaml_files[1], "fmu.yaml"));
+    assert_non_null(strstr(fmi_gw->settings.yaml_files[2], "stack.yaml"));
+
+    /* No simer runtime parameters: simer.parameter variables absent. */
+    assert_null(hashmap_get(&inst->variables.string.input, "0"));  // NOLINT
+    assert_null(hashmap_get(&inst->variables.scalar.input, "1"));
+
+    /* Script environment variables from script.parameter annotations. */
+    FmiGatewayParameter* envar = fmi_gw->settings.scripts.envar;
+    assert_non_null(envar);
+    assert_string_equal(envar[0].name, "envar0");
+    assert_string_equal(envar[0].type, "String");
+    assert_string_equal(envar[0].vref, "2");
+    assert_string_equal(envar[1].name, "envar1");
+    assert_string_equal(envar[1].type, "Real");
+    assert_string_equal(envar[1].vref, "3");
+    assert_null(
+        envar[2].name); /* NTL terminator: only 2 envars in legacy XML */
+
+    fmi2FreeInstance(inst);
+}
+
+
 int run_fmigateway__fmi2_tests(void)
 {
     void* s = test_fmigateway__fmi2_setup;
     void* t = test_fmigateway__fmi2_teardown;
+    void* ls = test_fmigateway__fmi2_legacy_setup;
 
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(
@@ -276,6 +406,10 @@ int run_fmigateway__fmi2_tests(void)
             test_fmigateway__fmi2_ExitInitializationMode, s, t),
         cmocka_unit_test_setup_teardown(test_fmigateway__fmi2_DOUBLE, s, t),
         cmocka_unit_test_setup_teardown(test_fmigateway__fmi2_BINARY, s, t),
+        cmocka_unit_test_setup_teardown(
+            test_fmigateway__fmi2_runtime_simer, s, t),
+        cmocka_unit_test_setup_teardown(
+            test_fmigateway__fmi2_runtime_legacy, ls, t),
     };
 
     return cmocka_run_group_tests_name("engine", tests, NULL, NULL);

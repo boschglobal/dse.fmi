@@ -49,10 +49,6 @@ spec:
         end_time: 0.0200
         log_level: 4
         log_location: "./here"
-        cmd_envvars:
-          - envar0
-          - envar1
-          - envar2
       runtime:
         env:
           # Gateway scripts.
