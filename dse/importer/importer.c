@@ -117,7 +117,7 @@ static void _apply_samples(CsvDesc* c, double simulation_time)
                 vector_at(&c->index, idx, &signal);
                 if (signal) *signal = v;
             } else {
-                _log("Error decoding sample [%f][%u]", c->timestamp, idx);
+                _log("Error decoding sample [%f][%zu]", c->timestamp, idx);
             }
             /* Check limit. */
             if (++idx >= vector_len(&c->index)) break;
