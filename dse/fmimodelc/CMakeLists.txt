@@ -116,25 +116,6 @@ install(
 )
 
 
-# Install the ModelC library
-# ==========================
-if (UNIX)
-install(
-    FILES
-        ${dse_modelc_lib_SOURCE_DIR}/lib/libmodelc.so
-    DESTINATION
-        ${MODULE_LC}/lib
-)
-elseif(WIN32)
-install(
-    FILES
-        ${dse_modelc_lib_SOURCE_DIR}/bin/libmodelc.dll
-    DESTINATION
-        ${MODULE_LC}/lib
-)
-endif()
-
-
 # Package
 # =======
 set(CPACK_SYSTEM_NAME $ENV{PACKAGE_ARCH})

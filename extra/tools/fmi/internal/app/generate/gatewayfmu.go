@@ -235,7 +235,7 @@ func (c *GenFmiGatewayCommand) buildFmuPackage(fmuXml interface{}) error {
 	// For Windows, also copy the modelc binary.
 	osName, _, found := strings.Cut(c.platform, "-")
 	if found && osName == "windows" {
-		src = fmi.GetFmuLibPath(c.fmiPackage, "../../bin/libmodelc", c.platform)
+		src = fmi.GetFmuLibPath(c.fmiPackage, "../../lib/libmodelc", c.platform)
 		tgt = fmi.GetFmuBinPath(fmuBinPath, "libmodelc", c.platform)
 		if err := operations.Copy(src, tgt); err != nil {
 			return fmt.Errorf("could not copy modelc binary (%v)", err)

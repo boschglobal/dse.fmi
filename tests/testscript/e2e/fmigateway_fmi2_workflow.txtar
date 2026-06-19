@@ -19,6 +19,7 @@ exists out/fmu/gateway.fmu
 exists out/fmu/gateway/modelDescription.xml
 exists out/fmu/gateway/resources/sim/model/gateway/data/model.yaml
 exists out/fmu/gateway/resources/sim/model/gateway/data/fmu.yaml
+exists out/fmu/gateway/binaries/linux64/fmi2gateway.so
 
 
 -- simulation.dse --

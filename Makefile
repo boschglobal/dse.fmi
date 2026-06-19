@@ -138,19 +138,34 @@ fmi: build package
 	mkdir -p extra/tools/fmi/build/stage/package/linux-amd64
 	mkdir -p extra/tools/fmi/build/stage/package/linux-x86
 	mkdir -p extra/tools/fmi/build/stage/package/linux-i386
+	mkdir -p extra/tools/fmi/build/stage/package/windows-x64
+	mkdir -p extra/tools/fmi/build/stage/package/windows-x86
 	@if [ ${PACKAGE_ARCH} = "linux-amd64" ]; then \
 		cp -r dse/build/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-amd64 ;\
 		cp -r dse/build/_out/fmigateway extra/tools/fmi/build/stage/package/linux-amd64 ;\
+		cp -r dse/build/_out/lib extra/tools/fmi/build/stage/package/linux-amd64 ;\
 		cp -r dse/build/_out/examples extra/tools/fmi/build/stage ;\
 		cp -r licenses -t extra/tools/fmi/build/stage ;\
 	fi
 	@if [ ${PACKAGE_ARCH} = "linux-x86" ]; then \
 		cp -r dse/build/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-x86 ;\
 		cp -r dse/build/_out/fmigateway extra/tools/fmi/build/stage/package/linux-x86 ;\
+		cp -r dse/build/_out/lib extra/tools/fmi/build/stage/package/linux-x86 ;\
 	fi
 	@if [ ${PACKAGE_ARCH} = "linux-i386" ]; then \
 		cp -r dse/build/_out/fmimodelc extra/tools/fmi/build/stage/package/linux-i386 ;\
 		cp -r dse/build/_out/fmigateway extra/tools/fmi/build/stage/package/linux-i386 ;\
+		cp -r dse/build/_out/lib extra/tools/fmi/build/stage/package/linux-i386 ;\
+	fi
+	@if [ ${PACKAGE_ARCH} = "windows-x64" ]; then \
+		cp -r dse/build/_out/fmimodelc extra/tools/fmi/build/stage/package/windows-x64 ;\
+		cp -r dse/build/_out/fmigateway extra/tools/fmi/build/stage/package/windows-x64 ;\
+		cp -r dse/build/_out/lib extra/tools/fmi/build/stage/package/windows-x64 ;\
+	fi
+	@if [ ${PACKAGE_ARCH} = "windows-x86" ]; then \
+		cp -r dse/build/_out/fmimodelc extra/tools/fmi/build/stage/package/windows-x86 ;\
+		cp -r dse/build/_out/fmigateway extra/tools/fmi/build/stage/package/windows-x86 ;\
+		cp -r dse/build/_out/lib extra/tools/fmi/build/stage/package/windows-x86 ;\
 	fi
 
 .PHONY: tools

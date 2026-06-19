@@ -144,7 +144,7 @@ func (c *GenModelCFmuCommand) Run() error {
 		return fmt.Errorf("could not copy FMU binary (%v)", err)
 	}
 	// libmodelc.so => libmodelc.so
-	src = fmi.GetFmuLibPath(c.fmiPackage, "libmodelc", c.platform)
+	src = fmi.GetFmuLibPath(c.fmiPackage, "../../lib/libmodelc", c.platform)
 	tgt = fmi.GetFmuBinPath(fmuBinPath, "libmodelc", c.platform)
 	if err := operations.Copy(src, tgt); err != nil {
 		return fmt.Errorf("could not copy modelc binary (%v)", err)

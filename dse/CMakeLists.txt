@@ -239,8 +239,9 @@ add_subdirectory(examples)
 install(
     FILES
         $<$<BOOL:${WIN32}>:${dse_modelc_lib_SOURCE_DIR}/bin/libmodelc.dll>
+        $<$<BOOL:${UNIX}>:${dse_modelc_lib_SOURCE_DIR}/lib/libmodelc.so>
     DESTINATION
-        bin
+        lib
 )
 
 
