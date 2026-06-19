@@ -49,6 +49,7 @@ vars:
   # When running from E2E tests (i.e. Docker in Docker), the FMI_SIMDIR (for
   # Docker commands) must be set to the host relative path.
   FMI_SIMDIR: '{{if .SIM}}{{.ENTRYWORKDIR}}/{{.SIM}}{{else}}{{.PWD}}{{end}}'
+  FMI_OUTDIR: '{{if .OUTDIR}}{{.ENTRYWORKDIR}}/{{.OUT}}{{else}}{{.PWD}}/out{{end}}'
   # Container image specification.
   FMI_REPO: 'https://github.com/boschglobal/dse.fmi'
   FMI_REGISTRY: ghcr.io/boschglobal
@@ -67,6 +68,7 @@ tasks:
     cmds:
       - echo "** Taskfile global vars (FMI Namespace) **"
       - echo FMI_SIMDIR={{.FMI_SIMDIR}}
+      - echo FMI_OUTDIR={{.FMI_OUTDIR}}
       - echo FMI_IMAGE={{.FMI_IMAGE}}
       - echo FMI_USER={{.FMI_USER}}
       - echo FMI_GROUP={{.FMI_GROUP}}
@@ -317,11 +319,10 @@ tasks:
       OUT_DIR: "{{if .OUT_DIR}}--outdir '{{.OUT_DIR}}'{{else}}{{end}}"
     cmds:
       - echo "USING {{.FMI_IMAGE}} CMD {{.TASK}}"
-      - mkdir -p {{.FMI_SIMDIR}}/../fmu
       - docker run --rm
           --user {{.FMI_USER}}:{{.FMI_GROUP}}
           -v {{.FMI_SIMDIR}}:/sim
-          -v {{.FMI_SIMDIR}}/../fmu:/out
+          -v {{.FMI_OUTDIR}}:/out
           {{.FMI_IMAGE}}
           gen-modelcfmu
             {{.SIM_DIR}}
@@ -489,7 +490,7 @@ tasks:
 
             echo "Copying Redis runtime files..."
             # Redis files from simer-windows
-            rsync -av --exclude='x64/' --exclude='x86/' --exclude='simer.exe' {{.OUT_DIR}}/sim/bin/. {{.TOOLS}}/Redis-x64-3.0.504/
+            rsync -av --exclude='x64/' --exclude='x86/' {{.OUT_DIR}}/sim/bin/. {{.TOOLS}}/Redis-x64-3.0.504/
 
             echo "Downloading ModelC dependencies..."
             # Download ModelC x64
@@ -556,10 +557,14 @@ tasks:
         {{- end }}
 
         # Copy Static files
+        {{- if and .STATIC_FILES (ne .STATIC_FILES "") }}
         {{- $static := splitList "," .STATIC_FILES }}
         {{- range $s := $static }}
         {{- $sf := trim $s }}
+        {{- if $sf }}
         cp {{$.PWD}}/{{$sf}} {{$.RESOURCES}}
+        {{- end }}
+        {{- end }}
         {{- end }}
         echo "Creating FMU package..."
         # Create FMU
