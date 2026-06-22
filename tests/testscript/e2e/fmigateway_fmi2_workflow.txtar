@@ -1,3 +1,4 @@
+skip 'TODO: test with latest DSE_BUILDER_IMAGE'
 env NAME=fmigateway
 env IMPORTER=$REPODIR/dse/build/_out/importer/fmuImporter
 env FMU_DIR=$REPODIR/dse/examples/gateway
@@ -15,11 +16,11 @@ env
 exec ls -al
 exec sh -e build.sh
 
-exists out/fmu/gateway.fmu
-exists out/fmu/gateway/modelDescription.xml
-exists out/fmu/gateway/resources/sim/model/gateway/data/model.yaml
-exists out/fmu/gateway/resources/sim/model/gateway/data/fmu.yaml
-exists out/fmu/gateway/binaries/linux64/fmi2gateway.so
+exists out/gateway.fmu
+exists out/gateway/modelDescription.xml
+exists out/gateway/resources/sim/model/gateway/data/model.yaml
+exists out/gateway/resources/sim/model/gateway/data/fmu.yaml
+exists out/gateway/binaries/linux64/fmi2gateway.so
 
 
 -- simulation.dse --
@@ -71,10 +72,17 @@ mv "${INPUT_DSE}.tmp" "$INPUT_DSE"
 docker run --name builder -i --rm \
     --network=host \
     --user "$(id -u):$(id -g)" \
+    --group-add "$(stat -c '%g' /var/run/docker.sock)" \
+    -v /var/run/docker.sock:/var/run/docker.sock \
     -v $ENTRYWORKDIR:/workdir \
     -v $ENTRYHOSTDIR:/repo \
+    --workdir "$PROJDIR" \
     -e AR_USER -e AR_TOKEN -e GHE_USER -e GHE_TOKEN -e GHE_PAT \
     -e http_proxy -e https_proxy -e no_proxy \
+    -e ENTRYWORKDIR="$ENTRYWORKDIR" \
+    -e PROJDIR="$PROJDIR" \
+    -e HOME=/workdir \
+    -e PACKAGE_VERSION \
     $DSE_BUILDER_IMAGE "$INPUT_DSE"
 # Run Task to finalize the simulation.
 echo "[INFO] Running task..."

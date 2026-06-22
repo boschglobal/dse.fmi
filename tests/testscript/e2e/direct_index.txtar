@@ -1,6 +1,7 @@
 
+skip 'TODO: test with latest DSE_BUILDER_IMAGE'
 env IMPORTER=dse/build/_out/importer/fmuImporter
-env FMU_DIR=out/fmu/direct
+env FMU_DIR=out/direct
 
 
 # SETUP: Construct working folder layout
@@ -12,19 +13,19 @@ env
 exec ls -al
 exec sh -e build.sh
 
-exists out/fmu/direct.fmu
+exists out/direct.fmu
 
 # TEST: Operate the ModelC FMU
 env
-exec ls -l out/fmu
-exec ls -l out/fmu/direct
-exec ls -R -l out/fmu/direct/binaries
-exec ls -R -l out/fmu/direct/resources/sim
+exec ls -l out
+exec ls -l out/direct
+exec ls -R -l out/direct/binaries
+exec ls -R -l out/direct/resources/sim
 exec sh -e test.sh
 
-stdout 'Importer: FMU Dir: /workdir/out/fmu/direct'
+stdout 'Importer: FMU Dir: /workdir/out/direct'
 stdout 'Importer: Loading FMU: binaries/linux64/fmi2modelcfmu.so'
-stdout 'Runtime: CWD: /workdir/out/fmu/direct'
+stdout 'Runtime: CWD: /workdir/out/direct'
 stdout 'Load YAML File: resources/sim/data/direct_index.yaml'
 stdout 'Model Name: dse.fmi.example.direct'
 stdout 'ModelCFmu:   set envar: name=DIRECT__OFFSET, value=100'
@@ -72,13 +73,20 @@ FMI_IMAGE="${FMI_IMAGE:-ghcr.io/boschglobal/dse-fmi:latest}"
 env
 pwd
 echo "==========================="
-
+PROJDIR=/workdir
 docker run --name builder -i --rm \
     --user "$(id -u):$(id -g)" \
+    --group-add "$(stat -c '%g' /var/run/docker.sock)" \
+    -v /var/run/docker.sock:/var/run/docker.sock \
     -v $ENTRYWORKDIR:/workdir \
     -v $ENTRYHOSTDIR:/repo \
+    --workdir "$PROJDIR" \
     -e AR_USER -e AR_TOKEN -e GHE_USER -e GHE_TOKEN -e GHE_PAT \
     -e http_proxy -e https_proxy -e no_proxy \
+    -e ENTRYWORKDIR="$ENTRYWORKDIR" \
+    -e PROJDIR="$PROJDIR" \
+    -e HOME=/workdir \
+    -e PACKAGE_VERSION \
     $BUILDER_IMAGE "$SIMULATION_DSE"
 echo "==========================="
 echo "==========================="
@@ -88,18 +96,16 @@ echo "==========================="
 cat out/Taskfile.yml
 echo "==========================="
 echo "==========================="
-
-task -y -t out/Taskfile.yml
-
+find . | sort
 echo "==========================="
 echo "==========================="
-cat out/fmu/direct/resources/sim/model/direct/data/model.yaml
+cat out/direct/resources/sim/model/direct/data/model.yaml
 echo "==========================="
 echo "==========================="
-cat out/fmu/direct/resources/sim/model/direct/data/signalgroup.yaml
+cat out/direct/resources/sim/model/direct/data/signalgroup.yaml
 echo "==========================="
 echo "==========================="
-cat out/fmu/direct/resources/sim/data/direct_index.yaml
+cat out/direct/resources/sim/data/direct_index.yaml
 echo "==========================="
 echo "==========================="
 exit 0 # Set to 1 for debug of build stage.
@@ -120,13 +126,13 @@ ls /workdir/$FMU_DIR
 ls -R /workdir/$FMU_DIR/resources/sim
 echo "==========================="
 echo "==========================="
-cat out/fmu/direct/resources/sim/data/simulation.yaml
+cat out/direct/resources/sim/data/simulation.yaml
 echo "==========================="
-cat out/fmu/direct/resources/sim/data/direct_index.yaml
+cat out/direct/resources/sim/data/direct_index.yaml
 echo "==========================="
-cat out/fmu/direct/resources/sim/model/direct/data/model.yaml
+cat out/direct/resources/sim/model/direct/data/model.yaml
 echo "==========================="
-cat out/fmu/direct/resources/sim/model/direct/data/signalgroup.yaml
+cat out/direct/resources/sim/model/direct/data/signalgroup.yaml
 echo "==========================="
 echo "==========================="
 

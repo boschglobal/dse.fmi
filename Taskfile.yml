@@ -381,11 +381,10 @@ tasks:
       PLATFORM: "{{if .PLATFORM}}--platform '{{.PLATFORM}}'{{else}}{{end}}"
     cmds:
       - echo "USING {{.FMI_IMAGE}} CMD {{.TASK}}"
-      - mkdir -p {{.FMI_SIMDIR}}/../fmu
       - docker run --rm
           --user {{.FMI_USER}}:{{.FMI_GROUP}}
           -v {{.FMI_SIMDIR}}:/sim
-          -v {{.FMI_SIMDIR}}/../fmu:/out
+          -v {{.FMI_OUTDIR}}:/out
           {{.FMI_IMAGE}}
           gen-gatewayfmu
             {{.SIGNAL_GROUPS}}
