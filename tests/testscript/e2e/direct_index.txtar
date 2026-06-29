@@ -1,5 +1,4 @@
 
-skip 'TODO: test with latest DSE_BUILDER_IMAGE'
 env IMPORTER=dse/build/_out/importer/fmuImporter
 env FMU_DIR=out/direct
 

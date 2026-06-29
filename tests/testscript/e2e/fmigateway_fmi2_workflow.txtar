@@ -1,4 +1,3 @@
-skip 'TODO: test with latest DSE_BUILDER_IMAGE'
 env NAME=fmigateway
 env IMPORTER=$REPODIR/dse/build/_out/importer/fmuImporter
 env FMU_DIR=$REPODIR/dse/examples/gateway
