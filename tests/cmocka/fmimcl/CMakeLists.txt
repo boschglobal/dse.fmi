@@ -148,6 +148,7 @@ target_link_libraries(test_mstep
         modelc_mock
         -Wl,-Bstatic modelc_bundled -Wl,-Bdynamic ${CMAKE_DL_LIBS}
     PRIVATE
+        lua
         cmocka
         dl
         rt

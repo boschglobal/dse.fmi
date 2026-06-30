@@ -119,7 +119,7 @@ void test_mstep(void** state)
                     .value = tc[i].expected_value[y] },
             };
             simmock_signal_check(
-                mock, "fmu_inst", checks, ARRAY_SIZE(checks), NULL);
+                mock, "fmu_inst", checks, ARRAY_SIZE(checks), NULL, NULL);
         }
     }
 }
