@@ -9,7 +9,6 @@
 
 
 #define UNUSED(x) ((void)x)
-#define END_TIME  (3 * 24 * 60 * 60)
 
 
 /**
@@ -51,11 +50,12 @@ FmuInstanceData* fmu_create(FmuInstanceData* fmu)
             /* Operational parameters. */
             .sim_path = dse_path_cat(fmu->instance.resource_location, "sim"),
             .simulation_yaml = "data/simulation.yaml",
-            .end_time = END_TIME,
             .log_level = 5, // Adjust log level via env:SIMBUS_LOGLEVEL.
             /* VTable callbacks (Importer provided). */
             .vtable = {
                 .set_env = fmimodelc_set_model_env,
+
+            /* Remaining parameters (step_size, end_time) set by runtime. */
             },
         },
     };
