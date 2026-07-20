@@ -8,5 +8,9 @@
 
 int fmimodelc_setenv(const char* name, const char* value)
 {
-    return SetEnvironmentVariable(name, value);
+    /* _putenv_s updates the CRT environment cache (read by getenv()).
+       SetEnvironmentVariable updates the Win32 process environment block
+       (inherited by child processes). Both are needed. */
+    _putenv_s(name, value);
+    return SetEnvironmentVariable(name, value) ? 0 : -1;
 }

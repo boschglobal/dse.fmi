@@ -129,7 +129,7 @@ int32_t fmu_step(
 
     /* Step the model. */
     double model_time = communication_point;
-    fmu_log(fmu, 0, "Debug", "Call model_runtime_step() ...");
+    fmu_log(fmu, 0, "Trace", "Call model_runtime_step() ...");
     int rc =
         model_runtime_step(m, &model_time, communication_point + step_size);
 
