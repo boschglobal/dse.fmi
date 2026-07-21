@@ -75,6 +75,7 @@ ModelDesc* model_create(ModelDesc* model)
 int model_step(ModelDesc* model, double* model_time, double stop_time)
 {
     ExtendedModelDesc* m = (ExtendedModelDesc*)model;
+    log_notice("Model: STEP @ %f", *model_time);
 
     /* Scalar signals. */
     ModelSignalIndex counter =

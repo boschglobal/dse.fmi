@@ -54,9 +54,8 @@ FmuInstanceData* fmu_create(FmuInstanceData* fmu)
             /* VTable callbacks (Importer provided). */
             .vtable = {
                 .set_env = fmimodelc_set_model_env,
-
-            /* Remaining parameters (step_size, end_time) set by runtime. */
             },
+            /* Remaining parameters (step_size, end_time) set by runtime. */
         },
     };
     m->model.sim = calloc(1, sizeof(SimulationSpec));

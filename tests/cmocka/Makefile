@@ -7,7 +7,7 @@ export MAKE_NPROC ?= $(shell nproc)
 # 41 = ASCII 'A'/65
 # 42 = ASCII 'B'/66
 ifeq ($(GDB_CMD),)
-GDB_CMD = valgrind -q --leak-check=yes --free-fill=42 --malloc-fill=41
+GDB_CMD = valgrind -q --leak-check=full --track-origins=yes --free-fill=42 --malloc-fill=41 --error-exitcode=808
 endif
 # GDB_CMD = gdb -q -ex='set confirm on' -ex=run -ex=quit
 
