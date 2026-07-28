@@ -117,13 +117,9 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.ModelDescription
 			}
 			annotations["fmi_variable_start_value"] = startValue
 		}
-		hasBinaryCodec := false
 		if s.Annotations != nil {
 			toolAnnotations := kind.Annotations{}
 			for _, tool := range s.Annotations.Tool {
-				if tool.Name == "dse.standards.fmi-ls-binary-codec" {
-					hasBinaryCodec = true
-				}
 				for _, anno := range tool.Annotation {
 					name := fmt.Sprintf("%s.%s", tool.Name, anno.Name)
 					toolAnnotations[name] = anno.Text
@@ -136,7 +132,7 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.ModelDescription
 			Signal:      s.Name,
 			Annotations: &annotations,
 		}
-		if slices.Contains([]string{"String"}, variable_type) && hasBinaryCodec {
+		if slices.Contains([]string{"String"}, variable_type) {
 			binarySignals = append(binarySignals, signal)
 		} else {
 			scalarSignals = append(scalarSignals, signal)
