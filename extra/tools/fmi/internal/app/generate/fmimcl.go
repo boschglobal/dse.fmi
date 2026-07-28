@@ -70,18 +70,6 @@ func (c *FmiMclCommand) Run() error {
 }
 
 func (c *FmiMclCommand) generateChannels(fmiMD fmi2.ModelDescription) ([]kind.Channel, error) {
-	hasBinaryCodecAnnotation := func(s fmi2.ScalarVariable) bool {
-		if s.Annotations == nil {
-			return false
-		}
-		for _, tool := range s.Annotations.Tool {
-			if tool.Name == "dse.standards.fmi-ls-binary-codec" {
-				return true
-			}
-		}
-		return false
-	}
-
 	channels := []kind.Channel{
 		{
 			Alias: stringPtr("signal_channel"),
@@ -94,7 +82,7 @@ func (c *FmiMclCommand) generateChannels(fmiMD fmi2.ModelDescription) ([]kind.Ch
 	binarySignalCount := func() int {
 		count := 0
 		for _, s := range fmiMD.ModelVariables.ScalarVariable {
-			if s.String != nil && hasBinaryCodecAnnotation(s) {
+			if s.String != nil {
 				count++
 			}
 		}
