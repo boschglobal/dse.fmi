@@ -87,15 +87,37 @@ static MarshalType _decode_var_type(const char* t)
 }
 
 
+static MarshalVar _decode_var_variability(const char* t, MarshalDir dir)
+{
+    /* Apply FMI 2 defaults when not specified. */
+    if (t == NULL) {
+        if (dir == MARSHAL_DIRECTION_PARAMETER)
+            return MARSHAL_VARIABILITY_FIXED;
+        return MARSHAL_VARIABILITY_CONTINUOUS;
+    }
+
+    if (strcmp(t, "constant") == 0) return MARSHAL_VARIABILITY_CONSTANT;
+    if (strcmp(t, "fixed") == 0) return MARSHAL_VARIABILITY_FIXED;
+    if (strcmp(t, "tunable") == 0) return MARSHAL_VARIABILITY_TUNABLE;
+    if (strcmp(t, "discrete") == 0) return MARSHAL_VARIABILITY_DISCRETE;
+    if (strcmp(t, "continuous") == 0) return MARSHAL_VARIABILITY_CONTINUOUS;
+
+    return MARSHAL_VARIABILITY_NONE;
+}
+
+
 static MarshalDir _decode_var_dir(const char* t)
 {
     if (t == NULL) return MARSHAL_DIRECTION_TXRX;
 
+    // clang-format off
     if (strcmp(t, "input") == 0) return MARSHAL_DIRECTION_TXONLY;
     if (strcmp(t, "output") == 0) return MARSHAL_DIRECTION_RXONLY;
     if (strcmp(t, "inout") == 0) return MARSHAL_DIRECTION_TXRX;
     if (strcmp(t, "parameter") == 0) return MARSHAL_DIRECTION_PARAMETER;
+    if (strcmp(t, "calculatedParameter") == 0) return MARSHAL_DIRECTION_PARAMETER;
     if (strcmp(t, "local") == 0) return MARSHAL_DIRECTION_LOCAL;
+    // clang-format on
 
     return MARSHAL_DIRECTION_NONE;
 }
@@ -109,6 +131,7 @@ static void* _fmu_signal_generator(ModelInstanceSpec* mi, void* data)
         FmuSignal*  s = calloc(1, sizeof(FmuSignal));
         const char* v_type = NULL;
         const char* v_dir = NULL;
+        const char* v_variability = NULL;
 
         s->name = n->scalar;
         dse_yaml_get_uint(
@@ -121,9 +144,21 @@ static void* _fmu_signal_generator(ModelInstanceSpec* mi, void* data)
             "annotations/fmi_annotations/"
             "dse.standards.fmi-ls-binary-to-text.encoding",
             &s->variable_annotation_encoding);
+        dse_yaml_get_string(
+            data, "annotations/fmi_variable_variability", &v_variability);
+
+        /* Read the start value (if specified). */
+        YamlNode* sv_node = dse_yaml_find_node(
+            (YamlNode*)data, "annotations/fmi_variable_start_value");
+        if (sv_node && sv_node->scalar) {
+            s->variable_start_value = sv_node->scalar;
+        }
+
         s->variable_kind = _decode_var_kind(v_type);
         s->variable_type = _decode_var_type(v_type);
         s->variable_dir = _decode_var_dir(v_dir);
+        s->variable_variability =
+            _decode_var_variability(v_variability, s->variable_dir);
 
         return s;
     }

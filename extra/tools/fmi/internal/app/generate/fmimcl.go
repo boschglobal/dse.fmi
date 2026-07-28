@@ -70,6 +70,18 @@ func (c *FmiMclCommand) Run() error {
 }
 
 func (c *FmiMclCommand) generateChannels(fmiMD fmi2.ModelDescription) ([]kind.Channel, error) {
+	hasBinaryCodecAnnotation := func(s fmi2.ScalarVariable) bool {
+		if s.Annotations == nil {
+			return false
+		}
+		for _, tool := range s.Annotations.Tool {
+			if tool.Name == "dse.standards.fmi-ls-binary-codec" {
+				return true
+			}
+		}
+		return false
+	}
+
 	channels := []kind.Channel{
 		{
 			Alias: stringPtr("signal_channel"),
@@ -82,7 +94,7 @@ func (c *FmiMclCommand) generateChannels(fmiMD fmi2.ModelDescription) ([]kind.Ch
 	binarySignalCount := func() int {
 		count := 0
 		for _, s := range fmiMD.ModelVariables.ScalarVariable {
-			if s.String != nil {
+			if s.String != nil && hasBinaryCodecAnnotation(s) {
 				count++
 			}
 		}
@@ -136,13 +148,14 @@ func (c *FmiMclCommand) generateModel(fmiMD fmi2.ModelDescription) error {
 	}
 	fmuResourceDir := filepath.Join(c.fmupath, "resources")
 
-	// Build the model.xml
-	nodeExists := func(Node any) string {
-		if Node != nil {
-			return "true"
-		}
-		return "false"
+	// Co-simulation support is required; the CoSimulation element is a value
+	// struct (never nil), so presence is detected via its modelIdentifier.
+	cosimSupported := fmiMD.CoSimulation.ModelIdentifier != ""
+	if !cosimSupported {
+		return fmt.Errorf("FMU does not support Co-Simulation (missing CoSimulation/modelIdentifier)")
 	}
+
+	// Build the model.xml
 	model := kind.Model{
 		Kind: "Model",
 		Metadata: &kind.ObjectMetadata{
@@ -150,7 +163,7 @@ func (c *FmiMclCommand) generateModel(fmiMD fmi2.ModelDescription) error {
 			Annotations: &kind.Annotations{
 				"mcl_adapter":       "fmi",
 				"mcl_version":       fmiMD.FmiVersion,
-				"fmi_model_cosim":   nodeExists(fmiMD.CoSimulation),
+				"fmi_model_cosim":   "true",
 				"fmi_model_version": fmiMD.Version,
 				"fmi_stepsize":      fmiMD.DefaultExperiment.StepSize,
 				"fmi_guid":          fmiMD.Guid,

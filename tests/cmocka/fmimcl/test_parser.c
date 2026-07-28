@@ -66,6 +66,16 @@ int test_parser_setup_sort(void** state)
     return 0;
 }
 
+int test_parser_setup_param(void** state)
+{
+    const char* yaml_files[] = {
+        "data/parser_param.yaml",
+        NULL,
+    };
+    *state = _create_mock(yaml_files);
+    return 0;
+}
+
 int test_parser_teardown(void** state)
 {
     FmimclMock* mock = *state;
@@ -352,10 +362,57 @@ void test_parser__fmu_signal_sorting(void** state)
 }
 
 
+void test_parser__fmu_signal_params(void** state)
+{
+    FmimclMock* mock = *state;
+    FmuModel*   fmu_model = &mock->model;
+
+    // Run parser.
+    fmimcl_parse(fmu_model);
+    assert_non_null(fmu_model->signals);
+
+    // Locate signals by name after sorting.
+    FmuSignal* param_fixed = NULL;
+    FmuSignal* param_tunable = NULL;
+    for (FmuSignal* s = fmu_model->signals; s && s->name; s++) {
+        if (strcmp(s->name, "real_param_fixed") == 0) param_fixed = s;
+        if (strcmp(s->name, "real_param_tunable") == 0) param_tunable = s;
+    }
+
+    // Verify fixed parameter: no fmi_variable_variability annotation → defaults
+    // to FIXED; direction stays PARAMETER.
+    assert_non_null(param_fixed);
+    assert_int_equal(param_fixed->variable_vref, 20);
+    assert_int_equal(param_fixed->variable_kind, MARSHAL_KIND_PRIMITIVE);
+    assert_int_equal(param_fixed->variable_dir, MARSHAL_DIRECTION_PARAMETER);
+    assert_int_equal(param_fixed->variable_type, MARSHAL_TYPE_DOUBLE);
+    assert_int_equal(
+        param_fixed->variable_variability, MARSHAL_VARIABILITY_FIXED);
+    assert_non_null(param_fixed->variable_start_value);
+    assert_string_equal(param_fixed->variable_start_value, "42.0");
+
+    // Verify tunable parameter: fmi_variable_variability = tunable; direction
+    // stays PARAMETER (tunable is not remapped).
+    assert_non_null(param_tunable);
+    assert_int_equal(param_tunable->variable_vref, 21);
+    assert_int_equal(param_tunable->variable_kind, MARSHAL_KIND_PRIMITIVE);
+    assert_int_equal(param_tunable->variable_dir, MARSHAL_DIRECTION_PARAMETER);
+    assert_int_equal(param_tunable->variable_type, MARSHAL_TYPE_DOUBLE);
+    assert_int_equal(
+        param_tunable->variable_variability, MARSHAL_VARIABILITY_TUNABLE);
+    assert_non_null(param_tunable->variable_start_value);
+    assert_string_equal(param_tunable->variable_start_value, "1.0");
+
+    // Unload parser objects.
+    fmimcl_destroy(fmu_model);
+}
+
+
 int run_parser_tests(void)
 {
     void* s = test_parser_setup;
     void* s_alt = test_parser_setup_sort;
+    void* s_param = test_parser_setup_param;
     void* t = test_parser_teardown;
 
     const struct CMUnitTest tests[] = {
@@ -363,6 +420,8 @@ int run_parser_tests(void)
         cmocka_unit_test_setup_teardown(test_parser__fmu_signal, s, t),
         cmocka_unit_test_setup_teardown(
             test_parser__fmu_signal_sorting, s_alt, t),
+        cmocka_unit_test_setup_teardown(
+            test_parser__fmu_signal_params, s_param, t),
     };
 
     return cmocka_run_group_tests_name("PARSER", tests, NULL, NULL);

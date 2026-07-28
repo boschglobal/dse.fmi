@@ -38,8 +38,7 @@ lint:
 		-v $$(pwd):/app \
 		-w /app \
 		golangci/golangci-lint:v2.12.2 \
-			golangci-lint fmt ./...; \
-			golangci-lint run --fix --disable errcheck ./...
+		sh -c "golangci-lint fmt ./... && golangci-lint run --fix --disable errcheck ./..."
 
 
 .PHONY: clean

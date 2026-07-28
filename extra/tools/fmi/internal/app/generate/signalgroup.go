@@ -68,12 +68,8 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.ModelDescription
 	binarySignals := []kind.Signal{}
 
 	for _, s := range fmiMD.ModelVariables.ScalarVariable {
-		switch s.Causality {
-		case "parameter":
-			continue
-		case "":
+		if s.Causality == "" {
 			s.Causality = "local"
-		default:
 		}
 
 		var variable_type string
@@ -93,12 +89,41 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.ModelDescription
 			"fmi_variable_type":      variable_type,
 			"fmi_variable_name":      s.Name,
 		}
-		if s.Causality == "local" {
+		// Parse variability; apply FMI 2 defaults when not specified.
+		variabilityDefault := "continuous"
+		if s.Causality == "parameter" || s.Causality == "calculatedParameter" {
+			variabilityDefault = "fixed"
+		}
+		if s.Variability != nil {
+			annotations["fmi_variable_variability"] = *s.Variability
+		} else {
+			annotations["fmi_variable_variability"] = variabilityDefault
+		}
+		if s.Causality == "local" || s.Causality == "parameter" {
 			annotations["internal"] = true
 		}
+
+		if s.Causality == "parameter" {
+			var startValue string
+			switch {
+			case s.Real != nil:
+				startValue = s.Real.Start
+			case s.Integer != nil:
+				startValue = s.Integer.Start
+			case s.Boolean != nil:
+				startValue = s.Boolean.Start
+			case s.String != nil:
+				startValue = s.String.Start
+			}
+			annotations["fmi_variable_start_value"] = startValue
+		}
+		hasBinaryCodec := false
 		if s.Annotations != nil {
 			toolAnnotations := kind.Annotations{}
 			for _, tool := range s.Annotations.Tool {
+				if tool.Name == "dse.standards.fmi-ls-binary-codec" {
+					hasBinaryCodec = true
+				}
 				for _, anno := range tool.Annotation {
 					name := fmt.Sprintf("%s.%s", tool.Name, anno.Name)
 					toolAnnotations[name] = anno.Text
@@ -111,7 +136,7 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.ModelDescription
 			Signal:      s.Name,
 			Annotations: &annotations,
 		}
-		if slices.Contains([]string{"String"}, variable_type) {
+		if slices.Contains([]string{"String"}, variable_type) && hasBinaryCodec {
 			binarySignals = append(binarySignals, signal)
 		} else {
 			scalarSignals = append(scalarSignals, signal)

@@ -7,6 +7,7 @@
 #include <string.h>
 #include <dse/testing.h>
 #include <dse/logger.h>
+#include <dse/clib/ini/ini.h>
 #include <dse/clib/util/yaml.h>
 #include <dse/modelc/runtime.h>
 #include <dse/fmimcl/fmimcl.h>
@@ -84,6 +85,64 @@ void fmimcl_destroy(FmuModel* fmu_model)
     if (fmu_model->data.scalar) free(fmu_model->data.scalar);  // also binary
     if (fmu_model->data.binary_len) free(fmu_model->data.binary_len);
     if (fmu_model->data.kind) free(fmu_model->data.kind);
+}
+
+
+/**
+fmimcl_load_parameters
+======================
+
+Load parameter start values from an INI file. For each FMU signal, if a
+matching key is present in the INI file then its value replaces the start
+value otherwise loaded from the YAML. Only double-typed signals are
+supported.
+
+Parameters
+----------
+fmu_model (FmuModel*)
+: FMU Model descriptor object.
+
+path (const char*)
+: Path to the INI file. If NULL or missing, no parameters are loaded.
+*/
+void fmimcl_load_parameters(FmuModel* fmu_model, const char* path)
+{
+    if (fmu_model == NULL) return;
+    if (path == NULL) return;
+
+    IniDesc ini = ini_open(path);
+    for (size_t i = 0; fmu_model->signals && fmu_model->signals[i].name; i++) {
+        FmuSignal* s = &fmu_model->signals[i];
+        if (s->variable_dir != MARSHAL_DIRECTION_PARAMETER) continue;
+
+        const char* val = ini_get_val(&ini, s->name);
+        if (val == NULL) continue;
+        switch (s->variable_type) {
+        case MARSHAL_TYPE_UINT8:
+        case MARSHAL_TYPE_UINT16:
+        case MARSHAL_TYPE_UINT32:
+        case MARSHAL_TYPE_UINT64:
+        case MARSHAL_TYPE_INT8:
+        case MARSHAL_TYPE_INT16:
+        case MARSHAL_TYPE_INT32:
+        case MARSHAL_TYPE_INT64:
+        case MARSHAL_TYPE_FLOAT:
+        case MARSHAL_TYPE_DOUBLE:
+            fmu_model->mcl.source.scalar[i] = strtod(val, NULL);
+            break;
+        case MARSHAL_TYPE_STRING:
+            free(fmu_model->mcl.source.binary[i]);
+            fmu_model->mcl.source.binary[i] = strdup(val);
+            fmu_model->mcl.source.binary_len[i] = strlen(val) + 1;
+            break;
+        case MARSHAL_TYPE_BINARY:
+        default:
+            log_error("INI parameter '%s' has unsupported type (%d)", s->name,
+                s->variable_type);
+            break;
+        }
+    }
+    ini_close(&ini);
 }
 
 

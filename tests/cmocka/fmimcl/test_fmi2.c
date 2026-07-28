@@ -495,6 +495,107 @@ void test_fmi2__api(void** state)
 }
 
 
+void test_fmi2__api_parameter(void** state)
+{
+    /*
+    Test the FMI2 parameter lifecycle:
+      - Fixed (PARAMETER direction) value is written to the FMU during init,
+        between enter_initialization and exit_initialization.
+      - Step-time marshal_out does NOT re-write the parameter to the FMU.
+
+    Setup:
+      mg[0]  PARAMETER   VR=0  source scalar = 5.0  (set once during init)
+      mg[1]  RXONLY       VR=1  reads FMU output
+
+    The test FMU computes: VR1 = VR0 + VR1_prev + 1.
+    After init, VR0 = 5.0.  Then we change the source to 99.0 before calling
+    step-time marshal_out — the FMU must still see VR0 = 5.0, so the output
+    should be 5.0 + 0.0 + 1 = 6.0.  If the parameter were incorrectly
+    re-applied, the result would be 100.0.
+    */
+    Fmi2Mock* mock = *state;
+    FmuModel* fmu_model = &mock->model;
+    int       rc;
+
+    double* scalar = calloc(2, sizeof(double));
+    scalar[0] = 5.0;  // parameter value
+    scalar[1] = 0.0;  // rx placeholder
+
+    MarshalGroup mg_table[] = {
+        {
+            .name = (char*)"param_double",
+            .kind = MARSHAL_KIND_PRIMITIVE,
+            .dir = MARSHAL_DIRECTION_PARAMETER,
+            .type = MARSHAL_TYPE_DOUBLE,
+            .count = 1,
+            .target = {
+                .ref = calloc(1, sizeof(uint32_t)),
+                ._double = calloc(1, sizeof(double)),
+            },
+            .source = {
+                .offset = 0,
+                .scalar = scalar,
+            },
+        },
+        {
+            .name = (char*)"double_rx",
+            .kind = MARSHAL_KIND_PRIMITIVE,
+            .dir = MARSHAL_DIRECTION_RXONLY,
+            .type = MARSHAL_TYPE_DOUBLE,
+            .count = 1,
+            .target = {
+                .ref = calloc(1, sizeof(uint32_t)),
+                ._double = calloc(1, sizeof(double)),
+            },
+            .source = {
+                .offset = 1,
+                .scalar = scalar,
+            },
+        },
+        { NULL },
+    };
+    mg_table[0].target.ref[0] = 0;  // FMU VR=0 (real input used in computation)
+    mg_table[1].target.ref[0] = 1;  // FMU VR=1 (real output: VR1 = VR0+VR1+1)
+
+    fmu_model->data.mg_table = mg_table;
+    fmi2mcl_create(fmu_model);
+
+    // Load and init: parameter value (5.0) is set inside fmi2mcl_init.
+    rc = fmu_model->mcl.vtable.load((void*)fmu_model);
+    assert_int_equal(rc, 0);
+
+    rc = fmu_model->mcl.vtable.init((void*)fmu_model);
+    assert_int_equal(rc, 0);
+
+    // Simulate an external attempt to change the fixed parameter — step-time
+    // marshal_out must NOT forward this to the FMU.
+    scalar[0] = 99.0;
+
+    rc = fmu_model->mcl.vtable.marshal_out((void*)fmu_model);
+    assert_int_equal(rc, 0);
+
+    double model_time = 0.0;
+    rc = fmu_model->mcl.vtable.step((void*)fmu_model, &model_time, 1.0);
+    assert_int_equal(rc, 0);
+
+    rc = fmu_model->mcl.vtable.marshal_in((void*)fmu_model);
+    assert_int_equal(rc, 0);
+
+    // FMU used VR0=5.0 (set during init, not overwritten at step time):
+    //   VR1 = 5.0 + 0.0 + 1 = 6.0
+    assert_double_equal(mg_table[1].target._double[0], 6.0, 0.0);
+
+    rc = fmu_model->mcl.vtable.unload((void*)fmu_model);
+    assert_int_equal(rc, 0);
+
+    free(mg_table[0].target.ref);
+    free(mg_table[0].target.ptr);
+    free(mg_table[1].target.ref);
+    free(mg_table[1].target.ptr);
+    free(scalar);
+}
+
+
 int run_fmi2_tests(void)
 {
     void* s = test_fmi2_setup;
@@ -505,6 +606,7 @@ int run_fmi2_tests(void)
         cmocka_unit_test_setup_teardown(test_fmi2__interface, s, t),
         cmocka_unit_test_setup_teardown(test_fmi2__lifecycle, s, t),
         cmocka_unit_test_setup_teardown(test_fmi2__api, s, t),
+        cmocka_unit_test_setup_teardown(test_fmi2__api_parameter, s, t),
     };
 
     return cmocka_run_group_tests_name("fmi2", tests, NULL, NULL);

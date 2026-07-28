@@ -13,6 +13,9 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 #define UNUSED(x)     ((void)x)
 
+static int32_t fmi2mcl_marshal_out(FmuModel* m);
+
+
 /**
 FMI2 Model Compatibility Library
 ================================
@@ -133,6 +136,7 @@ static int32_t fmi2mcl_init(FmuModel* m)
         log_error("FMI2 Instance could not be created.");
         return EINVAL;
     }
+    m->runtime.state = FMU_STATE_INSTANTIATED;
 
     errno = 0;
     rc = adapter->vtable.enter_initialization(adapter->fmi2_inst);
@@ -142,6 +146,14 @@ static int32_t fmi2mcl_init(FmuModel* m)
     }
     if (rc > 0) {
         log_error("FMI2 enter initialization did not return OK (%d).", rc);
+        return rc;
+    }
+    m->runtime.state = FMU_STATE_INIT;
+
+    /* Set parameter start values before exiting initialization mode. */
+    rc = fmi2mcl_marshal_out(m);
+    if (rc != 0) {
+        log_error("FMI2 could not marshal start values (%d).", rc);
         return rc;
     }
 
@@ -155,6 +167,7 @@ static int32_t fmi2mcl_init(FmuModel* m)
         log_error("FMI2 exit initialization did not return OK (%d).", rc);
         return rc;
     }
+    m->runtime.state = FMU_STATE_RUN;
 
     return 0;
 }
@@ -283,7 +296,7 @@ static int32_t fmi2mcl_marshal_in(FmuModel* m)
 }
 
 
-int32_t fmi2mcl_marshal_out(FmuModel* m)
+static int32_t fmi2mcl_marshal_out(FmuModel* m)
 {
     Fmi2Adapter* a = m->adapter;
     int          rc = 0;
@@ -295,7 +308,10 @@ int32_t fmi2mcl_marshal_out(FmuModel* m)
         switch (mg->dir) {
         case MARSHAL_DIRECTION_TXRX:
         case MARSHAL_DIRECTION_TXONLY:
+            break;
         case MARSHAL_DIRECTION_PARAMETER:
+            /* Parameters are only marshalled during initialisation. */
+            if (m->runtime.state != FMU_STATE_INIT) continue;
             break;
         default:
             continue;
@@ -363,7 +379,6 @@ int32_t fmi2mcl_marshal_out(FmuModel* m)
             }
             errno = 0;
             rc = a->vtable.set_string(
-                // a->fmi2_inst, mg->target.ref, mg->count, "foobar");
                 a->fmi2_inst, mg->target.ref, mg->count, mg->target._string);
             if (errno) {
                 log_debug("FMU set errno (%d): %s", errno, strerror(errno));
@@ -388,6 +403,7 @@ static int32_t fmi2mcl_unload(FmuModel* m)
     Fmi2Adapter* a = m->adapter;
 
     a->vtable.free_instance(a->fmi2_inst);
+    m->runtime.state = FMU_STATE_TERMINATED;
 
     if (m->adapter) free(m->adapter);
 

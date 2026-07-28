@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <stdio.h>
 #include <dse/testing.h>
 #include <dse/logger.h>
 #include <dse/clib/util/yaml.h>
@@ -369,9 +370,240 @@ void test_engine__marshal_from_adapter(void** state)
 }
 
 
+int test_engine_setup_param(void** state)
+{
+    /* Load yaml files. */
+    const char* yaml_files[] = {
+        "data/parser_param.yaml",
+        NULL,
+    };
+    YamlDocList* doc_list = NULL;
+    for (const char** _ = yaml_files; *_ != NULL; _++) {
+        doc_list = dse_yaml_load_file(*_, doc_list);
+    }
+
+    /* Construct the mock object .*/
+    FmimclMock* mock = malloc(sizeof(FmimclMock));
+    *mock = (FmimclMock) {
+        .model = {
+            .name = "FMU"
+        },
+        .model_instance = {
+            .name = (char*)"fmu_inst",
+            .yaml_doc_list = doc_list,
+        },
+    };
+    mock->model.mcl.model.mi = &mock->model_instance;
+
+    /* Return the mock (caller to free). */
+    *state = mock;
+    return 0;
+}
+
+
+int test_engine_setup_param_string(void** state)
+{
+    /* Load yaml files. */
+    const char* yaml_files[] = {
+        "data/parser_param_string.yaml",
+        NULL,
+    };
+    YamlDocList* doc_list = NULL;
+    for (const char** _ = yaml_files; *_ != NULL; _++) {
+        doc_list = dse_yaml_load_file(*_, doc_list);
+    }
+
+    /* Construct the mock object .*/
+    FmimclMock* mock = malloc(sizeof(FmimclMock));
+    *mock = (FmimclMock) {
+        .model = {
+            .name = "FMU"
+        },
+        .model_instance = {
+            .name = (char*)"fmu_inst",
+            .yaml_doc_list = doc_list,
+        },
+    };
+    mock->model.mcl.model.mi = &mock->model_instance;
+
+    /* Return the mock (caller to free). */
+    *state = mock;
+    return 0;
+}
+
+
+void test_engine__allocate_source_params(void** state)
+{
+    FmimclMock* mock = *state;
+    FmuModel*   fmu_model = &mock->model;
+
+    fmimcl_parse(fmu_model);
+    fmimcl_allocate_source(fmu_model);
+
+    // Two parameters. Both stay PARAMETER, so YAML (insertion) order:
+    //   scalar[0] = real_param_fixed   (DOUBLE, PARAMETER, start=42.0)
+    //   scalar[1] = real_param_tunable (DOUBLE, PARAMETER, start=1.0)
+    assert_int_equal(fmu_model->data.count, 2);
+    assert_double_equal(fmu_model->data.scalar[0], 42.0, 0.0);
+    assert_double_equal(fmu_model->data.scalar[1], 1.0, 0.0);
+
+    assert_string_equal(fmu_model->data.name[0], "real_param_fixed");
+    assert_string_equal(fmu_model->data.name[1], "real_param_tunable");
+
+    fmimcl_destroy(fmu_model);
+}
+
+
+void test_engine__create_marshal_tables_params(void** state)
+{
+    FmimclMock* mock = *state;
+    FmuModel*   fmu_model = &mock->model;
+
+    MCT_TC tc[] = {
+        {
+            // Both parameters share one PARAMETER marshal group.
+            .name = "mg-1-4-10",
+            .kind = MARSHAL_KIND_PRIMITIVE,
+            .dir = MARSHAL_DIRECTION_PARAMETER,
+            .type = MARSHAL_TYPE_DOUBLE,
+            .offset = 0,
+            .count = 2,
+            .ref = { 20, 21 },
+        },
+    };
+
+    fmimcl_parse(fmu_model);
+    fmimcl_allocate_source(fmu_model);
+    fmimcl_generate_marshal_table(fmu_model);
+
+    assert_non_null(fmu_model->data.mg_table);
+    size_t        count = 0;
+    MarshalGroup* mg;
+    for (mg = fmu_model->data.mg_table; mg->name; mg++)
+        count++;
+    assert_int_equal(count, ARRAY_SIZE(tc));
+
+    for (size_t i = 0; i < ARRAY_SIZE(tc); i++) {
+        mg = &fmu_model->data.mg_table[i];
+        MCT_TC* t = &tc[i];
+        assert_string_equal(mg->name, t->name);
+        assert_int_equal(mg->kind, t->kind);
+        assert_int_equal(mg->dir, t->dir);
+        assert_int_equal(mg->type, t->type);
+        assert_int_equal(mg->count, t->count);
+        assert_int_equal(mg->source.offset, t->offset);
+        assert_non_null(mg->target.ref);
+        assert_memory_equal(
+            mg->target.ref, t->ref, t->count * marshal_type_size(t->type));
+    }
+
+    fmimcl_destroy(fmu_model);
+}
+
+
+static void _write_ini(const char* path, const char* content)
+{
+    FILE* f = fopen(path, "w");
+    assert_non_null(f);
+    fputs(content, f);
+    fclose(f);
+}
+
+
+void test_engine__load_parameters_ini(void** state)
+{
+    FmimclMock* mock = *state;
+    FmuModel*   fmu_model = &mock->model;
+
+    fmimcl_parse(fmu_model);
+    fmimcl_allocate_source(fmu_model);
+
+    // Baseline YAML start values.
+    assert_double_equal(fmu_model->data.scalar[0], 42.0, 0.0);  // fixed
+    assert_double_equal(fmu_model->data.scalar[1], 1.0, 0.0);   // tunable
+
+    // INI overrides one signal; the other key is absent so the YAML start
+    // value must be preserved.
+    const char* ini_path = "params_test.ini";
+    _write_ini(ini_path, "real_param_fixed=11.5\n"
+                         "unknown_signal=999\n");
+
+    fmimcl_load_parameters(fmu_model, ini_path);
+
+    // Overridden value.
+    assert_double_equal(fmu_model->mcl.source.scalar[0], 11.5, 0.0);
+    // Not overridden (key not present in INI).
+    assert_double_equal(fmu_model->mcl.source.scalar[1], 1.0, 0.0);
+
+    remove(ini_path);
+    fmimcl_destroy(fmu_model);
+}
+
+
+void test_engine__load_parameters_no_file(void** state)
+{
+    FmimclMock* mock = *state;
+    FmuModel*   fmu_model = &mock->model;
+
+    fmimcl_parse(fmu_model);
+    fmimcl_allocate_source(fmu_model);
+
+    // Missing path and missing file: YAML start values must be preserved.
+    fmimcl_load_parameters(fmu_model, NULL);
+    fmimcl_load_parameters(fmu_model, "no_such_file_xyz.ini");
+
+    assert_double_equal(fmu_model->mcl.source.scalar[0], 42.0, 0.0);
+    assert_double_equal(fmu_model->mcl.source.scalar[1], 1.0, 0.0);
+
+    fmimcl_destroy(fmu_model);
+}
+
+
+void test_engine__load_parameters_string(void** state)
+{
+    FmimclMock* mock = *state;
+    FmuModel*   fmu_model = &mock->model;
+
+    fmimcl_parse(fmu_model);
+    fmimcl_allocate_source(fmu_model);
+    /* Generate the marshal table so the source binary values are released by
+       fmimcl_destroy (via marshal_group_destroy). */
+    fmimcl_generate_marshal_table(fmu_model);
+
+    // String start value from YAML is applied during allocation.
+    assert_int_equal(fmu_model->data.count, 1);
+    assert_non_null(fmu_model->data.binary[0]);
+    assert_string_equal(fmu_model->data.binary[0], "hello");
+    assert_int_equal(fmu_model->data.binary_len[0], strlen("hello") + 1);
+
+    // INI provides the string parameter value.
+    const char* ini_path = "params_string_test.ini";
+    _write_ini(ini_path, "string_param=world\n");
+
+    fmimcl_load_parameters(fmu_model, ini_path);
+
+    assert_non_null(fmu_model->mcl.source.binary[0]);
+    assert_string_equal(fmu_model->mcl.source.binary[0], "world");
+    assert_int_equal(fmu_model->mcl.source.binary_len[0], strlen("world") + 1);
+
+    // A second load replaces the previous value (previous strdup is freed).
+    _write_ini(ini_path, "string_param=updated\n");
+    fmimcl_load_parameters(fmu_model, ini_path);
+
+    assert_string_equal(fmu_model->mcl.source.binary[0], "updated");
+    assert_int_equal(
+        fmu_model->mcl.source.binary_len[0], strlen("updated") + 1);
+
+    remove(ini_path);
+    fmimcl_destroy(fmu_model);
+}
+
+
 int run_engine_tests(void)
 {
     void* s = test_engine_setup;
+    void* s_param = test_engine_setup_param;
+    void* s_param_string = test_engine_setup_param_string;
     void* t = test_engine_teardown;
 
     const struct CMUnitTest tests[] = {
@@ -381,6 +613,16 @@ int run_engine_tests(void)
         cmocka_unit_test_setup_teardown(test_engine__marshal_to_adapter, s, t),
         cmocka_unit_test_setup_teardown(
             test_engine__marshal_from_adapter, s, t),
+        cmocka_unit_test_setup_teardown(
+            test_engine__allocate_source_params, s_param, t),
+        cmocka_unit_test_setup_teardown(
+            test_engine__create_marshal_tables_params, s_param, t),
+        cmocka_unit_test_setup_teardown(
+            test_engine__load_parameters_ini, s_param, t),
+        cmocka_unit_test_setup_teardown(
+            test_engine__load_parameters_no_file, s_param, t),
+        cmocka_unit_test_setup_teardown(
+            test_engine__load_parameters_string, s_param_string, t),
     };
 
     return cmocka_run_group_tests_name("ENGINE", tests, NULL, NULL);

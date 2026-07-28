@@ -18,9 +18,9 @@
 #define VARNAME_MAXLEN 250
 
 
-char* _get_measurement_file_name(ModelDesc* model)
+char* _get_file_name(ModelDesc* model, const char* source)
 {
-    char* value = model_expand_vars(model, "${MEASUREMENT_FILE:-}");
+    char* value = model_expand_vars(model, source);
     if (strlen(value)) {
         return value;
     } else {
@@ -56,12 +56,18 @@ ModelDesc* model_create(ModelDesc* model)
     rc = mcl_load(m);
     if (rc != 0) log_fatal("Could not load MCL (%d)", rc);
 
+    /* Load parameter start values from the INI file (overrides YAML). */
+    FmuModel* fmu = (FmuModel*)m;
+    char*     param_filename = _get_file_name(model, "${PARAMETER_FILE:-}");
+    log_notice("Parameter File: %s", param_filename);
+    fmimcl_load_parameters(fmu, param_filename);
+    free(param_filename);
+
     rc = mcl_init(m);
     if (rc != 0) log_fatal("Could not initiate MCL (%d)", rc);
 
     /* Initialise measurement. */
-    FmuModel* fmu = (FmuModel*)m;
-    fmu->measurement.file_name = _get_measurement_file_name(model);
+    fmu->measurement.file_name = _get_file_name(model, "${MEASUREMENT_FILE:-}");
     log_notice("Measurement File: %s", fmu->measurement.file_name);
     if (fmu->measurement.file_name) {
         errno = 0;

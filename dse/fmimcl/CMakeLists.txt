@@ -21,6 +21,7 @@ add_library(${MODULE_LC} SHARED
     model.c
     parser.c
     adapter/fmi2mcl.c
+    ${DSE_CLIB_SOURCE_DIR}/clib/ini/ini.c
     ${DSE_CLIB_SOURCE_DIR}/clib/util/ascii85.c
     ${DSE_CLIB_SOURCE_DIR}/clib/mdf/mdf.c
 )

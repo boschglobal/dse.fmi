@@ -98,47 +98,74 @@ func TestSignalGrpSignals(t *testing.T) {
 
 	var test_data = []map[string]interface{}{
 		{
-			"Signal":                 "scalar_1",
-			"fmi_variable_causality": "input",
-			"fmi_variable_vref":      "1",
-			"fmi_variable_type":      "Real",
-			"fmi_variable_name":      "scalar_1",
+			"Signal":                   "scalar_1",
+			"fmi_variable_causality":   "input",
+			"fmi_variable_vref":        "1",
+			"fmi_variable_type":        "Real",
+			"fmi_variable_name":        "scalar_1",
+			"fmi_variable_variability": "continuous",
 		},
 		{
-			"Signal":                 "scalar_2",
-			"fmi_variable_causality": "output",
-			"fmi_variable_vref":      "2",
-			"fmi_variable_type":      "Real",
-			"fmi_variable_name":      "scalar_2",
+			"Signal":                   "scalar_2",
+			"fmi_variable_causality":   "output",
+			"fmi_variable_vref":        "2",
+			"fmi_variable_type":        "Real",
+			"fmi_variable_name":        "scalar_2",
+			"fmi_variable_variability": "continuous",
 		},
 		{
-			"Signal":                 "scalar_3",
-			"fmi_variable_causality": "local",
-			"fmi_variable_vref":      "3",
-			"fmi_variable_type":      "Real",
-			"fmi_variable_name":      "scalar_3",
+			"Signal":                   "scalar_3",
+			"fmi_variable_causality":   "local",
+			"fmi_variable_vref":        "3",
+			"fmi_variable_type":        "Real",
+			"fmi_variable_name":        "scalar_3",
+			"fmi_variable_variability": "continuous",
+			"internal":                 true,
 		},
 		{
-			"Signal":                 "boolean_1",
-			"fmi_variable_causality": "input",
-			"fmi_variable_vref":      "4",
-			"fmi_variable_type":      "Boolean",
-			"fmi_variable_name":      "boolean_1",
+			"Signal":                   "boolean_1",
+			"fmi_variable_causality":   "input",
+			"fmi_variable_vref":        "4",
+			"fmi_variable_type":        "Boolean",
+			"fmi_variable_name":        "boolean_1",
+			"fmi_variable_variability": "discrete",
 		},
 		{
-			"Signal":                 "boolean_2",
-			"fmi_variable_causality": "output",
-			"fmi_variable_vref":      "5",
-			"fmi_variable_type":      "Boolean",
-			"fmi_variable_name":      "boolean_2",
+			"Signal":                   "boolean_2",
+			"fmi_variable_causality":   "output",
+			"fmi_variable_vref":        "5",
+			"fmi_variable_type":        "Boolean",
+			"fmi_variable_name":        "boolean_2",
+			"fmi_variable_variability": "continuous",
 		},
 		{
-			"Signal":                 "scalar_4",
-			"fmi_variable_causality": "local",
-			"fmi_variable_vref":      "6",
-			"fmi_variable_type":      "Real",
-			"fmi_variable_name":      "scalar_4",
-			"internal":               true,
+			"Signal":                   "scalar_4",
+			"fmi_variable_causality":   "local",
+			"fmi_variable_vref":        "6",
+			"fmi_variable_type":        "Real",
+			"fmi_variable_name":        "scalar_4",
+			"fmi_variable_variability": "continuous",
+			"internal":                 true,
+		},
+		{
+			"Signal":                   "scalar_param",
+			"fmi_variable_causality":   "parameter",
+			"fmi_variable_vref":        "7",
+			"fmi_variable_type":        "Real",
+			"fmi_variable_name":        "scalar_param",
+			"fmi_variable_variability": "fixed",
+			"fmi_variable_start_value": "42.0",
+			"internal":                 true,
+		},
+		{
+			"Signal":                   "scalar_param_tunable",
+			"fmi_variable_causality":   "parameter",
+			"fmi_variable_vref":        "8",
+			"fmi_variable_type":        "Real",
+			"fmi_variable_name":        "scalar_param_tunable",
+			"fmi_variable_variability": "tunable",
+			"fmi_variable_start_value": "1.0",
+			"internal":                 true,
 		},
 	}
 
@@ -148,5 +175,14 @@ func TestSignalGrpSignals(t *testing.T) {
 		assert.Equal(t, (*s.Annotations)["fmi_variable_vref"], test_data[i]["fmi_variable_vref"], "annotation/fmi_variable_vref should match")
 		assert.Equal(t, (*s.Annotations)["fmi_variable_type"], test_data[i]["fmi_variable_type"], "annotation/fmi_variable_type should match")
 		assert.Equal(t, (*s.Annotations)["fmi_variable_name"], test_data[i]["fmi_variable_name"], "annotation/fmi_variable_name should match")
+		assert.Equal(t, (*s.Annotations)["fmi_variable_variability"], test_data[i]["fmi_variable_variability"], "annotation/fmi_variable_variability should match")
+		if expected, ok := test_data[i]["fmi_variable_start_value"]; ok {
+			assert.Equal(t, (*s.Annotations)["fmi_variable_start_value"], expected, "annotation/fmi_variable_start_value should match")
+		}
+		if expected, ok := test_data[i]["internal"]; ok {
+			assert.Equal(t, (*s.Annotations)["internal"], expected, "annotation/internal should match")
+		} else {
+			assert.Nil(t, (*s.Annotations)["internal"], "annotation/internal should not be set")
+		}
 	}
 }

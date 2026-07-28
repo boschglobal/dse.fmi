@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
@@ -48,6 +49,35 @@ void fmimcl_allocate_source(FmuModel* m)
     for (size_t i = 0; i < count; i++) {
         m->data.name[i] = m->signals[i].name;
         m->data.kind[i] = m->signals[i].variable_kind;
+        /* Apply start value if specified. */
+        if (m->signals[i].variable_start_value) {
+            switch (m->signals[i].variable_type) {
+            case MARSHAL_TYPE_UINT8:
+            case MARSHAL_TYPE_UINT16:
+            case MARSHAL_TYPE_UINT32:
+            case MARSHAL_TYPE_UINT64:
+            case MARSHAL_TYPE_INT8:
+            case MARSHAL_TYPE_INT16:
+            case MARSHAL_TYPE_INT32:
+            case MARSHAL_TYPE_INT64:
+            case MARSHAL_TYPE_FLOAT:
+            case MARSHAL_TYPE_DOUBLE:
+                m->data.scalar[i] =
+                    strtod(m->signals[i].variable_start_value, NULL);
+                break;
+            case MARSHAL_TYPE_STRING:
+                free(m->data.binary[i]);
+                m->data.binary[i] = strdup(m->signals[i].variable_start_value);
+                m->data.binary_len[i] =
+                    strlen(m->signals[i].variable_start_value) + 1;
+                break;
+            case MARSHAL_TYPE_BINARY:
+            default:
+                log_error("Unsupported start value type (%d) for signal '%s'",
+                    m->signals[i].variable_type, m->signals[i].name);
+                break;
+            }
+        }
     }
 
     /* Set references in the MCL. */

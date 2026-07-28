@@ -49,6 +49,7 @@ target_link_libraries(modelc_mock
 
 add_library(fmimcl_runtime OBJECT
     ${DSE_CLIB_SOURCE_DIR}/util/ascii85.c
+    ${DSE_CLIB_SOURCE_DIR}/ini/ini.c
     ${REPO_DIR}/dse/fmimcl/engine.c
     ${REPO_DIR}/dse/fmimcl/fmimcl.c
     ${REPO_DIR}/dse/fmimcl/parser.c
@@ -115,6 +116,8 @@ install(
         data/simulation.yaml
         data/fmu.yaml
         data/parser_sort.yaml
+        data/parser_param.yaml
+        data/parser_param_string.yaml
         data/mcl_mock.yaml
         data/mcl.yaml
     DESTINATION

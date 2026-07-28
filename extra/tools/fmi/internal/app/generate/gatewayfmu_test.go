@@ -158,7 +158,7 @@ func TestGatewayFmu_FMI2_AllSignalGroups(t *testing.T) {
 	// model.yaml must name Gateway.
 	m := readModelYaml(t, ctx)
 	require.NotNil(t, m.Metadata)
-	assert.Equal(t, "Gateway", *m.Metadata.Name)
+	assert.Equal(t, "gateway", *m.Metadata.Name)
 	require.NotNil(t, m.Spec.Channels)
 	assert.NotEmpty(t, *m.Spec.Channels)
 }

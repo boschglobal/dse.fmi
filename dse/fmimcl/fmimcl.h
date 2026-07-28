@@ -231,6 +231,16 @@ typedef struct FmuData {
 } FmuData;
 
 
+typedef enum MarshalVar {
+    MARSHAL_VARIABILITY_NONE = 0,
+    MARSHAL_VARIABILITY_CONSTANT,
+    MARSHAL_VARIABILITY_FIXED,
+    MARSHAL_VARIABILITY_TUNABLE,
+    MARSHAL_VARIABILITY_DISCRETE,
+    MARSHAL_VARIABILITY_CONTINUOUS,
+} MarshalVar;
+
+
 typedef struct FmuSignal {
     const char* name;
     /* Variable. */
@@ -239,9 +249,21 @@ typedef struct FmuSignal {
     MarshalKind variable_kind;
     MarshalDir  variable_dir;
     MarshalType variable_type;
+    MarshalVar  variable_variability;
+    const char* variable_start_value; /* NULL if not specified. */
     /* Annotations. */
     const char* variable_annotation_encoding;
 } FmuSignal;
+
+
+typedef enum FmuState {
+    FMU_STATE_NONE = 0,
+    FMU_STATE_INSTANTIATED,
+    FMU_STATE_INIT,
+    FMU_STATE_RUN,
+    FMU_STATE_TERMINATED,
+    FMU_STATE_ERROR,
+} FmuState;
 
 
 typedef struct FmuModel {
@@ -269,12 +291,17 @@ typedef struct FmuModel {
         MdfChannelGroup* cg;
         MdfDesc          mdf;
     } measurement;
+    /* Runtime state. */
+    struct {
+        FmuState state;
+    } runtime;
 } FmuModel;
 
 
 /* fmimcl.c */
 DLL_PRIVATE int32_t fmimcl_adapter_create(FmuModel* fmu_model);
 DLL_PRIVATE void    fmimcl_destroy(FmuModel* fmu_model);
+DLL_PRIVATE void fmimcl_load_parameters(FmuModel* fmu_model, const char* path);
 
 /* parser.c */
 DLL_PRIVATE void fmimcl_parse(FmuModel* fmu_model);
