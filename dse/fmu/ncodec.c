@@ -526,7 +526,7 @@ static void* fmu_sv_stream_create(FmuSignalVector* sv, uint32_t idx)
 NCodec Interface.
 */
 
-NCODEC* ncodec_open(const char* mime_type, NCodecStreamVTable* stream)
+NCODEC* ncodec_open(const char* mime_type, NSTREAM* stream)
 {
     if (mime_type == NULL) {
         errno = EINVAL;

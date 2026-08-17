@@ -24,7 +24,7 @@ static FmimclMock* _create_mock(const char** files)
     /* Load yaml files. */
     YamlDocList* doc_list = NULL;
     for (const char** _ = files; *_ != NULL; _++) {
-        doc_list = dse_yaml_load_file(*_, doc_list);
+        doc_list = dse_yaml_load_file(NULL, *_, doc_list);
     }
 
     /* Construct the mock object .*/

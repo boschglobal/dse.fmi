@@ -164,6 +164,7 @@ FetchContent_Declare(dse_ncodec
     SOURCE_SUBDIR       dse/ncodec
 )
 FetchContent_MakeAvailable(dse_ncodec)
+set(DSE_NCODEC_INCLUDE_DIR ${dse_ncodec_SOURCE_DIR})
 
 
 # Common Targets

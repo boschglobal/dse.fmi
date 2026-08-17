@@ -32,9 +32,10 @@ int test_mcl_setup(void** state)
     };
     YamlDocList* doc_list = NULL;
     for (const char** _ = yaml_files; *_ != NULL; _++) {
-        doc_list = dse_yaml_load_file(*_, doc_list);
+        doc_list = dse_yaml_load_file(NULL, *_, doc_list);
     }
     /* Construct the mock object .*/
+    YamlNode*   mcl_doc = dse_yaml_load_single_doc(NULL, "data/mcl.yaml");
     FmimclMock* mock = malloc(sizeof(FmimclMock));
     *mock = (FmimclMock) {
         .model = {
@@ -46,7 +47,7 @@ int test_mcl_setup(void** state)
         .model_instance = {
             .name = (char*)"mock_inst",
             .yaml_doc_list = doc_list,
-            .model_definition.doc = dse_yaml_load_single_doc("data/mcl.yaml")
+            .model_definition.doc = mcl_doc
         },
         .model_desc = {
             .sv = calloc(3, sizeof(SignalVector))

@@ -8,16 +8,16 @@
 export PACKAGE_ARCH ?= linux-amd64
 
 DSE_CLIB_REPO ?= https://github.com/boschglobal/dse.clib
-DSE_CLIB_VERSION ?= 1.0.53
+DSE_CLIB_VERSION ?= 1.1.1
 export DSE_CLIB_URL ?= $(DSE_CLIB_REPO)/archive/refs/tags/v$(DSE_CLIB_VERSION).zip
 
 DSE_MODELC_REPO ?= https://github.com/boschglobal/dse.modelc
-DSE_MODELC_VERSION ?= 2.3.34
+DSE_MODELC_VERSION ?= 2.3.36
 export DSE_MODELC_URL ?= $(DSE_MODELC_REPO)/archive/refs/tags/v$(DSE_MODELC_VERSION).zip
 export DSE_MODELC_LIB_URL ?= $(DSE_MODELC_REPO)/releases/download/v$(DSE_MODELC_VERSION)/ModelC-$(DSE_MODELC_VERSION)-$(PACKAGE_ARCH).zip
 
 DSE_NCODEC_REPO ?= https://github.com/boschglobal/dse.ncodec
-DSE_NCODEC_VERSION ?= 1.2.9
+DSE_NCODEC_VERSION ?= 1.2.11
 export DSE_NCODEC_URL ?= $(DSE_NCODEC_REPO)/archive/refs/tags/v$(DSE_NCODEC_VERSION).zip
 
 

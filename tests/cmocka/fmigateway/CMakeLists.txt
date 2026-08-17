@@ -41,9 +41,15 @@ target_link_libraries(fmigateway_runtime
 
 file(GLOB PDUNET_SOURCES CONFIGURE_DEPENDS "${DSE_MODELC_SOURCE_DIR}/model/pdunet/*.c")
 list(APPEND PDUNET_SOURCES ${DSE_MODELC_SOURCE_DIR}/model/pdunet.c)
+# PDUNet library sources (from the DSE NCodec package).
+file(GLOB PDUNET_LIB_SOURCES CONFIGURE_DEPENDS "${DSE_NCODEC_INCLUDE_DIR}/dse/pdunet/network/*.c")
+list(APPEND PDUNET_LIB_SOURCES
+    ${DSE_NCODEC_INCLUDE_DIR}/dse/pdunet/pdunet.c
+    ${DSE_NCODEC_INCLUDE_DIR}/dse/pdunet/schema.c)
 
 add_library(modelcgateway_runtime OBJECT
     ${PDUNET_SOURCES}
+    ${PDUNET_LIB_SOURCES}
     ${DSE_MODELC_SOURCE_DIR}/model/gateway.c
     ${DSE_MODELC_SOURCE_DIR}/model/lua.c
     ${DSE_MODELC_SOURCE_DIR}/model/luamodel.c
@@ -69,6 +75,8 @@ target_include_directories(modelcgateway_runtime
         ${DSE_MODELC_SOURCE_INCLUDE_DIR}
         ${DSE_MODELC_INCLUDE_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
+        ${DSE_NCODEC_INCLUDE_DIR}
+        ${LUA_SOURCE_DIR}
         ${MSGPACKC_SOURCE_DIR}/include
         ${YAML_SOURCE_DIR}/include
 )

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <dlfcn.h>
+#include <dse/modelc/runtime.h>
 #include <dse/fmimcl/fmimcl.h>
 #include <dse/fmimcl/adapter/fmi2mcl.h>
 #include <dse/logger.h>
@@ -290,7 +291,7 @@ static int32_t fmi2mcl_marshal_in(FmuModel* m)
         }
     }
 
-    marshal_group_in(m->data.mg_table);
+    marshal_group_in(NULL, m->data.mg_table);
 
     return 0;
 }
@@ -301,7 +302,7 @@ static int32_t fmi2mcl_marshal_out(FmuModel* m)
     Fmi2Adapter* a = m->adapter;
     int          rc = 0;
 
-    marshal_group_out(m->data.mg_table);
+    marshal_group_out(NULL, m->data.mg_table);
 
     log_trace("Marshal OUT (target -> FMU):");
     for (MarshalGroup* mg = m->data.mg_table; mg && mg->name; mg++) {

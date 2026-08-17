@@ -30,7 +30,7 @@ int test_engine_setup(void** state)
     };
     YamlDocList* doc_list = NULL;
     for (const char** _ = yaml_files; *_ != NULL; _++) {
-        doc_list = dse_yaml_load_file(*_, doc_list);
+        doc_list = dse_yaml_load_file(NULL, *_, doc_list);
     }
 
     /* Construct the mock object .*/
@@ -264,7 +264,7 @@ void test_engine__marshal_to_adapter(void** state)
     fmu_model->data.binary_len[12] = strlen("bar_85") + 1;
 
     // Marshal out: source -> target.
-    marshal_group_out(fmu_model->data.mg_table);
+    marshal_group_out(NULL, fmu_model->data.mg_table);
 
     // Check the result (only RX should show change, i.e. input/parameter).
     mg = fmu_model->data.mg_table;
@@ -336,7 +336,7 @@ void test_engine__marshal_from_adapter(void** state)
 
 
     // Marshal in: target -> source.
-    marshal_group_in(fmu_model->data.mg_table);
+    marshal_group_in(NULL, fmu_model->data.mg_table);
 
 
     // Check the result (only TX should show change).
@@ -379,7 +379,7 @@ int test_engine_setup_param(void** state)
     };
     YamlDocList* doc_list = NULL;
     for (const char** _ = yaml_files; *_ != NULL; _++) {
-        doc_list = dse_yaml_load_file(*_, doc_list);
+        doc_list = dse_yaml_load_file(NULL, *_, doc_list);
     }
 
     /* Construct the mock object .*/
@@ -410,7 +410,7 @@ int test_engine_setup_param_string(void** state)
     };
     YamlDocList* doc_list = NULL;
     for (const char** _ = yaml_files; *_ != NULL; _++) {
-        doc_list = dse_yaml_load_file(*_, doc_list);
+        doc_list = dse_yaml_load_file(NULL, *_, doc_list);
     }
 
     /* Construct the mock object .*/

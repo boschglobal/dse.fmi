@@ -263,7 +263,7 @@ static void _parse_stack(
 
     char* model_stack =
         dse_path_cat(fmu->instance.resource_location, stack_name);
-    session->model_stack_files = dse_yaml_load_file(model_stack, NULL);
+    session->model_stack_files = dse_yaml_load_file(NULL, model_stack, NULL);
     free(model_stack);
     if (session->model_stack_files == NULL) return;
 
@@ -488,7 +488,7 @@ void fmigateway_parse(FmuInstanceData* fmu)
     /* Load yaml files. */
     for (size_t i = 0; fmi_gw->settings.yaml_files[i]; i++) {
         fmi_gw->settings.doc_list = dse_yaml_load_file(
-            fmi_gw->settings.yaml_files[i], fmi_gw->settings.doc_list);
+            NULL, fmi_gw->settings.yaml_files[i], fmi_gw->settings.doc_list);
     }
 
     /* Parse the FMU Model (creates session via _gateway_stack callback). */
