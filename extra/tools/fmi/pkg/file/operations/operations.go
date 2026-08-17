@@ -29,10 +29,10 @@ func Unzip(filename string, dest string) error {
 
 	for _, file := range archive.File {
 		cleanName := filepath.Clean(file.Name)
-		filePath := filepath.Join(destAbs, cleanName)
+		filePath := filepath.Clean(filepath.Join(destAbs, cleanName))
 
-		rel, err := filepath.Rel(destAbs, filePath)
-		if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		destPrefix := destAbs + string(os.PathSeparator)
+		if filePath != destAbs && !strings.HasPrefix(filePath, destPrefix) {
 			return fmt.Errorf("UNZIP (illegal file path %q)", file.Name)
 		}
 
