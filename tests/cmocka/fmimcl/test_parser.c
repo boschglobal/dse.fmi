@@ -96,7 +96,7 @@ void test_parser__fmu_model(void** state)
     assert_null(fmu_model->mcl.adapter);
     assert_null(fmu_model->mcl.version);
     assert_null(fmu_model->m_doc);
-    assert_null(fmu_model->path);
+    assert_null(fmu_model->model_path);
     assert_null(fmu_model->handle);
     fmimcl_parse(fmu_model);
 
@@ -119,8 +119,9 @@ void test_parser__fmu_model(void** state)
     assert_non_null(fmu_model->resource_dir);
     assert_string_equal(fmu_model->resource_dir,
         "dse/build/_out/fmimcl/example/simple/fmu/resources");
-    assert_non_null(fmu_model->path);
-    assert_string_equal(fmu_model->path, "examples/fmu/fmu/binaries/simple.so");
+    assert_non_null(fmu_model->model_path);
+    assert_string_equal(
+        fmu_model->model_path, "examples/fmu/fmu/binaries/simple.so");
     assert_null(fmu_model->handle);
     assert_non_null(fmu_model->m_doc);
 
@@ -207,7 +208,7 @@ void test_parser__fmu_signal(void** state)
 
     // Run parser.
     assert_null(fmu_model->signals);
-    assert_null(fmu_model->path);
+    assert_null(fmu_model->model_path);
     assert_null(fmu_model->handle);
     assert_null(fmu_model->m_doc);
     fmimcl_parse(fmu_model);
@@ -216,8 +217,9 @@ void test_parser__fmu_signal(void** state)
     assert_non_null(fmu_model->m_doc);
     assert_non_null(fmu_model->name);
     assert_string_equal(fmu_model->name, "FMU");
-    assert_non_null(fmu_model->path);
-    assert_string_equal(fmu_model->path, "examples/fmu/fmu/binaries/simple.so");
+    assert_non_null(fmu_model->model_path);
+    assert_string_equal(
+        fmu_model->model_path, "examples/fmu/fmu/binaries/simple.so");
     assert_null(fmu_model->handle);
 
     // Check FMU Signal properties.

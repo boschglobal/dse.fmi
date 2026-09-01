@@ -725,7 +725,10 @@ fmu (FmuInstanceData*)
 void fmigateway_parallelize(FmuInstanceData* fmu)
 {
     char* script_path = fmigateway_file_exists(fmu, "parallelisation");
-    if (script_path == NULL) return;
+    if (script_path == NULL) {
+        fmu_log(fmu, 0, "Debug", "No parallelisation script found.");
+        return;
+    }
 
     char* script_output = fmigateway_run_parallelisation(fmu, script_path);
     if (script_output) {

@@ -10,6 +10,18 @@
 #define UNUSED(x) ((void)x)
 
 
+static int _reset_binary_signal(void* value, void* data)
+{
+    UNUSED(data);
+
+    SimbusVectorIndex* idx = value;
+    if (idx && idx->sbv && idx->vi < idx->sbv->count) {
+        idx->sbv->length[idx->vi] = 0;
+    }
+    return 0;
+}
+
+
 /**
 fmu_signals_reset
 =================
@@ -24,8 +36,6 @@ fmu (FmuInstanceData*)
 void fmu_signals_reset(FmuInstanceData* fmu)
 {
     assert(fmu);
-    RuntimeModelDesc* m = fmu->data;
-    assert(m);
 
     if (fmu->variables.signals_reset) return;
 

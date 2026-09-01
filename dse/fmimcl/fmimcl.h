@@ -273,9 +273,11 @@ typedef struct FmuModel {
     const char* version;
     bool        cosim;
     const char* guid;
-    const char* resource_dir;
-    const char* path;
     const char* handle;
+    /* Paths. */
+    const char* sim_path;
+    char*       resource_dir;
+    char*       model_path;
     /* Signals (representing FMU Variables). */
     FmuSignal*  signals; /* NULL terminated list. */
     /* Internal data objects (YamlNode). */

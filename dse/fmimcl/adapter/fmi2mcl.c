@@ -92,9 +92,9 @@ static int32_t fmi2mcl_load(FmuModel* m)
     int          rc = 0;
     Fmi2Adapter* a = m->adapter;
 
-    log_debug("Load fmu from path: %s", m->path);
+    log_debug("Load fmu from path: %s", m->model_path);
     dlerror();
-    handle = dlopen(m->path, RTLD_NOW | RTLD_LOCAL);
+    handle = dlopen(m->model_path, RTLD_NOW | RTLD_LOCAL);
     dlerror_str = dlerror();
     if (dlerror_str) {
         log_error(dlerror_str);

@@ -79,12 +79,17 @@ void fmimcl_destroy(FmuModel* fmu_model)
 {
     if (fmu_model == NULL) return;
 
+    /* Free allocated paths. */
+    free(fmu_model->resource_dir);
+    free(fmu_model->model_path);
+
+    /* Free allocated marshal group and signal data. */
     marshal_group_destroy(fmu_model->data.mg_table);
-    if (fmu_model->signals) free(fmu_model->signals);
-    if (fmu_model->data.name) free(fmu_model->data.name);
-    if (fmu_model->data.scalar) free(fmu_model->data.scalar);  // also binary
-    if (fmu_model->data.binary_len) free(fmu_model->data.binary_len);
-    if (fmu_model->data.kind) free(fmu_model->data.kind);
+    free(fmu_model->signals);
+    free(fmu_model->data.name);
+    free(fmu_model->data.scalar);  // also binary
+    free(fmu_model->data.binary_len);
+    free(fmu_model->data.kind);
 }
 
 
@@ -179,6 +184,9 @@ MclDesc* mcl_create(ModelDesc* model)
 
     dse_yaml_get_string(
         m->mcl.model.mi->model_definition.doc, "metadata/name", &m->name);
+
+    m->sim_path =
+        (model->sim && model->sim->sim_path) ? model->sim->sim_path : NULL;
 
     fmimcl_parse(m);
 

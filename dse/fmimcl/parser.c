@@ -5,6 +5,7 @@
 #include <dse/testing.h>
 #include <dse/platform.h>
 #include <dse/logger.h>
+#include <dse/clib/util/strings.h>
 #include <dse/clib/util/yaml.h>
 #include <dse/modelc/schema.h>
 #include <dse/modelc/runtime.h>
@@ -198,6 +199,8 @@ static int _model_match_handler(ModelInstanceSpec* mi, SchemaObject* o)
     m->m_doc = o->doc;
 
     /* Annotations. */
+    const char* resource_dir = NULL;
+
     // clang-format off
     dse_yaml_get_string(m->m_doc, "metadata/annotations/mcl_adapter", &m->mcl.adapter);
     dse_yaml_get_string(m->m_doc, "metadata/annotations/mcl_version", &m->mcl.version);
@@ -205,20 +208,25 @@ static int _model_match_handler(ModelInstanceSpec* mi, SchemaObject* o)
     dse_yaml_get_string(m->m_doc, "metadata/annotations/fmi_model_version", &m->version);
     dse_yaml_get_double(m->m_doc, "metadata/annotations/fmi_stepsize", &m->mcl.step_size);
     dse_yaml_get_string(m->m_doc, "metadata/annotations/fmi_guid", &m->guid);
-    dse_yaml_get_string(m->m_doc, "metadata/annotations/fmi_resource_dir", &m->resource_dir);
+    dse_yaml_get_string(m->m_doc, "metadata/annotations/fmi_resource_dir", &resource_dir);
     // clang-format on
+
+    m->resource_dir = dse_path_cat(m->sim_path, resource_dir);
 
     /* Make sure that a resource dir is set. */
     if (m->resource_dir == NULL) {
-        m->resource_dir = "/tmp";
+        m->resource_dir = strdup("/tmp");
     }
 
     /* FMU Library. */
     const char* selectors[] = { "os", "arch" };
     const char* values[] = { PLATFORM_OS, PLATFORM_ARCH };
+    const char* model_path = NULL;
     YamlNode*   n = dse_yaml_find_node_in_seq(
         m->m_doc, "spec/runtime/mcl", selectors, values, ARRAY_SIZE(selectors));
-    dse_yaml_get_string(n, "path", &m->path);
+
+    dse_yaml_get_string(n, "path", &model_path);
+    m->model_path = dse_path_cat(m->sim_path, model_path);
 
     /* Logging. */
     log_notice("FMU Model:");
@@ -230,7 +238,8 @@ static int _model_match_handler(ModelInstanceSpec* mi, SchemaObject* o)
     log_notice("  Model Stepsize = %.6f", m->mcl.step_size);
     log_notice("  Model GUID = %s", m->guid);
     log_notice("  Model Resource Directory = %s", m->resource_dir);
-    log_notice("  Path = %s (%s/%s)", m->path, PLATFORM_OS, PLATFORM_ARCH);
+    log_notice("  Model Binary Path = %s (%s/%s)", m->model_path, PLATFORM_OS,
+        PLATFORM_ARCH);
 
     /* Stop parsing after first match. */
     return 1;

@@ -31,8 +31,8 @@ int test_fmi2_setup(void** state)
             },
             .cosim = true,
             .guid = "",
-            .resource_dir = "",
-            .path = "../../../../dse/build/_out/fmimcl/examples/lib/libmclfmi2fmu.so",
+            .resource_dir = strdup(""),
+            .model_path = strdup("../../../../dse/build/_out/fmimcl/examples/lib/libmclfmi2fmu.so"),
             .handle = "",
         },
         .model_instance = {
@@ -50,9 +50,9 @@ int test_fmi2_setup(void** state)
 int test_fmi2_teardown(void** state)
 {
     Fmi2Mock* mock = *state;
-    if (mock) {
-        free(mock);
-    }
+    free(mock->model.resource_dir);
+    free(mock->model.model_path);
+    free(mock);
     return 0;
 }
 
