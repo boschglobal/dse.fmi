@@ -11,9 +11,35 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
+
+func isSafeArchivePath(name string) bool {
+	if name == "" {
+		return false
+	}
+
+	normalized := strings.ReplaceAll(name, "\\", "/")
+	if strings.HasPrefix(normalized, "/") {
+		return false
+	}
+	if path.IsAbs(normalized) || filepath.IsAbs(name) {
+		return false
+	}
+	if vol := filepath.VolumeName(name); vol != "" {
+		return false
+	}
+
+	for _, part := range strings.Split(normalized, "/") {
+		if part == ".." {
+			return false
+		}
+	}
+
+	return true
+}
 
 func Unzip(filename string, dest string) error {
 	archive, err := zip.OpenReader(filename)
@@ -28,6 +54,10 @@ func Unzip(filename string, dest string) error {
 	}
 
 	for _, file := range archive.File {
+		if !isSafeArchivePath(file.Name) {
+			return fmt.Errorf("UNZIP (illegal file path %q)", file.Name)
+		}
+
 		cleanName := filepath.Clean(file.Name)
 		filePath := filepath.Clean(filepath.Join(destAbs, cleanName))
 
