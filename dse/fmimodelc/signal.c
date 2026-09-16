@@ -29,7 +29,13 @@ void fmu_signals_reset(FmuInstanceData* fmu)
 
     if (fmu->variables.signals_reset) return;
 
-    simbus_vector_binary_reset(m->model.sim);
+    // Calling reset on the SimBus vector causes networking issues as
+    // data is not exchanged between all nodes. A different method of
+    // connecting to the SimBus vector is required (NetBus) to decouple
+    // from the SimBus vector (which has an inverse lifecycle to the
+    // Model representation of a Binary Vector).
+    //
+    // simbus_vector_binary_reset(m->model.sim);
 
     fmu->variables.signals_reset = true;
 }
