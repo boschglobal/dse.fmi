@@ -41,6 +41,26 @@ func isSafeArchivePath(name string) bool {
 	return true
 }
 
+func resolveArchivePath(destAbs string, archiveName string) (string, error) {
+	if !isSafeArchivePath(archiveName) {
+		return "", fmt.Errorf("UNZIP (illegal file path %q)", archiveName)
+	}
+
+	cleanName := filepath.Clean(archiveName)
+	candidate := filepath.Join(destAbs, cleanName)
+	candidateAbs, err := filepath.Abs(candidate)
+	if err != nil {
+		return "", fmt.Errorf("UNZIP (%v)", err)
+	}
+
+	destPrefix := destAbs + string(os.PathSeparator)
+	if candidateAbs != destAbs && !strings.HasPrefix(candidateAbs, destPrefix) {
+		return "", fmt.Errorf("UNZIP (illegal file path %q)", archiveName)
+	}
+
+	return candidateAbs, nil
+}
+
 func Unzip(filename string, dest string) error {
 	archive, err := zip.OpenReader(filename)
 	if err != nil {
@@ -54,16 +74,9 @@ func Unzip(filename string, dest string) error {
 	}
 
 	for _, file := range archive.File {
-		if !isSafeArchivePath(file.Name) {
-			return fmt.Errorf("UNZIP (illegal file path %q)", file.Name)
-		}
-
-		cleanName := filepath.Clean(file.Name)
-		filePath := filepath.Clean(filepath.Join(destAbs, cleanName))
-
-		destPrefix := destAbs + string(os.PathSeparator)
-		if filePath != destAbs && !strings.HasPrefix(filePath, destPrefix) {
-			return fmt.Errorf("UNZIP (illegal file path %q)", file.Name)
+		filePath, err := resolveArchivePath(destAbs, file.Name)
+		if err != nil {
+			return err
 		}
 
 		if file.FileInfo().IsDir() {
