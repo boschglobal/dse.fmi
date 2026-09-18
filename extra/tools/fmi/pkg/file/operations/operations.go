@@ -11,48 +11,23 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 )
 
-func isSafeArchivePath(name string) bool {
-	if name == "" {
-		return false
-	}
-
-	normalized := strings.ReplaceAll(name, "\\", "/")
-	if strings.HasPrefix(normalized, "/") {
-		return false
-	}
-	if path.IsAbs(normalized) || filepath.IsAbs(name) {
-		return false
-	}
-	if vol := filepath.VolumeName(name); vol != "" {
-		return false
-	}
-
-	for _, part := range strings.Split(normalized, "/") {
-		if part == ".." {
-			return false
-		}
-	}
-
-	return true
-}
-
+// resolveArchivePath resolves the target absolute path and strictly validates 
+// that it does not escape the destination absolute path directory.
 func resolveArchivePath(destAbs string, archiveName string) (string, error) {
-	if !isSafeArchivePath(archiveName) {
-		return "", fmt.Errorf("UNZIP (illegal file path %q)", archiveName)
-	}
-
-	cleanName := filepath.Clean(archiveName)
-	candidate := filepath.Join(destAbs, cleanName)
+	// 1. Join clean paths to find the candidate target
+	candidate := filepath.Join(destAbs, filepath.Clean(archiveName))
+	
+	// 2. Resolve to absolute path to evaluate all potential ".." elements
 	candidateAbs, err := filepath.Abs(candidate)
 	if err != nil {
 		return "", fmt.Errorf("UNZIP (%v)", err)
 	}
 
+	// 3. Ensure target is matching or strictly under the destination prefix
 	destPrefix := destAbs + string(os.PathSeparator)
 	if candidateAbs != destAbs && !strings.HasPrefix(candidateAbs, destPrefix) {
 		return "", fmt.Errorf("UNZIP (illegal file path %q)", archiveName)
@@ -89,25 +64,34 @@ func Unzip(filename string, dest string) error {
 		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
 			return fmt.Errorf("UNZIP (%v)", err)
 		}
-		destFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
-		if err != nil {
-			return fmt.Errorf("UNZIP (%v)", err)
-		}
-		defer destFile.Close()
 
-		srcFile, err := file.Open()
-		if err != nil {
-			return fmt.Errorf("UNZIP (%v)", err)
-		}
-		defer srcFile.Close()
-
-		_, err = io.Copy(destFile, srcFile)
-
-		if err != nil {
-			return fmt.Errorf("UNZIP (%v)", err)
+		// Fixed: Removed `defer` inside the loop to avoid running out of file descriptors
+		if err := extractFile(file, filePath); err != nil {
+			return err
 		}
 	}
 
+	return nil
+}
+
+// Helper function to safely isolate file handling and properly close file handles per iteration
+func extractFile(file *zip.File, filePath string) error {
+	destFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
+	if err != nil {
+		return fmt.Errorf("UNZIP (%v)", err)
+	}
+	defer destFile.Close()
+
+	srcFile, err := file.Open()
+	if err != nil {
+		return fmt.Errorf("UNZIP (%v)", err)
+	}
+	defer srcFile.Close()
+
+	_, err = io.Copy(destFile, srcFile)
+	if err != nil {
+		return fmt.Errorf("UNZIP (%v)", err)
+	}
 	return nil
 }
 
