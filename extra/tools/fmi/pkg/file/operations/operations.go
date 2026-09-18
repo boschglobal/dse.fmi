@@ -15,27 +15,6 @@ import (
 	"strings"
 )
 
-// resolveArchivePath resolves the target absolute path and strictly validates 
-// that it does not escape the destination absolute path directory.
-func resolveArchivePath(destAbs string, archiveName string) (string, error) {
-	// 1. Join clean paths to find the candidate target
-	candidate := filepath.Join(destAbs, filepath.Clean(archiveName))
-	
-	// 2. Resolve to absolute path to evaluate all potential ".." elements
-	candidateAbs, err := filepath.Abs(candidate)
-	if err != nil {
-		return "", fmt.Errorf("UNZIP (%v)", err)
-	}
-
-	// 3. Ensure target is matching or strictly under the destination prefix
-	destPrefix := destAbs + string(os.PathSeparator)
-	if candidateAbs != destAbs && !strings.HasPrefix(candidateAbs, destPrefix) {
-		return "", fmt.Errorf("UNZIP (illegal file path %q)", archiveName)
-	}
-
-	return candidateAbs, nil
-}
-
 func Unzip(filename string, dest string) error {
 	archive, err := zip.OpenReader(filename)
 	if err != nil {
@@ -47,11 +26,19 @@ func Unzip(filename string, dest string) error {
 	if err != nil {
 		return fmt.Errorf("UNZIP (%v)", err)
 	}
+	destPrefix := destAbs + string(os.PathSeparator)
 
 	for _, file := range archive.File {
-		filePath, err := resolveArchivePath(destAbs, file.Name)
+		// 1. Locally build the targeted path using standard filepath mechanisms
+		candidate := filepath.Join(destAbs, filepath.Clean(file.Name))
+		filePath, err := filepath.Abs(candidate)
 		if err != nil {
-			return err
+			return fmt.Errorf("UNZIP (%v)", err)
+		}
+
+		// 2. Local Guard: CodeQL requires this conditional check right here to stop taint flow
+		if filePath != destAbs && !strings.HasPrefix(filePath, destPrefix) {
+			return fmt.Errorf("UNZIP (illegal file path %q)", file.Name)
 		}
 
 		if file.FileInfo().IsDir() {
@@ -65,7 +52,7 @@ func Unzip(filename string, dest string) error {
 			return fmt.Errorf("UNZIP (%v)", err)
 		}
 
-		// Fixed: Removed `defer` inside the loop to avoid running out of file descriptors
+		// Isolate file operation side-effects to clean up file descriptor defers correctly
 		if err := extractFile(file, filePath); err != nil {
 			return err
 		}
