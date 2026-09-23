@@ -31,18 +31,18 @@ uses
 dse.fmi    file:///repo
 router_lua file:///repo/dse/examples/gateway/model_router/model.lua
 
+stack remote
 
 model router router_lua
 channel in in
 channel out out
 file router.yaml /repo/dse/examples/gateway/model_router/router.yaml
 
-stack remote
-model gateway dse.fmi.mcl external=true
+model gateway external=true
 channel in in
 channel out out
 
-workflow generate-gatewayfmu
+workflow generate-gatewayfmu uses dse.fmi
     var SIGNAL_GROUPS model/router/data/router.yaml
     var FMU_NAME gateway
     var FMI_VERSION 2
@@ -58,7 +58,7 @@ echo "==========================="
 echo "Docker Containers"
 echo "================="
 echo "DSE_BUILDER_IMAGE=${DSE_BUILDER_IMAGE}"
-echo "DSE_SIMER_IMAGE=${DSE_SIMER_IMAGE}"
+echo "SIMER_IMAGE=${SIMER_IMAGE}"
 echo "FMI_IMAGE=${FMI_IMAGE}"
 echo ""
 
