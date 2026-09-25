@@ -141,7 +141,7 @@ void fmimodelc_index_scalar_signals(FmuInstanceData* fmu)
         }
     }
     uint64_t vname_count = 0;
-    char** vname = set_to_array(&vector_names, &vname_count);
+    char**   vname = set_to_array(&vector_names, &vname_count);
     for (size_t i = 0; i < vname_count; i++) {
         /* Locate the SimBus vector. */
         SimbusVectorIndex index =

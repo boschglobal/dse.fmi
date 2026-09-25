@@ -222,6 +222,22 @@ func TestGatewayFmu_FMI2_WithStack(t *testing.T) {
 	// Simer built-in parameters must also be present.
 	assert.True(t, paramNames["Simer_Command_Selector"], "Simer_Command_Selector must exist in simer mode")
 	assert.True(t, paramNames["Simer_Command"], "Simer_Command must exist in simer mode")
+
+	vars := map[string]fmi2.ScalarVariable{}
+	for _, v := range md.ModelVariables.ScalarVariable {
+		vars[v.Name] = v
+	}
+	// Default from cmd_envvars is the start value.
+	require.NotNil(t, vars["envar0"].String)
+	assert.Equal(t, "testvalue", vars["envar0"].String.Start)
+	require.NotNil(t, vars["envar1"].Real)
+	assert.Equal(t, "0.0", vars["envar1"].Real.Start)
+	// Numeric (non-string) default.
+	require.NotNil(t, vars["envar2"].Real)
+	assert.Equal(t, "1.5", vars["envar2"].Real.Start)
+	// VRs expected by the gateway runtime (session_win32.c).
+	assert.Equal(t, "0", vars["Simer_Command"].ValueReference)
+	assert.Equal(t, "1", vars["Simer_Command_Selector"].ValueReference)
 }
 
 // TestGatewayFmu_FMI2_WithParameters exercises the --parameters CSV (simer mode).
@@ -245,6 +261,18 @@ func TestGatewayFmu_FMI2_WithParameters(t *testing.T) {
 	}
 	assert.True(t, paramNames["param1"], "param1 from CSV must appear as a parameter variable")
 	assert.True(t, paramNames["param2"], "param2 from CSV must appear as a parameter variable")
+
+	// CSV default is the start value.
+	for _, v := range md.ModelVariables.ScalarVariable {
+		switch v.Name {
+		case "param1":
+			require.NotNil(t, v.Real)
+			assert.Equal(t, "1.0", v.Real.Start)
+		case "param2":
+			require.NotNil(t, v.String)
+			assert.Equal(t, "default_value", v.String.Start)
+		}
+	}
 }
 
 // TestGatewayFmu_FMI2_DuplicateSignalsDeduped verifies that a signal name

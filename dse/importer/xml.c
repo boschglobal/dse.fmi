@@ -183,6 +183,10 @@ static void _parse_fmi2_string(xmlNode* variable, xmlNode* child, xmlChar* vr,
     HashMap* vr_tx_binary)
 {
     if (xmlStrcmp(child->name, (xmlChar*)"String")) return;
+    if (strcmp((char*)causality, "input") != 0 &&
+        strcmp((char*)causality, "output") != 0) {
+        return;
+    }
 
     BinaryData* data = calloc(1, sizeof(BinaryData));
     if (start != NULL) data->start = strdup((char*)start);

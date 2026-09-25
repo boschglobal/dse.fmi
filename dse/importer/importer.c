@@ -39,6 +39,7 @@ Support for both FMI 2 and FMI 3 Co-Simulation.
 /* Define types for the FMI 2 inteface methods being used. */
 typedef void* (*fmi2Instantiate)();
 typedef int32_t (*fmi2SetDebugLogging)();
+typedef int32_t (*fmi2EnterInitializationMode)();
 typedef int32_t (*fmi2ExitInitializationMode)();
 typedef int32_t (*fmi2GetReal)();
 typedef int32_t (*fmi2GetString)();
@@ -50,11 +51,13 @@ typedef void (*fmi2FreeInstance)();
 
 /* Define types for the FMI 3 inteface methods being used. */
 typedef void* (*fmi3InstantiateCoSimulation)();
+typedef int32_t (*fmi3EnterInitializationMode)();
 typedef int32_t (*fmi3ExitInitializationMode)();
 typedef int32_t (*fmi3GetFloat64)();
 typedef int32_t (*fmi3GetBinary)();
 typedef int32_t (*fmi3SetFloat64)();
 typedef int32_t (*fmi3SetBinary)();
+typedef int32_t (*fmi3SetString)();
 typedef int32_t (*fmi3DoStep)();
 typedef void (*fmi3FreeInstance)();
 
@@ -64,7 +67,7 @@ typedef void (*fmi3FreeInstance)();
 #define MODEL_XML_FILE "modelDescription.xml"
 
 
-#define OPT_LIST       "hs:X:P:Bvc:"
+#define OPT_LIST       "hs:X:P:Bvc:I:S:"
 static struct option long_options[] = {
     { "help", no_argument, NULL, 'h' },
     { "step_size", optional_argument, NULL, 's' },
@@ -73,6 +76,9 @@ static struct option long_options[] = {
     { "signal_bus", no_argument, NULL, 'B' },
     { "verbose", no_argument, NULL, 'v' },
     { "csv", required_argument, NULL, 'c' },
+    { "init", required_argument, NULL, 'I' },
+    { "init_string", required_argument, NULL, 'S' },
+    { 0, 0, 0, 0 },
 };
 
 static inline void print_usage()
@@ -86,6 +92,9 @@ static inline void print_usage()
     printf("      [-B, --signal_bus]\n");
     printf("      [-v, --verbose]\n");
     printf("      [-c, --csv=<csv_file>]\n");
+    printf("      [-I, --init=<vr=value,...>] (Real, set before init)\n");
+    printf("      [-S, --init_string=<vr=value,...>] (String, set before "
+           "init)\n");
 }
 
 void _log(const char* format, ...)
@@ -154,7 +163,8 @@ static void _fmu2_log(fmi2ComponentEnvironment componentEnvironment,
 }
 
 static int _run_fmu2_cosim(modelDescription* desc, void* handle,
-    double step_size, unsigned int steps, CsvDesc* csv)
+    double step_size, unsigned int steps, CsvDesc* csv, InitList* init_real,
+    InitList* init_string)
 {
     /* Setup the FMU
      * ============= */
@@ -187,11 +197,45 @@ static int _run_fmu2_cosim(modelDescription* desc, void* handle,
     const char* log_categories[] = { "All" };
     set_debug_logging(fmu, fmi2True, 1, log_categories);
 
+    /* Load Get and Set functions. */
+    fmi2GetReal get_real = dlsym(handle, "fmi2GetReal");
+    if (get_real == NULL) return EINVAL;
+    fmi2GetString get_string = dlsym(handle, "fmi2GetString");
+    if (get_string == NULL) return EINVAL;
+    fmi2SetReal set_real = dlsym(handle, "fmi2SetReal");
+    if (set_real == NULL) return EINVAL;
+    fmi2SetString set_string = dlsym(handle, "fmi2SetString");
+    if (set_string == NULL) return EINVAL;
+
+    /* Initial values (Instantiated state). */
+    if (init_real->count) {
+        double* val = init_real_values(init_real, desc);
+        set_real(fmu, init_real->vr, init_real->count, val);
+        free(val);
+    }
+    if (init_string->count) {
+        set_string(fmu, init_string->vr, init_string->count, init_string->val);
+    }
+
+    /* fmi2EnterInitializationMode */
+    fmi2EnterInitializationMode enter_init_mode =
+        dlsym(handle, "fmi2EnterInitializationMode");
+    if (enter_init_mode == NULL) return EINVAL;
+    enter_init_mode(fmu);
+
     /* fmi2ExitInitializationMode */
     fmi2ExitInitializationMode exit_init_mode =
         dlsym(handle, "fmi2ExitInitializationMode");
     if (exit_init_mode == NULL) return EINVAL;
     exit_init_mode(fmu);
+
+    if (__verbose__) {
+        unsigned int* vr;
+        double*       val;
+        size_t        count = init_readback_alloc(desc, init_real, &vr, &val);
+        get_real(fmu, vr, count, val);
+        init_readback_log(vr, val, count);
+    }
 
 
     /* Step the FMU
@@ -202,19 +246,7 @@ static int _run_fmu2_cosim(modelDescription* desc, void* handle,
     _log("Binary Variables: Input %lu, Output %lu", desc->binary.rx_count,
         desc->binary.tx_count);
 
-
-    /* Load Get and Set functions. */
-    fmi2GetReal get_real = dlsym(handle, "fmi2GetReal");
-    if (get_real == NULL) return EINVAL;
-    fmi2GetString get_string = dlsym(handle, "fmi2GetString");
-    if (get_string == NULL) return EINVAL;
-
     _apply_samples(csv, model_time);
-
-    fmi2SetReal set_real = dlsym(handle, "fmi2SetReal");
-    if (set_real == NULL) return EINVAL;
-    fmi2SetString set_string = dlsym(handle, "fmi2SetString");
-    if (set_string == NULL) return EINVAL;
 
     /* fmi2DoStep */
     fmi2DoStep do_step = dlsym(handle, "fmi2DoStep");
@@ -243,7 +275,8 @@ static int _run_fmu2_cosim(modelDescription* desc, void* handle,
             free(ncodec_tx);
         }
         /* Inject a CAN Frame. */
-        if (desc->binary.tx_binary_info && desc->binary.tx_binary_info[0] &&
+        if (desc->binary.tx_count && desc->binary.tx_binary_info &&
+            desc->binary.tx_binary_info[0] &&
             desc->binary.tx_binary_info[0]->mime_type &&
             strcmp(desc->binary.tx_binary_info[0]->type, "frame") == 0) {
             char msg[128];
@@ -361,7 +394,8 @@ static void _fmu3_log(fmi3InstanceEnvironment instanceEnvironment,
 }
 
 static int _run_fmu3_cosim(modelDescription* desc, void* handle,
-    double step_size, unsigned int steps, CsvDesc* csv)
+    double step_size, unsigned int steps, CsvDesc* csv, InitList* init_real,
+    InitList* init_string)
 {
     /* Setup the FMU
      * ============= */
@@ -375,11 +409,49 @@ static int _run_fmu3_cosim(modelDescription* desc, void* handle,
         NULL, 0, NULL, &_fmu3_log, NULL);
     if (fmu == NULL) return EINVAL;
 
+    /* Load Get and Set functions. */
+    fmi3GetFloat64 get_float64 = dlsym(handle, "fmi3GetFloat64");
+    if (get_float64 == NULL) return EINVAL;
+    fmi3GetBinary get_binary = dlsym(handle, "fmi3GetBinary");
+    if (get_binary == NULL) return EINVAL;
+    fmi3SetFloat64 set_float64 = dlsym(handle, "fmi3SetFloat64");
+    if (set_float64 == NULL) return EINVAL;
+    fmi3SetBinary set_binary = dlsym(handle, "fmi3SetBinary");
+    if (set_binary == NULL) return EINVAL;
+
+    /* Initial values (Instantiated state). */
+    if (init_real->count) {
+        double* val = init_real_values(init_real, desc);
+        set_float64(
+            fmu, init_real->vr, init_real->count, val, init_real->count);
+        free(val);
+    }
+    if (init_string->count) {
+        fmi3SetString set_string = dlsym(handle, "fmi3SetString");
+        if (set_string == NULL) return EINVAL;
+        set_string(fmu, init_string->vr, init_string->count, init_string->val,
+            init_string->count);
+    }
+
+    /* fmi3EnterInitializationMode */
+    fmi3EnterInitializationMode enter_init_mode =
+        dlsym(handle, "fmi3EnterInitializationMode");
+    if (enter_init_mode == NULL) return EINVAL;
+    enter_init_mode(fmu, 0, 0, 0, 0, 0);
+
     /* fmi3ExitInitializationMode */
     fmi3ExitInitializationMode exit_init_mode =
         dlsym(handle, "fmi3ExitInitializationMode");
     if (exit_init_mode == NULL) return EINVAL;
     exit_init_mode(fmu);
+
+    if (__verbose__) {
+        unsigned int* vr;
+        double*       val;
+        size_t        count = init_readback_alloc(desc, init_real, &vr, &val);
+        get_float64(fmu, vr, count, val, count);
+        init_readback_log(vr, val, count);
+    }
 
 
     /* Step the FMU
@@ -390,19 +462,7 @@ static int _run_fmu3_cosim(modelDescription* desc, void* handle,
     _log("Binary Variables: Input %lu, Output %lu", desc->binary.rx_count,
         desc->binary.tx_count);
 
-
-    /* Load Get and Set functions. */
-    fmi3GetFloat64 get_float64 = dlsym(handle, "fmi3GetFloat64");
-    if (get_float64 == NULL) return EINVAL;
-    fmi3GetBinary get_binary = dlsym(handle, "fmi3GetBinary");
-    if (get_binary == NULL) return EINVAL;
-
     _apply_samples(csv, model_time);
-
-    fmi3SetFloat64 set_float64 = dlsym(handle, "fmi3SetFloat64");
-    if (set_float64 == NULL) return EINVAL;
-    fmi3SetBinary set_binary = dlsym(handle, "fmi3SetBinary");
-    if (set_binary == NULL) return EINVAL;
 
     /* fmi3DoStep */
     fmi3DoStep do_step = dlsym(handle, "fmi3DoStep");
@@ -432,7 +492,8 @@ static int _run_fmu3_cosim(modelDescription* desc, void* handle,
             free(ncodec_tx);
         }
         /* Inject a CAN Frame. */
-        if (desc->binary.tx_binary_info && desc->binary.tx_binary_info[0] &&
+        if (desc->binary.tx_count && desc->binary.tx_binary_info &&
+            desc->binary.tx_binary_info[0] &&
             desc->binary.tx_binary_info[0]->mime_type &&
             strcmp(desc->binary.tx_binary_info[0]->type, "frame") == 0) {
             char msg[128];
@@ -525,7 +586,8 @@ static int _run_fmu3_cosim(modelDescription* desc, void* handle,
 
 static inline void _parse_arguments(int argc, char** argv, double* step_size,
     unsigned int* steps, const char** fmu_path, const char** platform,
-    bool* signal_bus, const char** csv_path)
+    bool* signal_bus, const char** csv_path, InitList* init_real,
+    InitList* init_string)
 {
     extern int   optind, optopt;
     extern char* optarg;
@@ -566,6 +628,12 @@ static inline void _parse_arguments(int argc, char** argv, double* step_size,
         case 'c':
             *csv_path = optarg;
             break;
+        case 'I':
+            init_list_parse(init_real, optarg);
+            break;
+        case 'S':
+            init_list_parse(init_string, optarg);
+            break;
         default:
             exit(1);
         }
@@ -586,6 +654,8 @@ int main(int argc, char** argv)
     const char*  fmu_path = NULL;
     const char*  platform = "linux-amd64";
     const char*  csv_path = NULL;
+    InitList     init_real = { 0 };
+    InitList     init_string = { 0 };
 
     static char _cwd[PATH_MAX];
 
@@ -593,7 +663,7 @@ int main(int argc, char** argv)
     /* Parse arguments
      * =============== */
     _parse_arguments(argc, argv, &step_size, &steps, &fmu_path, &platform,
-        &signal_bus_enabled, &csv_path);
+        &signal_bus_enabled, &csv_path, &init_real, &init_string);
     getcwd(_cwd, PATH_MAX);
     if (fmu_path == NULL) {
         fmu_path = _cwd;
@@ -640,10 +710,12 @@ int main(int argc, char** argv)
     int rc = 0;
     switch (atoi(desc->version)) {
     case 2:
-        rc = _run_fmu2_cosim(desc, handle, step_size, steps, csv);
+        rc = _run_fmu2_cosim(
+            desc, handle, step_size, steps, csv, &init_real, &init_string);
         break;
     case 3:
-        rc = _run_fmu3_cosim(desc, handle, step_size, steps, csv);
+        rc = _run_fmu3_cosim(
+            desc, handle, step_size, steps, csv, &init_real, &init_string);
         break;
     default:
         _log("Unsupported FMI version (%s)!", desc->version);
@@ -696,6 +768,8 @@ int main(int argc, char** argv)
 
     dlclose(handle);
     csv_close(csv);
+    init_list_free(&init_real);
+    init_list_free(&init_string);
 
     /* Return result. */
     return rc;

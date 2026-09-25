@@ -37,5 +37,7 @@
                   <Annotation type="dse.fmi.gateway.script.parameter"></Annotation>
               </Annotations>
           </Float64>
+          <Float64 name="scalar_in" valueReference="5" causality="input" variability="discrete" start="2.5"></Float64>
+          <Float64 name="scalar_out" valueReference="6" causality="output" variability="discrete"></Float64>
       </ModelVariables>
   </fmiModelDescription>

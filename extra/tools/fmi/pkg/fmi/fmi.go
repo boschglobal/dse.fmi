@@ -7,6 +7,7 @@ package fmi
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -22,6 +23,22 @@ type FmiConfig struct {
 	ModelIdentifier string
 	GenerationTool  string
 	Annotations     map[string]string
+}
+
+// StartValue formats a fmi_variable_start_value annotation for a numeric start
+// attribute. Returns false if the value is missing or empty.
+func StartValue(v any) (string, bool) {
+	switch v := v.(type) {
+	case string:
+		return v, v != ""
+	case int:
+		return strconv.Itoa(v), true
+	case float32:
+		return fmt.Sprintf("%f", v), true
+	case float64:
+		return fmt.Sprintf("%f", v), true
+	}
+	return "", false
 }
 
 func GetFmuBinaryDirName(platform string, fmiVersion string) (dir string) {

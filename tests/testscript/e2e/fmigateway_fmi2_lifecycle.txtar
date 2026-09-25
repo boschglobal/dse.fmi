@@ -1,0 +1,265 @@
+env NAME=fmigateway_lifecycle
+
+# Operate from the WORKDIR (allocated by caller, i.e. docker command).
+cd $WORKDIR
+env SIM=sim
+
+env EXAMPLE=$REPODIR/dse/build/_out/examples/gateway
+env FMU_IMPORTER=$REPODIR/dse/build/_out/importer/fmuImporter
+env COUNTER=$REPODIR/dse/examples/gateway/model_counter
+
+
+# Create the simulation folder (Simer layout)
+mkdir $SIM/bin $SIM/fmu/resources $SIM/model/counter
+cp $FMU_IMPORTER $SIM/bin/fmuImporter
+exec cp -R $EXAMPLE/fmi2/binaries $SIM/fmu/binaries
+cp $WORK/modelDescription.xml $SIM/fmu/modelDescription.xml
+cp $WORK/model.yaml $SIM/fmu/resources/model.yaml
+cp $WORK/fmu.yaml $SIM/fmu/resources/fmu.yaml
+cp $WORK/stack.yaml $SIM/fmu/resources/stack.yaml
+cp $WORK/stack_target.yaml $SIM/fmu/resources/stack_target.yaml
+cp $COUNTER/model.lua $SIM/model/counter/model.lua
+cp $WORK/startup.sh $SIM/startup.sh
+cp $WORK/shutdown.sh $SIM/shutdown.sh
+cp $WORK/input.csv $SIM/input.csv
+
+
+# TEST: FMI Gateway variable indexing and lifecycle
+exec sh -e $WORK/test.sh
+
+stdout 'Input vr=99 not in modelDescription.xml'
+stdout 'Scalar: input=7, output=2'
+stdout 'Binary: rx=0, tx=0'
+stdout 'LIFECYCLE P_REAL=2.500000 P_REAL_SET=6.250000 P_ENV=from_env P_STR=hello P_STR_SET=b'
+stdout 'Importer: Init \[6\] 2.000000'
+stdout 'Importer: Init \[7\] 100.000000'
+stdout 'Importer: Init \[5\] 1.000000'
+stdout 'Importer: Init \[8\] 9.000000'
+stdout 'Importer: Init \[4\] 6.250000'
+stdout 'Importer: Calling fmi2DoStep\(\): model_time=0.004500, step_size=0.000500'
+stdout 'Importer:   \[9\] 110.000000'
+stdout 'Importer:   \[10\] 9.000000'
+stdout 'Importer: Simulation return value: 0'
+stdout 'LIFECYCLE SHUTDOWN'
+
+
+-- modelDescription.xml --
+<?xml version="1.0" encoding="utf-8"?>
+<fmiModelDescription modelName="fmi2gateway" fmiVersion="2.0" guid="{11111111-2222-3333-8888-555555555555}">
+    <CoSimulation modelIdentifier="libfmi2gateway"></CoSimulation>
+    <DefaultExperiment stepSize="0.0005" startTime="0.0" stopTime="0.005"></DefaultExperiment>
+    <ModelVariables>
+        <ScalarVariable name="factor" valueReference="6" causality="input">
+            <Real start="2.0"></Real>
+        </ScalarVariable>
+        <ScalarVariable name="P_REAL" valueReference="3" causality="parameter" variability="fixed">
+            <Real start="2.5"></Real>
+            <Annotations><Tool name="dse.fmi.gateway.script.parameter"></Tool></Annotations>
+        </ScalarVariable>
+        <ScalarVariable name="offset" valueReference="7" causality="input">
+            <Real start="0.0"></Real>
+        </ScalarVariable>
+        <ScalarVariable name="P_ENV" valueReference="2" causality="parameter" variability="fixed">
+            <Real start="1.0"></Real>
+            <Annotations><Tool name="dse.fmi.gateway.script.parameter"></Tool></Annotations>
+        </ScalarVariable>
+        <ScalarVariable name="input" valueReference="5" causality="input">
+            <Real start="1.0"></Real>
+        </ScalarVariable>
+        <ScalarVariable name="P_REAL_SET" valueReference="4" causality="parameter" variability="fixed">
+            <Real start="1.0"></Real>
+            <Annotations><Tool name="dse.fmi.gateway.script.parameter"></Tool></Annotations>
+        </ScalarVariable>
+        <ScalarVariable name="orphan" valueReference="8" causality="input">
+            <Real start="9.0"></Real>
+        </ScalarVariable>
+        <ScalarVariable name="output" valueReference="9" causality="output">
+            <Real start="0.0"></Real>
+        </ScalarVariable>
+        <ScalarVariable name="counter" valueReference="10" causality="output">
+            <Real start="0.0"></Real>
+        </ScalarVariable>
+        <ScalarVariable name="P_STR" valueReference="0" causality="parameter" variability="fixed">
+            <String start="hello"></String>
+            <Annotations><Tool name="dse.fmi.gateway.script.parameter"></Tool></Annotations>
+        </ScalarVariable>
+        <ScalarVariable name="P_STR_SET" valueReference="1" causality="parameter" variability="fixed">
+            <String start="a"></String>
+            <Annotations><Tool name="dse.fmi.gateway.script.parameter"></Tool></Annotations>
+        </ScalarVariable>
+    </ModelVariables>
+    <ModelStructure></ModelStructure>
+</fmiModelDescription>
+
+-- model.yaml --
+---
+kind: Model
+metadata:
+  name: Gateway
+spec:
+  runtime:
+    gateway: {}
+  channels:
+    - alias: in
+      selectors:
+        channel: in
+    - alias: out
+      selectors:
+        channel: out
+
+-- fmu.yaml --
+---
+kind: SignalGroup
+metadata:
+  name: counter_in
+  labels:
+    channel: in
+spec:
+  signals:
+    - signal: input
+      annotations:
+        fmi_variable_vref: 5
+        fmi_variable_name: input
+        fmi_variable_type: Real
+        fmi_variable_causality: input
+    - signal: factor
+      annotations:
+        fmi_variable_vref: 6
+        fmi_variable_name: factor
+        fmi_variable_type: Real
+        fmi_variable_causality: input
+    - signal: offset
+      annotations:
+        fmi_variable_vref: 7
+        fmi_variable_name: offset
+        fmi_variable_type: Real
+        fmi_variable_causality: input
+    - signal: missing
+      annotations:
+        fmi_variable_vref: 99
+        fmi_variable_name: missing
+        fmi_variable_type: Real
+        fmi_variable_causality: input
+    - signal: unmapped
+---
+kind: SignalGroup
+metadata:
+  name: counter_out
+  labels:
+    channel: out
+spec:
+  signals:
+    - signal: output
+      annotations:
+        fmi_variable_vref: 9
+        fmi_variable_name: output
+        fmi_variable_type: Real
+        fmi_variable_causality: output
+    - signal: counter
+      annotations:
+        fmi_variable_vref: 10
+        fmi_variable_name: counter
+        fmi_variable_type: Real
+        fmi_variable_causality: output
+
+-- stack.yaml --
+---
+kind: Stack
+metadata:
+  name: gateway
+spec:
+  connection:
+    transport:
+      redis:
+        uri: redis://localhost:6379
+        timeout: 60
+  models:
+    - name: gateway
+      uid: 42
+      model:
+        name: Gateway
+      annotations:
+        step_size: 0.0005
+        end_time: 0.005
+        log_level: 6
+      channels:
+        - name: in
+          alias: in
+          selectors:
+            channel: in
+        - name: out
+          alias: out
+          selectors:
+            channel: out
+
+-- stack_target.yaml --
+---
+kind: Stack
+metadata:
+  name: stack_target
+spec:
+  connection:
+    transport:
+      redis:
+        uri: redis://localhost:6379
+        timeout: 60
+  models:
+    - name: simbus
+      model:
+        name: simbus
+      channels:
+        - name: in
+          expectedModelCount: 2
+        - name: out
+          expectedModelCount: 2
+    - name: counter_inst
+      uid: 43
+      runtime:
+        mcl: lua
+        files:
+          - fmu/resources/fmu.yaml
+          - model/counter/model.lua
+      channels:
+        - name: in
+          alias: in
+          selectors:
+            channel: in
+        - name: out
+          alias: out
+          selectors:
+            channel: out
+
+-- startup.sh --
+echo "LIFECYCLE P_REAL=$P_REAL P_REAL_SET=$P_REAL_SET P_ENV=$P_ENV P_STR=$P_STR P_STR_SET=$P_STR_SET"
+
+-- shutdown.sh --
+echo "LIFECYCLE SHUTDOWN"
+
+-- input.csv --
+Timestamp;5
+0.0010;5.0
+
+-- test.sh --
+SIMER_IMAGE="${SIMER_IMAGE:-ghcr.io/boschglobal/dse-simer:latest}"
+
+docker run --name gateway -i --rm -v $ENTRYWORKDIR/$SIM:/sim \
+    --env SIMBUS_LOGLEVEL=4 \
+    --env GATEWAY_INIT_CMD="sh /sim/startup.sh" \
+    --env GATEWAY_SHUTDOWN_CMD="sh /sim/shutdown.sh" \
+    --env P_ENV=from_env \
+    --net="host" \
+    --entrypoint="" $SIMER_IMAGE \
+    bash -c "cd fmu; valgrind -q --leak-check=yes --error-exitcode=808 \
+    ../bin/fmuImporter --verbose --step_size=0.0005 --steps=10 \
+        --csv=/sim/input.csv \
+        --init=7=100,4=6.25 \
+        --init_string=1=b,50=x" &
+GW_PID=$!
+
+docker run --name simer -i --rm -v $ENTRYWORKDIR/$SIM:/sim \
+    --env SIMBUS_LOGLEVEL=4 \
+    --net="host" \
+    $SIMER_IMAGE \
+    -stepsize 0.0005 -endtime 0.0050
+
+wait $GW_PID

@@ -78,7 +78,6 @@ int test_fmigateway__parser_teardown(void** state)
                 e && e->name; e++) {
                 free(e->vref);
                 free((char*)e->name);
-                free(e->default_value);
             }
             free(fmi_gw->settings.scripts.envar);
             free((char*)fmi_gw->settings.runtime.log_location);
@@ -88,8 +87,9 @@ int test_fmigateway__parser_teardown(void** state)
                     &fmi_gw->settings.runtime.cmds, i, NULL));
             }
             vector_reset(&fmi_gw->settings.runtime.cmds);
-            VECTOR_FOREACH(&fmi_gw->settings.parameters, double*, p, free(*p));
-            vector_reset(&fmi_gw->settings.parameters);
+            VECTOR_FOREACH(
+                &fmi_gw->settings.scalar_storage, double*, p, free(*p));
+            vector_reset(&fmi_gw->settings.scalar_storage);
             free((char*)fmi_gw->settings.model_name);
             free(fmi_gw->model);
             free(fmi_gw);

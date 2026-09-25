@@ -29,21 +29,21 @@ channel out
 
 uses
 dse.fmi    file:///repo
-router_lua file:///repo/dse/examples/gateway/model_router/model.lua
+counter_lua file:///repo/dse/examples/gateway/model_counter/model.lua
 
 stack remote
 
-model router router_lua
+model counter counter_lua
 channel in in
 channel out out
-file router.yaml /repo/dse/examples/gateway/model_router/router.yaml
+file counter.yaml /repo/dse/examples/gateway/model_counter/counter.yaml
 
 model gateway external=true
 channel in in
 channel out out
 
 workflow generate-gatewayfmu uses dse.fmi
-    var SIGNAL_GROUPS model/router/data/router.yaml
+    var SIGNAL_GROUPS model/counter/data/counter.yaml
     var FMU_NAME gateway
     var FMI_VERSION 2
     var VERSION 1.0.0

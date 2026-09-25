@@ -1,0 +1,34 @@
+---
+kind: SignalGroup
+metadata:
+  name: counter
+  labels:
+    channel: in
+    model: counter
+spec:
+  signals:
+    - signal: input
+      annotations:
+        direction: input
+    - signal: factor
+      annotations:
+        direction: input
+        fmi_variable_start_value: 1.0
+    - signal: offset
+      annotations:
+        direction: input
+---
+kind: SignalGroup
+metadata:
+  name: counter
+  labels:
+    channel: out
+    model: counter
+spec:
+  signals:
+    - signal: output
+      annotations:
+        direction: output
+    - signal: counter
+      annotations:
+        direction: output

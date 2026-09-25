@@ -47,6 +47,7 @@ typedef struct FmiGatewayParameter {
     const char* name;
     const char* type;
     char*       vref;
+    /* Legacy model envar value (stack.yaml), unused for script envars. */
     char*       default_value;
 } FmiGatewayParameter;
 
@@ -121,8 +122,8 @@ typedef struct FmiGateway {
             const char*          shutdown_cmd;
             FmiGatewayParameter* envar;
         } scripts;
-        /* Storage (double*) for scalar parameters (runtime and scripts). */
-        Vector parameters;
+        /* Storage (double*) for scalar inputs/parameters until indexed. */
+        Vector scalar_storage;
     } settings;
     bool binary_signals_reset;
 } FmiGateway;

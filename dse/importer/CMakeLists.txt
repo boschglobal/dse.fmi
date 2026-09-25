@@ -18,6 +18,7 @@ project(${MODULE}
 add_executable(${MODULE_LC}
     csv.c
     importer.c
+    init.c
     signal_bus.c
     xml.c
     ${CLIB_SOURCE_FILES}

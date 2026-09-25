@@ -92,6 +92,13 @@ typedef struct CsvDesc {
 #define CSV_DELIMITER   ",;\n"
 
 
+typedef struct InitList {
+    unsigned int* vr;
+    char**        val;
+    size_t        count;
+} InitList;
+
+
 /* xml.c */
 DLL_PRIVATE modelDescription* parse_model_desc(
     const char* docname, const char* platform);
@@ -112,6 +119,14 @@ CsvDesc* csv_open(const char* path);
 void csv_index(CsvDesc* c, unsigned int* rx_vr, double* rx_real, size_t count);
 bool csv_read_line(CsvDesc* c);
 void csv_close(CsvDesc* c);
+
+/* init.c */
+void    init_list_parse(InitList* l, const char* arg);
+void    init_list_free(InitList* l);
+double* init_real_values(InitList* l, modelDescription* desc);
+size_t  init_readback_alloc(modelDescription* desc, InitList* init_real,
+     unsigned int** vr, double** val);
+void    init_readback_log(unsigned int* vr, double* val, size_t count);
 
 
 #endif  // DSE_IMPORTER_IMPORTER_H_

@@ -24,7 +24,7 @@ static char* _get_fmu_env_value(FmuInstanceData* fmu, FmiGatewayParameter* e)
             &fmu->variables.scalar.input, (uint32_t)strtoul(e->vref, NULL, 10));
         if (value) {
             char* str_value = calloc(NUMERIC_ENVAR_LEN, sizeof(char));
-            snprintf(str_value, NUMERIC_ENVAR_LEN, "%d", (int)*value);
+            snprintf(str_value, NUMERIC_ENVAR_LEN, "%f", *value);
             return str_value;
         }
     }
@@ -40,14 +40,12 @@ static void _set_envar(FmuInstanceData* fmu)
         e++) {
         const char* env_value = getenv(e->name);
 
-        /* Set the ENV in order of priority: ENV, FMU, default. */
+        /* Set the ENV in order of priority: ENV, FMU (start value). */
         if (env_value == NULL) {
             char* fmu_value = _get_fmu_env_value(fmu, e);
             if (fmu_value) {
                 fmigateway_setenv(e->name, fmu_value);
                 free(fmu_value);
-            } else if (e->default_value != NULL) {
-                fmigateway_setenv(e->name, e->default_value);
             }
         }
     }

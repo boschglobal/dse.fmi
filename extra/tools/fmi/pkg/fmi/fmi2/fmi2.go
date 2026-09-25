@@ -249,17 +249,8 @@ func ScalarSignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGr
 			start = "0.0"
 		}
 
-		if v = (*signal.Annotations)["fmi_variable_start_value"]; v != nil {
-			switch v := v.(type) {
-			case int:
-				start = strconv.Itoa(v)
-			case float32:
-				start = fmt.Sprintf("%f", v)
-			case float64:
-				start = fmt.Sprintf("%f", v)
-			case string:
-				start = v
-			}
+		if s, ok := fmi.StartValue((*signal.Annotations)["fmi_variable_start_value"]); ok {
+			start = s
 		}
 		if v = (*signal.Annotations)["fmi_variable_vref"]; v != nil {
 			vRef := ""

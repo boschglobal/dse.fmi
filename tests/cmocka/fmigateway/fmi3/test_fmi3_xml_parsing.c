@@ -63,12 +63,11 @@ int test_fmigateway__fmi3_xml_teardown(void** state)
         e++) {
         free(e->vref);
         free((char*)e->name);
-        free(e->default_value);
     }
     free(fmi_gw->settings.scripts.envar);
 
-    VECTOR_FOREACH(&fmi_gw->settings.parameters, double*, p, free(*p));
-    vector_reset(&fmi_gw->settings.parameters);
+    VECTOR_FOREACH(&fmi_gw->settings.scalar_storage, double*, p, free(*p));
+    vector_reset(&fmi_gw->settings.scalar_storage);
 
     fmu_variable_index_destroy(&fmu->variables.string.input);
     vector_reset(&fmu->variables.scalar.input);
@@ -172,20 +171,20 @@ void test_fmigateway__fmi3_xml_script_envar(void** state)
     /* All three should be present (order: String then Float64). */
     assert_string_equal(envars[0].name, "envar0");
     assert_string_equal(envars[0].type, "String");
-    assert_string_equal(envars[0].default_value, "");
+    assert_string_equal(envars[0].vref, "2");
 
     assert_string_equal(envars[1].name, "envar1");
     assert_string_equal(envars[1].type, "Real");
-    assert_string_equal(envars[1].default_value, "0.000000");
+    assert_string_equal(envars[1].vref, "3");
 
     assert_string_equal(envars[2].name, "envar2");
     assert_string_equal(envars[2].type, "Real");
-    assert_string_equal(envars[2].default_value, "1.000000");
+    assert_string_equal(envars[2].vref, "4");
 
     /* Sentinel at end. */
     assert_null(envars[3].name);
 
-    /* String envar registered in string input vector. */
+    /* Values (start values) are held by the FMU variables. */
     assert_string_equal(
         // NOLINTNEXTLINE(build/include_what_you_use)
         (char*)fmu_variable_find(&fmu->variables.string.input, 2), "");
@@ -194,6 +193,19 @@ void test_fmigateway__fmi3_xml_script_envar(void** state)
         *(double*)fmu_variable_find(&fmu->variables.scalar.input, 3), 0.0, 0.0);
     assert_double_equal(
         *(double*)fmu_variable_find(&fmu->variables.scalar.input, 4), 1.0, 0.0);
+}
+
+
+void test_fmigateway__fmi3_xml_input_start_value(void** state)
+{
+    FmuInstanceData* fmu = *state;
+
+    fmigateway_parse_xml(fmu);
+
+    assert_double_equal(
+        *(double*)fmu_variable_find(&fmu->variables.scalar.input, 5), 2.5, 0.0);
+    /* Outputs are not indexed as inputs. */
+    assert_null(fmu_variable_find(&fmu->variables.scalar.input, 6));
 }
 
 
@@ -217,6 +229,8 @@ int run_fmigateway__fmi3_xml_parsing_tests(void)
             test_fmigateway__fmi3_xml_default_setup, t),
         cmocka_unit_test_setup_teardown(
             test_fmigateway__fmi3_xml_script_envar, s, t),
+        cmocka_unit_test_setup_teardown(
+            test_fmigateway__fmi3_xml_input_start_value, s, t),
     };
 
     return cmocka_run_group_tests_name("FMI3_XML_PARSING", tests, NULL, NULL);

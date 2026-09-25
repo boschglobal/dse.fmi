@@ -241,8 +241,8 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
         free(*(char**)vector_at(&fmi_gw->settings.runtime.cmds, i, NULL));
     }
     vector_reset(&fmi_gw->settings.runtime.cmds);
-    VECTOR_FOREACH(&fmi_gw->settings.parameters, double*, p, free(*p));
-    vector_reset(&fmi_gw->settings.parameters);
+    VECTOR_FOREACH(&fmi_gw->settings.scalar_storage, double*, p, free(*p));
+    vector_reset(&fmi_gw->settings.scalar_storage);
 
     FmiGatewaySession* session = fmi_gw->settings.session;
     if (session) {
@@ -273,7 +273,6 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
         e++) {
         free(e->vref);
         free((char*)e->name);
-        free(e->default_value);
     }
     free(fmi_gw->settings.scripts.envar);
     free(fmi_gw->settings.yaml_files);

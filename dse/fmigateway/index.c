@@ -123,11 +123,20 @@ void fmigateway_index_scalar_signals(
             if (strcmp(causality, "output") == 0) {
                 fmu_variable_add(output, vr, idx.scalar);
             } else if (strcmp(causality, "input") == 0) {
-                fmu_variable_add(input, vr, idx.scalar);
+                /* Inputs are already indexed by fmigateway_parse_xml(). */
+                FmuVariable* var =
+                    vector_find(input, &(FmuVariable){ .vr = vr }, 0, NULL);
+                if (var == NULL) {
+                    fmu_log(fmu, 0, "Info",
+                        "Input vr=%u not in modelDescription.xml", vr);
+                    continue;
+                }
+                /* Retain the start value, or value set before init. */
+                *idx.scalar = *(double*)var->ref;
+                var->ref = idx.scalar;
             }
         }
     }
-    vector_sort(input);
     vector_sort(output);
 
     fmu_log(fmu, 0, "Debug", "  Scalar: input=%u, output=%u",

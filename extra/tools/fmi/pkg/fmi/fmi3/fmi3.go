@@ -273,8 +273,8 @@ func ScalarSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 			variability = stringPtr("tunable")
 		}
 
-		if (*signal.Annotations)["fmi_variable_start_value"] != nil {
-			start = strconv.Itoa((*signal.Annotations)["fmi_variable_start_value"].(int))
+		if s, ok := fmi.StartValue((*signal.Annotations)["fmi_variable_start_value"]); ok {
+			start = s
 		}
 		if (*signal.Annotations)["fmi_variable_vref"] == nil {
 			return fmt.Errorf("could not get value reference for signal %s", signal.Signal)

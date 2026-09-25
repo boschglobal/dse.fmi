@@ -288,9 +288,9 @@ func (c *GenFmiGatewayCommand) createRuntime() error {
 
 	switch c.runtime {
 	case "simer":
-		// Add built-in gateway parameters.
-		c.realParams.Signals = append(c.realParams.Signals, schemaKind.Signal{
-			Signal: "Simer_Command_Selector",
+		// Add built-in gateway parameters (session_win32.c expects String vr=0, Real vr=1).
+		c.stringParams.Signals = append(c.stringParams.Signals, schemaKind.Signal{
+			Signal: "Simer_Command",
 			Annotations: &schemaKind.Annotations{
 				"fmi_variable_causality": "parameter",
 				"fmi_variable_vref":      c.signalIdx,
@@ -300,8 +300,8 @@ func (c *GenFmiGatewayCommand) createRuntime() error {
 			},
 		})
 		c.signalIdx++
-		c.stringParams.Signals = append(c.stringParams.Signals, schemaKind.Signal{
-			Signal: "Simer_Command",
+		c.realParams.Signals = append(c.realParams.Signals, schemaKind.Signal{
+			Signal: "Simer_Command_Selector",
 			Annotations: &schemaKind.Annotations{
 				"fmi_variable_causality": "parameter",
 				"fmi_variable_vref":      c.signalIdx,
@@ -365,6 +365,10 @@ func (c *GenFmiGatewayCommand) patchSignal(vr *int, sgType string, signals []sch
 			"fmi_variable_vref":      *vr,
 			"fmi_variable_type":      sgType,
 			"fmi_variable_name":      s.Signal,
+		}
+		if start := (*s.Annotations)["fmi_variable_start_value"]; start != nil &&
+			(causality == "input" || causality == "parameter") {
+			annotations["fmi_variable_start_value"] = start
 		}
 		*s.Annotations = annotations
 		signalList = append(signalList, s)
@@ -526,15 +530,15 @@ func (c *GenFmiGatewayCommand) getEnvar(envarList interface{}, expectedType stri
 			continue
 		}
 		var start string
-		if _start, ok := anns["default"].(string); ok {
-			start = _start
+		if _start := anns["default"]; _start != nil {
+			start = fmt.Sprintf("%v", _start)
 		}
 		signal := schemaKind.Signal{
 			Signal: _name,
 			Annotations: &schemaKind.Annotations{
-				"fmi_variable_causality": "parameter",
-				"fmi_variable_vref":      c.signalIdx,
-				"fmi_variable_start":     start,
+				"fmi_variable_causality":   "parameter",
+				"fmi_variable_vref":        c.signalIdx,
+				"fmi_variable_start_value": start,
 				"fmi_annotations": map[string]interface{}{
 					"dse.fmi.gateway.script.parameter": nil,
 				},
@@ -588,9 +592,9 @@ func (c *GenFmiGatewayCommand) parseParametersCsv() error {
 		signal := schemaKind.Signal{
 			Signal: strings.TrimSpace(record[0]),
 			Annotations: &schemaKind.Annotations{
-				"fmi_variable_causality": "parameter",
-				"fmi_variable_vref":      c.signalIdx,
-				"fmi_variable_start":     defaultValue,
+				"fmi_variable_causality":   "parameter",
+				"fmi_variable_vref":        c.signalIdx,
+				"fmi_variable_start_value": defaultValue,
 				"fmi_annotations": map[string]interface{}{
 					"dse.fmi.gateway.script.parameter": nil,
 				},

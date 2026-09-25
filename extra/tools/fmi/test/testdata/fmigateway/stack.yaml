@@ -52,6 +52,7 @@ spec:
           - name: envar1
             type: real
           - name: envar2
+            default: 1.5
       runtime:
         env:
           # Gateway scripts.

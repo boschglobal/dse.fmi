@@ -175,7 +175,8 @@ void test_fmigateway__fmi2_ExitInitializationMode(void** state)
 
     assert_string_equal(fmi_gw->model->mi->name, "gateway");
 
-    assert_int_equal(vector_len(&inst->variables.scalar.input), 5);
+    /* XML: Real parameters (1,3,4) and inputs (5..15, 1001, 1004). */
+    assert_int_equal(vector_len(&inst->variables.scalar.input), 11);
     assert_int_equal(vector_len(&inst->variables.scalar.output), 2);
     for (SignalVector* sv = fmi_gw->model->sv; sv && sv->name; sv++) {
         if (sv->is_binary) continue;
@@ -394,6 +395,41 @@ void test_fmigateway__fmi2_runtime_legacy(void** state)
 }
 
 
+void test_fmigateway__fmi2_DOUBLE_pre_init(void** state)
+{
+    fmi2_setup* setup = *state;
+
+    FmuInstanceData* inst = fmi2Instantiate(setup->instance_name,
+        setup->fmu_type, setup->fmu_guid, setup->fmu_resource_location,
+        setup->functions, setup->visible, setup->logging_on);
+
+    /* Start value from XML. */
+    const unsigned int VR_DBL_IN[] = { 1001, 1004 };
+    double             VALUE[] = { 0.0, 0.0 };
+    fmi2GetReal(inst, VR_DBL_IN, 2, VALUE);
+    assert_double_equal(VALUE[0], 1.5, 0.0);
+    assert_double_equal(VALUE[1], 0.0, 0.0);
+
+    /* Value set before init is retained. */
+    const unsigned int VR_SET[] = { 1004 };
+    const double       SET_VALUE[] = { 2.5 };
+    fmi2SetReal(inst, VR_SET, 1, SET_VALUE);
+
+    fmi2ExitInitializationMode(inst);
+    FmiGateway* fmi_gw = inst->data;
+
+    for (SignalVector* sv = fmi_gw->model->sv; sv && sv->name; sv++) {
+        if (sv->is_binary) continue;
+        assert_double_equal(sv->scalar[0], 1.5, 0.0);
+        assert_double_equal(sv->scalar[2], 2.5, 0.0);
+        assert_ptr_equal(fmu_variable_find(&inst->variables.scalar.input, 1001),
+            &sv->scalar[0]);
+    }
+
+    fmi2FreeInstance(inst);
+}
+
+
 int run_fmigateway__fmi2_tests(void)
 {
     void* s = test_fmigateway__fmi2_setup;
@@ -406,6 +442,8 @@ int run_fmigateway__fmi2_tests(void)
         cmocka_unit_test_setup_teardown(
             test_fmigateway__fmi2_ExitInitializationMode, s, t),
         cmocka_unit_test_setup_teardown(test_fmigateway__fmi2_DOUBLE, s, t),
+        cmocka_unit_test_setup_teardown(
+            test_fmigateway__fmi2_DOUBLE_pre_init, s, t),
         cmocka_unit_test_setup_teardown(test_fmigateway__fmi2_BINARY, s, t),
         cmocka_unit_test_setup_teardown(
             test_fmigateway__fmi2_runtime_simer, s, t),

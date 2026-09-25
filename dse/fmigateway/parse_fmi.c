@@ -32,8 +32,8 @@ typedef struct FmiParseConfig {
     const char* cmd_xpath_fmt;
     const char* logloc_xpath;
     const char* loglevel_xpath;
-    const char* str_rt_param_xpath_fmt;
-    const char* float_rt_param_xpath_fmt;
+    const char* scalar_var_xpath;
+    const char* string_param_xpath;
     const char* str_envar_xpath;
     const char* float_envar_xpath;
     int         fmi_version;
@@ -65,6 +65,11 @@ typedef struct FmiParseGenContext {
     "[@causality='parameter']"                                                 \
     "[" element "]"                                                            \
     "[Annotations/Tool[@name='dse.fmi.gateway." key "']]"
+#define FMI2_SCALAR_VAR                                                        \
+    "//ModelVariables/ScalarVariable"                                          \
+    "[@causality='input' or @causality='parameter'][Real]"
+#define FMI2_STRING_PARAM                                                      \
+    "//ModelVariables/ScalarVariable[@causality='parameter'][String]"
 
 
 /* FMI3: annotations live under fmiModelDescription/Annotations, by @type. */
@@ -77,6 +82,9 @@ typedef struct FmiParseGenContext {
 #define FMI3_MV(element, key)                                                  \
     "//ModelVariables/" element "[@causality='parameter']"                     \
     "[Annotations/Annotation[@type='dse.fmi.gateway." key "']]"
+#define FMI3_SCALAR_VAR                                                        \
+    "//ModelVariables/Float64[@causality='input' or @causality='parameter']"
+#define FMI3_STRING_PARAM "//ModelVariables/String[@causality='parameter']"
 
 
 static const FmiParseConfig _cfg_fmi2 = {
@@ -85,8 +93,8 @@ static const FmiParseConfig _cfg_fmi2 = {
     .cmd_xpath_fmt = FMI2_ANN_FMT("%s.cmd."),
     .logloc_xpath = FMI2_ANN("loglocation"),
     .loglevel_xpath = FMI2_ANN("loglevel"),
-    .str_rt_param_xpath_fmt = FMI2_MV("String", "%s.parameter"),
-    .float_rt_param_xpath_fmt = FMI2_MV("Real", "%s.parameter"),
+    .scalar_var_xpath = FMI2_SCALAR_VAR,
+    .string_param_xpath = FMI2_STRING_PARAM,
     .str_envar_xpath = FMI2_MV("String", "script.parameter"),
     .float_envar_xpath = FMI2_MV("Real", "script.parameter"),
 };
@@ -98,8 +106,8 @@ static const FmiParseConfig _cfg_fmi3 = {
     .cmd_xpath_fmt = FMI3_ANN_FMT("%s.cmd."),
     .logloc_xpath = FMI3_ANN("loglocation"),
     .loglevel_xpath = FMI3_ANN("loglevel"),
-    .str_rt_param_xpath_fmt = FMI3_MV("String", "%s.parameter"),
-    .float_rt_param_xpath_fmt = FMI3_MV("Float64", "%s.parameter"),
+    .scalar_var_xpath = FMI3_SCALAR_VAR,
+    .string_param_xpath = FMI3_STRING_PARAM,
     .str_envar_xpath = FMI3_MV("String", "script.parameter"),
     .float_envar_xpath = FMI3_MV("Float64", "script.parameter"),
 };
@@ -156,38 +164,22 @@ static void* _cmd_generator(xmlNodePtr node, void* userdata)
 }
 
 
-static void _index_scalar_parameter(
+static void _index_scalar_variable(
     FmuInstanceData* fmu, uint32_t vr, double value)
 {
     FmiGateway* fmi_gw = fmu->data;
     double*     storage = malloc(sizeof(double));
     *storage = value;
-    vector_push(&fmi_gw->settings.parameters, &storage);
+    vector_push(&fmi_gw->settings.scalar_storage, &storage);
     fmu_variable_add(&fmu->variables.scalar.input, vr, storage);
 }
 
 
-static void _index_string_parameter(
+static void _index_string_variable(
     FmuInstanceData* fmu, uint32_t vr, const char* value)
 {
     // NOLINTNEXTLINE(build/include_what_you_use)
     fmu_variable_add(&fmu->variables.string.input, vr, strdup(value));
-}
-
-
-static void* _rt_param_generator(xmlNodePtr node, void* userdata)
-{
-    FmiParseGenContext* gctx = userdata;
-    xmlChar*            vref = xmlGetProp(node, BAD_CAST "valueReference");
-    if (vref) {
-        uint32_t vr = (uint32_t)strtoul((char*)vref, NULL, 10);
-        if (gctx->is_string)
-            _index_string_parameter(gctx->fmu, vr, "");
-        else
-            _index_scalar_parameter(gctx->fmu, vr, 0.0);
-        xmlFree(vref);
-    }
-    return userdata; /* sentinel: non-NULL continues enumeration */
 }
 
 
@@ -199,21 +191,6 @@ static void _parse_runtime(
     if (fmi_gw->settings.runtime.type == FMIGATEWAY_RUNTIME_LEGACY) return;
 
     const char* rt_name = _runtime_name(fmi_gw->settings.runtime.type);
-
-    /* String and float runtime parameters. */
-    const char* rt_param_fmts[] = {
-        cfg->str_rt_param_xpath_fmt,
-        cfg->float_rt_param_xpath_fmt,
-    };
-    for (int i = 0; i < 2; i++) {
-        char param_xpath[256];
-        snprintf(param_xpath, sizeof(param_xpath), rt_param_fmts[i], rt_name);
-        FmiParseGenContext param_ctx = { .fmu = fmu, .is_string = (i == 0) };
-        uint32_t           param_idx = 0;
-        while (xml_object_enumerator(ctx, param_xpath, &param_idx,
-                   _rt_param_generator, &param_ctx) != NULL) {
-        }
-    }
 
     /* Collect cmd.N annotations. */
     char cmd_xpath[256];
@@ -262,11 +239,46 @@ static xmlChar* _get_start_value(
 }
 
 
+static void* _variable_generator(xmlNodePtr node, void* userdata)
+{
+    FmiParseGenContext* gctx = userdata;
+    xmlChar*            vref = xmlGetProp(node, BAD_CAST "valueReference");
+    if (vref == NULL) return userdata;
+
+    uint32_t vr = (uint32_t)strtoul((char*)vref, NULL, 10);
+    xmlChar* start =
+        _get_start_value(node, gctx->is_string, gctx->cfg->fmi_version);
+    if (gctx->is_string) {
+        _index_string_variable(gctx->fmu, vr, start ? (char*)start : "");
+    } else {
+        _index_scalar_variable(
+            gctx->fmu, vr, start ? strtod((char*)start, NULL) : 0.0);
+    }
+    if (start) xmlFree(start);
+    xmlFree(vref);
+    return userdata; /* sentinel: non-NULL continues enumeration */
+}
+
+
+static void _parse_variables(
+    FmuInstanceData* fmu, xmlXPathContextPtr ctx, const FmiParseConfig* cfg)
+{
+    const char* xpaths[] = { cfg->string_param_xpath, cfg->scalar_var_xpath };
+    for (int i = 0; i < 2; i++) {
+        FmiParseGenContext gctx = {
+            .fmu = fmu, .cfg = cfg, .is_string = (i == 0)
+        };
+        uint32_t index = 0;
+        while (xml_object_enumerator(ctx, xpaths[i], &index,
+                   _variable_generator, &gctx) != NULL) {
+        }
+    }
+}
+
+
 static void* _envar_generator(xmlNodePtr node, void* userdata)
 {
-    FmiParseGenContext*   gctx = userdata;
-    FmuInstanceData*      fmu = gctx->fmu;
-    const FmiParseConfig* cfg = gctx->cfg;
+    FmiParseGenContext* gctx = userdata;
 
     xmlChar* vref = xmlGetProp(node, BAD_CAST "valueReference");
     xmlChar* sv_name = xmlGetProp(node, BAD_CAST "name");
@@ -276,32 +288,15 @@ static void* _envar_generator(xmlNodePtr node, void* userdata)
         return NULL;
     }
 
-    xmlChar* start = _get_start_value(node, gctx->is_string, cfg->fmi_version);
-    double   value = 0.0;
-
+    /* Value is the FMU variable, indexed with its start value. */
     FmiGatewayParameter* envar = calloc(1, sizeof(FmiGatewayParameter));
     envar->vref = strdup((char*)vref);
     envar->name = strdup((char*)sv_name);
-    if (gctx->is_string) {
-        envar->type = "String";
-        envar->default_value = strdup(start ? (char*)start : "");
-    } else {
-        envar->type = "Real";
-        if (start) value = strtod((char*)start, NULL);
-        envar->default_value = calloc(NUMERIC_ENVAR_LEN, sizeof(char));
-        snprintf(envar->default_value, NUMERIC_ENVAR_LEN, "%f", value);
-    }
+    envar->type = gctx->is_string ? "String" : "Real";
 
-    if (start) xmlFree(start);
     xmlFree(vref);
     xmlFree(sv_name);
 
-    uint32_t vr = (uint32_t)strtoul(envar->vref, NULL, 10);
-    if (gctx->is_string) {
-        _index_string_parameter(fmu, vr, envar->default_value);
-    } else {
-        _index_scalar_parameter(fmu, vr, value);
-    }
     return envar;
 }
 
@@ -346,12 +341,13 @@ static void fmigateway_parse_xml_config(
     }
 
     FmiGateway* fmi_gw = fmu->data;
-    fmi_gw->settings.parameters = vector_make(sizeof(double*), 0, NULL);
+    fmi_gw->settings.scalar_storage = vector_make(sizeof(double*), 0, NULL);
 
     xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
     if (ctx) {
         _parse_simulation_settings(fmu, ctx, cfg);
         _parse_runtime(fmu, ctx, cfg);
+        _parse_variables(fmu, ctx, cfg);
         _parse_xml_script_envar(fmu, ctx, cfg);
         xmlXPathFreeContext(ctx);
     }
@@ -374,10 +370,12 @@ information is extracted:
 
 - Simulation settings: model name, end time, step size, log level.
 - Runtime configuration: type (simer/legacy), log location, command list.
-- Runtime parameters: string and scalar FMU variables registered to the
-  runtime (e.g. simer) as input parameters.
+- Input and parameter variables: Real/Float64 inputs and parameters, and String
+  parameters, are indexed with their start value so that values set before
+  `fmu_init()` are retained.
 - Script environment variables: string and scalar FMU variables annotated as
-  script parameters, including their default values.
+  script parameters. Their value is taken from the FMU variable (start value,
+  or as set by the importer).
 
 Parameters
 ----------

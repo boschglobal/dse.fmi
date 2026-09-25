@@ -116,6 +116,12 @@
                   </Tool>
               </Annotations>
           </ScalarVariable>
+          <ScalarVariable name="scalar_in" valueReference="1001" causality="input">
+              <Real start="1.5"></Real>
+          </ScalarVariable>
+          <ScalarVariable name="scalar_in2" valueReference="1004" causality="input">
+              <Real start="0.0"></Real>
+          </ScalarVariable>
       </ModelVariables>
       <ModelStructure>
           <Outputs>
