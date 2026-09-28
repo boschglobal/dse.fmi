@@ -25,22 +25,24 @@ typedef struct WindowsProcess {
 } WindowsProcess;
 
 
-/*
+/**
 _build_cmd
 ==========
 
-Build the command for the modelC process from the yaml parameters.
-Endtime and stepsize are optional.
+Builds the command line used to start a modelC process from the model
+configuration and resource path.
 
 Parameters
 ----------
-w_model (WindowsModel)
-: Model Descriptor containing parameter information.
+w_model (WindowsModel*)
+: Model descriptor containing parameter information.
+path (const char*)
+: Working directory for the modelC process.
 
 Returns
 -------
-string
-: string containing the cmd to start a windows model
+char*
+: Heap-allocated command string. The caller must free the returned string.
 */
 static char* _build_cmd(WindowsModel* w_model, const char* path)
 {
@@ -69,12 +71,32 @@ static char* _build_cmd(WindowsModel* w_model, const char* path)
 }
 
 
+/**
+fmigateway_file_exists
+======================
+
+Searches the FMU resource directory for a batch or PowerShell script with
+the supplied base name.
+
+Parameters
+----------
+fmu (FmuInstanceData*)
+: The FMU descriptor containing the resource directory.
+name (const char*)
+: The script base name without its extension.
+
+Returns
+-------
+char*
+: Heap-allocated path to the first existing script, or NULL if none exists.
+The caller must free the returned path.
+*/
 char* fmigateway_file_exists(FmuInstanceData* fmu, const char* name)
 {
     static const char* const extensions[] = { "bat", "ps1", NULL };
     char                     path[PATH_MAX];
     for (const char* const* ext = extensions; *ext; ext++) {
-        snprintf(path, sizeof(path), "%s\\..\\%s.%s",
+        snprintf(path, sizeof(path), "%s\\%s.%s",
             fmu->instance.resource_location, name, *ext);
         DWORD attr = GetFileAttributesA(path);
         if (attr != INVALID_FILE_ATTRIBUTES &&
@@ -86,6 +108,22 @@ char* fmigateway_file_exists(FmuInstanceData* fmu, const char* name)
 }
 
 
+/**
+_create_file
+===========
+
+Creates or replaces a writable inheritable file handle.
+
+Parameters
+----------
+name (char*)
+: Path of the file to create.
+
+Returns
+-------
+HANDLE
+: The created Windows file handle, or INVALID_HANDLE_VALUE on failure.
+*/
 static HANDLE _create_file(char* name)
 {
     SECURITY_ATTRIBUTES sa;
@@ -102,17 +140,17 @@ static HANDLE _create_file(char* name)
 }
 
 
-/*
+/**
 _gracefully_terminate_process
 =============================
 
-Gracefully terminate a windows process by sending a Ctrl C, Sigint
-Signal to the process.
+Gracefully terminates a Windows process by attaching to its console and
+sending a CTRL_BREAK_EVENT signal.
 
 Parameters
 ----------
-w_model (WindowsModel)
-: Model Descriptor containing parameter information.
+w_model (WindowsModel*)
+: Model descriptor containing parameter information.
 */
 static void _gracefully_terminate_process(
     FmuInstanceData* fmu, WindowsModel* w_model)
@@ -181,18 +219,18 @@ cleanup:
 }
 
 
-/*
+/**
 _start_redis
 ============
 
-Create and start a new redis process.
+Creates and starts a Redis process.
 
 Parameters
 ----------
-w_model (WindowsModel)
+w_model (WindowsModel*)
 : Model Descriptor containing parameter information.
 
-w_process (WindowsProcess)
+w_process (WindowsProcess*)
 : Process Descriptor, references various data.
 
 fmu (FmuInstanceData*)
@@ -218,22 +256,23 @@ static void _start_redis(
 }
 
 
-/*
+/**
 _build_env
 ==========
 
-Add model specific environment variables to the parent environment
-and return a new environment block as string.
+Adds model-specific environment variables to the parent environment and
+returns a new double-null-terminated environment block.
 
 Parameters
 ----------
-w_model (WindowsModel)
-: Model Descriptor containing parameter information.
+m (WindowsModel*)
+: Model descriptor containing parameter information.
 
-Return
-------
+Returns
+-------
 char*
-: A new environment block as a string, double-null terminated.
+: A heap-allocated environment block, double-null terminated, or NULL when
+    no model environment variables are configured. The caller must free it.
 */
 static char* _build_env(WindowsModel* m)
 {
@@ -281,18 +320,19 @@ static char* _build_env(WindowsModel* m)
 }
 
 
-/*
+/**
 _start_model
 ============
 
-Create and start a new modelC process.
+Creates and starts a modelC process, optionally redirecting its standard
+output and error streams to a log file.
 
 Parameters
 ----------
-w_model (WindowsModel)
-: Model Descriptor containing parameter information.
+m (WindowsModel*)
+: Model descriptor containing parameter information.
 
-w_process (WindowsProcess)
+w_process (WindowsProcess*)
 : Process Descriptor, references various data.
 
 fmu (FmuInstanceData*)
@@ -337,16 +377,16 @@ static void _start_model(FmuInstanceData* fmu, WindowsModel* m)
 }
 
 
-/*
+/**
 _configure_process
 ==================
 
-Initialize the process handles.
+Initializes the Windows process startup and process information structures.
 
 Parameters
 ----------
-w_model (WindowsModel)
-: Model Descriptor containing parameter information.
+w_process (WindowsProcess*)
+: Process descriptor to initialize.
 
 visible (bool)
 : Indicates whether the process window should be visible.
@@ -376,18 +416,18 @@ static void _configure_process(
 }
 
 
-/*
+/**
 _check_alive
 ============
 
-Check if a process is still running.
+Checks whether a Windows process is still running.
 
 Parameters
 ----------
 fmu (FmuInstanceData*)
 : The FMU Descriptor object representing an instance of the FMU Model.
 
-w_model (WindowsModel)
+w_model (WindowsModel*)
 : Model Descriptor containing parameter information.
 
 Returns
@@ -413,22 +453,28 @@ static bool _check_alive(FmuInstanceData* fmu, WindowsModel* w_model)
 }
 
 
-/*
+/**
 _check_shutdown
 ===============
 
-Observe a process and check if it is terminated.
+Waits for a process to terminate, closes its handles, and releases its
+process descriptor.
 
 Parameters
 ----------
 fmu (FmuInstanceData*)
 : The FMU Descriptor object representing an instance of the FMU Model.
 
-w_model (WindowsModel)
+w_model (WindowsModel*)
 : Model Descriptor containing parameter information.
 
-sec (integer)
-: Time in seconds.
+sec (int)
+: Maximum wait time in seconds.
+
+Returns
+-------
+int32_t
+: 0 if the process terminated, or -1 if it remained active.
 */
 static int32_t _check_shutdown(
     FmuInstanceData* fmu, WindowsModel* w_model, int sec)
@@ -460,12 +506,11 @@ static int32_t _check_shutdown(
 
 
 /**
-fmigateway_session_windows_start
-================================
+fmigateway_start_models
+=======================
 
-Creates windows processes based on the parameters
-configured in a yaml file. Process informations are
-stored for later termination.
+Creates Windows processes based on the configured session models and stores
+their process information for later termination.
 
 Parameters
 ----------
@@ -508,10 +553,11 @@ void fmigateway_start_models(FmuInstanceData* fmu)
 
 
 /**
-fmigateway_sync_extra_step
-==========================
+_sync_extra_step
+===============
 
-Performs an extra step to shutdown models.
+Performs one additional gateway synchronization step so models can shut down
+after receiving their termination signal.
 
 Parameters
 ----------
@@ -538,6 +584,18 @@ static void _sync_extra_step(FmuInstanceData* fmu)
 }
 
 
+/**
+_shutdown_models
+================
+
+Signals all configured model processes to terminate and performs an extra
+gateway step when the models have not shut down yet.
+
+Parameters
+----------
+fmu (FmuInstanceData*)
+: The FMU descriptor containing the gateway session and model state.
+*/
 static void _shutdown_models(FmuInstanceData* fmu)
 {
     FmiGateway*        fmi_gw = fmu->data;
@@ -569,13 +627,14 @@ static void _shutdown_models(FmuInstanceData* fmu)
     }
 }
 
+
 /**
 fmigateway_shutdown_models
 ==========================
 
-Terminates all previously started windows processes.
-After sending the termination signals, one additional
-step is made by the gateway to close the simulation.
+Terminates all previously started Windows processes, including the transport
+and SIMER processes. An additional gateway step may be made for model
+shutdown before process handles are closed.
 
 Parameters
 ----------
@@ -618,12 +677,11 @@ void fmigateway_shutdown_models(FmuInstanceData* fmu)
 fmigateway_setenv
 =================
 
-Set an environment variable.
+Sets an environment variable for the current process.
 
 Parameters
 ----------
 name (const char*)
-: The name of the environment variable.
 value (const char*)
 : The value to set for the environment variable.
 
@@ -638,17 +696,19 @@ int fmigateway_setenv(const char* name, const char* value)
 }
 
 
-/*
+/**
 fmigateway_run_parallelisation
 ==============================
 
-Run a PowerShell script and return its first line of stdout as a
-heap-allocated string. Caller must free() the returned string.
+Runs a PowerShell or batch script and returns its first line of standard
+output as a heap-allocated string. The caller must free the returned string.
 
 Parameters
 ----------
+fmu (FmuInstanceData*)
+: The FMU descriptor used for logging and command execution.
 script_path (const char*)
-: Absolute path to the .ps1 script to execute.
+: Absolute path to the script to execute.
 
 Returns
 -------
@@ -709,12 +769,13 @@ static char* fmigateway_run_parallelisation(
     return (*output) ? strdup(output) : NULL;
 }
 
-/*
+
+/**
 fmigateway_parallelize
 ======================
 
-Run the parallelisation.ps1 script (if present) and capture its output.
-The output is used to update the resource location of the FMU instance.
+Runs the parallelisation batch or PowerShell script, if present, and uses its
+output to update the FMU instance resource location.
 
 Parameters
 ----------
@@ -743,6 +804,17 @@ void fmigateway_parallelize(FmuInstanceData* fmu)
 }
 
 
+/**
+fmigateway_teardown
+===================
+
+Runs the optional teardown batch script from the FMU resource directory.
+
+Parameters
+----------
+fmu (FmuInstanceData*)
+: The FMU descriptor containing the resource directory.
+*/
 void fmigateway_teardown(FmuInstanceData* fmu)
 {
     char* path = dse_path_cat(fmu->instance.resource_location, "teardown.bat");
@@ -755,11 +827,11 @@ void fmigateway_teardown(FmuInstanceData* fmu)
 }
 
 
-/*
+/**
 fmigateway_run_cmd
 =================
 
-Run a command using CreateProcess and wait for its completion.
+Runs a command using CreateProcess and waits for it to complete.
 
 Parameters
 ----------
@@ -819,6 +891,19 @@ int fmigateway_run_cmd(FmuInstanceData* fmu, const char* cmd_string)
     return 0;
 }
 
+
+/**
+fmigateway_run_simer
+====================
+
+Starts the SIMER process using the selected runtime command and stores its
+process descriptor in the gateway runtime settings.
+
+Parameters
+----------
+fmu (FmuInstanceData*)
+: The FMU descriptor containing the gateway runtime configuration.
+*/
 void fmigateway_run_simer(FmuInstanceData* fmu)
 {
     FmiGateway* fmi_gw = fmu->data;
@@ -896,6 +981,19 @@ void fmigateway_run_simer(FmuInstanceData* fmu)
 }
 
 
+/**
+fmigateway_stop_simer
+=====================
+
+Stops the SIMER process by sending CTRL_BREAK_EVENT, falling back to forced
+termination when the process console cannot be attached, and releases its
+process handles.
+
+Parameters
+----------
+fmu (FmuInstanceData*)
+: The FMU descriptor containing the SIMER process.
+*/
 void fmigateway_stop_simer(FmuInstanceData* fmu)
 {
     FmiGateway*     fmi_gw = fmu->data;
