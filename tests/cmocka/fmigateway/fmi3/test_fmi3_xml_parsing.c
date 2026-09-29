@@ -22,8 +22,8 @@ int test_fmigateway__fmi3_xml_setup(void** state)
         strdup("../../../../tests/cmocka/fmigateway/fmi3/data/fmi3/resources");
     fmu->instance.version = 3;
 
-    hashmap_init(&fmu->variables.string.input);
-    hashmap_init(&fmu->variables.scalar.input);
+    fmu->variables.string.input = fmu_variable_index_make();
+    fmu->variables.scalar.input = fmu_variable_index_make();
 
     *state = fmu;
     return 0;
@@ -40,8 +40,8 @@ int test_fmigateway__fmi3_xml_default_setup(void** state)
         "../../../../tests/cmocka/fmigateway/fmi3/data/fmi3_default/resources");
     fmu->instance.version = 3;
 
-    hashmap_init(&fmu->variables.string.input);
-    hashmap_init(&fmu->variables.scalar.input);
+    fmu->variables.string.input = fmu_variable_index_make();
+    fmu->variables.scalar.input = fmu_variable_index_make();
 
     *state = fmu;
     return 0;
@@ -67,8 +67,11 @@ int test_fmigateway__fmi3_xml_teardown(void** state)
     }
     free(fmi_gw->settings.scripts.envar);
 
-    hashmap_destroy(&fmu->variables.string.input);
-    hashmap_destroy(&fmu->variables.scalar.input);
+    VECTOR_FOREACH(&fmi_gw->settings.parameters, double*, p, free(*p));
+    vector_reset(&fmi_gw->settings.parameters);
+
+    fmu_variable_index_destroy(&fmu->variables.string.input);
+    vector_reset(&fmu->variables.scalar.input);
 
     free(fmu->instance.resource_location);
     free((char*)fmi_gw->settings.model_name);
@@ -116,10 +119,10 @@ void test_fmigateway__fmi3_xml_simer_parameters(void** state)
 
     /* valueReference="0" -> Simer_Command (String) */
     assert_string_equal(
-        (char*)hashmap_get(&fmu->variables.string.input, "0"), "");
+        (char*)fmu_variable_find(&fmu->variables.string.input, 0), "");
     /* valueReference="1" -> Simer_Command_Selector (Float64) */
     assert_double_equal(
-        *(double*)hashmap_get(&fmu->variables.scalar.input, "1"), 0.0, 0.0);
+        *(double*)fmu_variable_find(&fmu->variables.scalar.input, 1), 0.0, 0.0);
 }
 
 
@@ -149,8 +152,8 @@ void test_fmigateway__fmi3_xml_simer_parameters_default(void** state)
     /* No simer.parameter variables -> keys absent from both inputs. */
     fmigateway_parse_xml(fmu);
 
-    assert_null(hashmap_get(&fmu->variables.string.input, "0"));
-    assert_null(hashmap_get(&fmu->variables.scalar.input, "1"));
+    assert_null(fmu_variable_find(&fmu->variables.string.input, 0));
+    assert_null(fmu_variable_find(&fmu->variables.scalar.input, 1));
 }
 
 
@@ -182,14 +185,15 @@ void test_fmigateway__fmi3_xml_script_envar(void** state)
     /* Sentinel at end. */
     assert_null(envars[3].name);
 
-    /* String envar registered in string input hashmap. */
+    /* String envar registered in string input vector. */
     assert_string_equal(
-        (char*)hashmap_get(&fmu->variables.string.input, "2"), "");  // NOLINT
-    /* Float64 envars registered in scalar input hashmap. */
+        // NOLINTNEXTLINE(build/include_what_you_use)
+        (char*)fmu_variable_find(&fmu->variables.string.input, 2), "");
+    /* Float64 envars registered in scalar input vector. */
     assert_double_equal(
-        *(double*)hashmap_get(&fmu->variables.scalar.input, "3"), 0.0, 0.0);
+        *(double*)fmu_variable_find(&fmu->variables.scalar.input, 3), 0.0, 0.0);
     assert_double_equal(
-        *(double*)hashmap_get(&fmu->variables.scalar.input, "4"), 1.0, 0.0);
+        *(double*)fmu_variable_find(&fmu->variables.scalar.input, 4), 1.0, 0.0);
 }
 
 

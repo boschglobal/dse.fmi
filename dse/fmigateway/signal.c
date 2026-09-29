@@ -63,17 +63,6 @@ void fmu_signals_setup(FmuInstanceData* fmu)
 }
 
 
-static inline int _free_fmu_idx(void* map_item, void* additional_data)
-{
-    UNUSED(additional_data);
-    FmuSignalVectorIndex* fmu_idx = map_item;
-    if (fmu_idx) {
-        free(fmu_idx->sv);
-    }
-    return 0;
-}
-
-
 /**
 fmu_signals_remove
 ==================
@@ -89,8 +78,10 @@ void fmu_signals_remove(FmuInstanceData* fmu)
 {
     assert(fmu);
     fmu_log(fmu, 0, "Debug", "Removing additional signal data...");
-    hashmap_iterator(&fmu->variables.binary.rx, _free_fmu_idx, false, NULL);
-    hashmap_iterator(&fmu->variables.binary.tx, _free_fmu_idx, false, NULL);
+    VECTOR_FOREACH(&fmu->variables.binary.rx, FmuVariable, v,
+        free(((FmuSignalVectorIndex*)v->ref)->sv));
+    VECTOR_FOREACH(&fmu->variables.binary.tx, FmuVariable, v,
+        free(((FmuSignalVectorIndex*)v->ref)->sv));
 }
 
 

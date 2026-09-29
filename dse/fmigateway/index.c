@@ -100,7 +100,7 @@ static const char** _signal_annotation_list(ModelInstanceSpec* mi,
 
 
 void fmigateway_index_scalar_signals(
-    FmuInstanceData* fmu, ModelGatewayDesc* m, HashMap* input, HashMap* output)
+    FmuInstanceData* fmu, ModelGatewayDesc* m, Vector* input, Vector* output)
 {
     for (SignalVector* sv = m->sv; sv && sv->name; sv++) {
         if (sv->is_binary) continue;
@@ -119,21 +119,24 @@ void fmigateway_index_scalar_signals(
             /* Index based on causality. */
             const char* causality =
                 signal_annotation(sv, i, "fmi_variable_causality", NULL);
+            uint32_t vr = (uint32_t)strtoul(vref, NULL, 10);
             if (strcmp(causality, "output") == 0) {
-                hashmap_set(output, vref, idx.scalar);
+                fmu_variable_add(output, vr, idx.scalar);
             } else if (strcmp(causality, "input") == 0) {
-                hashmap_set(input, vref, idx.scalar);
+                fmu_variable_add(input, vr, idx.scalar);
             }
         }
     }
+    vector_sort(input);
+    vector_sort(output);
 
-    fmu_log(fmu, 0, "Debug", "  Scalar: input=%lu, output=%lu",
-        input->used_nodes, output->used_nodes);
+    fmu_log(fmu, 0, "Debug", "  Scalar: input=%u, output=%u",
+        (uint32_t)vector_len(input), (uint32_t)vector_len(output));
 }
 
 
-static inline void _set_binary_variable(ModelDesc* m, SignalVector* sv,
-    uint32_t index, HashMap* map, const char* vref)
+static inline void _set_binary_variable(
+    ModelDesc* m, SignalVector* sv, uint32_t index, Vector* v, const char* vref)
 {
     /* Locate the variable. */
     ModelSignalIndex idx = signal_index(m, sv->alias, sv->signal[index]);
@@ -146,12 +149,12 @@ static inline void _set_binary_variable(ModelDesc* m, SignalVector* sv,
     fmu_idx->sv->length = idx.sv->length;
     fmu_idx->sv->buffer_size = idx.sv->buffer_size;
     fmu_idx->vi = idx.signal;
-    hashmap_set_alt(map, vref, fmu_idx);
+    fmu_variable_add(v, (uint32_t)strtoul(vref, NULL, 10), fmu_idx);
 }
 
 
 void fmigateway_index_binary_signals(
-    FmuInstanceData* fmu, ModelGatewayDesc* m, HashMap* rx, HashMap* tx)
+    FmuInstanceData* fmu, ModelGatewayDesc* m, Vector* rx, Vector* tx)
 {
     for (ModelInstanceSpec* mi = m->sim->instance_list; mi && mi->name; mi++) {
         for (SignalVector* sv = mi->model_desc->sv; sv && sv->name; sv++) {
@@ -197,14 +200,16 @@ void fmigateway_index_binary_signals(
             }
         }
     }
+    vector_sort(rx);
+    vector_sort(tx);
 
-    fmu_log(fmu, 0, "Debug", "  Binary: rx=%lu, tx=%lu", rx->used_nodes,
-        tx->used_nodes);
+    fmu_log(fmu, 0, "Debug", "  Binary: rx=%u, tx=%u", (uint32_t)vector_len(rx),
+        (uint32_t)vector_len(tx));
 }
 
 
 void fmigateway_index_text_encoding(FmuInstanceData* fmu, ModelGatewayDesc* m,
-    HashMap* encode_func, HashMap* decode_func)
+    Vector* encode_func, Vector* decode_func)
 {
     for (ModelInstanceSpec* mi = m->sim->instance_list; mi && mi->name; mi++) {
         for (SignalVector* sv = mi->model_desc->sv; sv && sv->name; sv++) {
@@ -228,17 +233,20 @@ void fmigateway_index_text_encoding(FmuInstanceData* fmu, ModelGatewayDesc* m,
                 if (vref_list) {
                     for (size_t j = 0; vref_list[j]; j++) {
                         /* Value Reference for the RX variable. */
-                        const char* vref = vref_list[j];
+                        uint32_t vr = (uint32_t)strtoul(vref_list[j], NULL, 10);
 
                         /* Encoding. */
-                        hashmap_set(encode_func, vref, dse_ascii85_encode);
-                        hashmap_set(decode_func, vref, dse_ascii85_decode);
+                        fmu_variable_add(encode_func, vr, dse_ascii85_encode);
+                        fmu_variable_add(decode_func, vr, dse_ascii85_decode);
                     }
                     free(vref_list);
                 }
             }
         }
     }
-    fmu_log(fmu, 0, "Debug", "  Encoding: enc=%lu, dec=%lu",
-        encode_func->used_nodes, decode_func->used_nodes);
+    vector_sort(encode_func);
+    vector_sort(decode_func);
+
+    fmu_log(fmu, 0, "Debug", "  Encoding: enc=%u, dec=%u",
+        (uint32_t)vector_len(encode_func), (uint32_t)vector_len(decode_func));
 }

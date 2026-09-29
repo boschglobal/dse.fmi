@@ -17,8 +17,7 @@
 #include <dse/fmu/fmu.h>
 
 
-#define UNUSED(x)    ((void)x)
-#define VREF_KEY_LEN (10 + 1)
+#define UNUSED(x) ((void)x)
 
 
 /**
@@ -175,21 +174,21 @@ fmi2Component fmi2Instantiate(fmi2String instance_name, fmi2Type fmu_type,
         fmu->instance.resource_location);
 
     fmu_log(fmu, fmi2OK, "Debug", "Build indexes...");
-    hashmap_init(&fmu->variables.scalar.input);
-    hashmap_init(&fmu->variables.scalar.output);
-    hashmap_init(&fmu->variables.string.input);
-    hashmap_init(&fmu->variables.string.output);
-    hashmap_init(&fmu->variables.binary.rx);
-    hashmap_init(&fmu->variables.binary.tx);
-    hashmap_init(&fmu->variables.binary.encode_func);
-    hashmap_init(&fmu->variables.binary.decode_func);
+    fmu->variables.scalar.input = fmu_variable_index_make();
+    fmu->variables.scalar.output = fmu_variable_index_make();
+    fmu->variables.string.input = fmu_variable_index_make();
+    fmu->variables.string.output = fmu_variable_index_make();
+    fmu->variables.binary.rx = fmu_variable_index_make();
+    fmu->variables.binary.tx = fmu_variable_index_make();
+    fmu->variables.binary.encode_func = fmu_variable_index_make();
+    fmu->variables.binary.decode_func = fmu_variable_index_make();
 
     /* Setup signal indexing. */
     fmu_load_signal_handlers(fmu);
     if (fmu->variables.vtable.setup) fmu->variables.vtable.setup(fmu);
 
     /* Lazy free list. */
-    hashlist_init(&fmu->variables.binary.free_list, 1024);
+    fmu->variables.binary.free_list = vector_make(sizeof(void*), 0, NULL);
 
     /* Create the FMU. */
     errno = 0;
@@ -286,15 +285,13 @@ fmi2Status fmi2GetReal(fmi2Component c, const fmi2ValueReference vr[],
         return fmi2OK;
     }
 
-    /* Hashmap based indexing. */
+    /* Vector based indexing. */
     for (size_t i = 0; i < nvr; i++) {
-        static char vr_idx[VREF_KEY_LEN];
-        snprintf(vr_idx, VREF_KEY_LEN, "%i", vr[i]);
-        double* signal = NULL;
-        signal = hashmap_get(&fmu->variables.scalar.output, vr_idx);
+        double* signal =
+            fmu_variable_find(&fmu->variables.scalar.output, vr[i]);
         /* Get operations can also be used on input variables. */
         if (signal == NULL) {
-            signal = hashmap_get(&fmu->variables.scalar.input, vr_idx);
+            signal = fmu_variable_find(&fmu->variables.scalar.input, vr[i]);
             /* Signal was not found on either output or input signals. */
             if (signal == NULL) continue;
         }
@@ -338,17 +335,16 @@ fmi2Status fmi2GetString(fmi2Component c, const fmi2ValueReference vr[],
     FmuInstanceData* fmu = (FmuInstanceData*)c;
 
     /* Free items on the lazy free list. */
-    hashmap_clear(&fmu->variables.binary.free_list.hash_map);
+    VECTOR_FOREACH(&fmu->variables.binary.free_list, void*, p, free(*p));
+    vector_clear(&fmu->variables.binary.free_list, NULL, NULL);
 
     for (size_t i = 0; i < nvr; i++) {
         /* Initial value condition is a NULL string. */
         value[i] = NULL;
 
         /* Lookup the binary signal, by VRef. */
-        static char vr_idx[VREF_KEY_LEN];
-        snprintf(vr_idx, VREF_KEY_LEN, "%i", vr[i]);
         FmuSignalVectorIndex* idx =
-            hashmap_get(&fmu->variables.binary.tx, vr_idx);
+            fmu_variable_find(&fmu->variables.binary.tx, vr[i]);
         if (idx == NULL) continue;
 
         uint8_t* data = idx->sv->binary[idx->vi];
@@ -357,7 +353,8 @@ fmi2Status fmi2GetString(fmi2Component c, const fmi2ValueReference vr[],
 
         /* Write the requested string, encode if configured. */
         _log_binary_signal(fmu, idx, "GetString");
-        EncodeFunc ef = hashmap_get(&fmu->variables.binary.encode_func, vr_idx);
+        EncodeFunc ef =
+            fmu_variable_find(&fmu->variables.binary.encode_func, vr[i]);
         if (ef) {
             value[i] = ef((char*)data, data_len);
         } else {
@@ -365,11 +362,7 @@ fmi2Status fmi2GetString(fmi2Component c, const fmi2ValueReference vr[],
         }
 
         /* Save reference for later free. */
-        char key[HASHLIST_KEY_LEN];
-        snprintf(key, HASHLIST_KEY_LEN, "%i",
-            hashlist_length(&fmu->variables.binary.free_list));
-        hashmap_set_alt(
-            &fmu->variables.binary.free_list.hash_map, key, (void*)value[i]);
+        vector_push(&fmu->variables.binary.free_list, &value[i]);
     }
     return fmi2OK;
 }
@@ -418,11 +411,9 @@ fmi2Status fmi2SetReal(fmi2Component c, const fmi2ValueReference vr[],
         return fmi2OK;
     }
 
-    /* Hashmap based indexing. */
+    /* Vector based indexing. */
     for (size_t i = 0; i < nvr; i++) {
-        static char vr_idx[VREF_KEY_LEN];
-        snprintf(vr_idx, VREF_KEY_LEN, "%i", vr[i]);
-        double* signal = hashmap_get(&fmu->variables.scalar.input, vr_idx);
+        double* signal = fmu_variable_find(&fmu->variables.scalar.input, vr[i]);
         if (signal == NULL) continue;
 
         /* Set the scalar signal value. */
@@ -476,20 +467,27 @@ fmi2Status fmi2SetString(fmi2Component c, const fmi2ValueReference vr[],
         if (value[i] == NULL) continue;
 
         /* Lookup the binary signal, by VRef. */
-        static char vr_idx[VREF_KEY_LEN];
-        snprintf(vr_idx, VREF_KEY_LEN, "%i", vr[i]);
         FmuSignalVectorIndex* idx =
-            hashmap_get(&fmu->variables.binary.rx, vr_idx);
+            fmu_variable_find(&fmu->variables.binary.rx, vr[i]);
         if (idx == NULL) {
-            hashmap_set_string(
-                &fmu->variables.string.input, vr_idx, (char*)value[i]);
+            FmuVariable* var = vector_find(&fmu->variables.string.input,
+                &(FmuVariable){ .vr = vr[i] }, 0, NULL);
+            if (var) {
+                free(var->ref);
+                var->ref = strdup(value[i]);
+            } else {
+                fmu_variable_add(
+                    &fmu->variables.string.input, vr[i], strdup(value[i]));
+                vector_sort(&fmu->variables.string.input);
+            }
             continue;
         };
 
         /* Get the input binary string, decode if configured. */
         char*      data = (char*)value[i];
         size_t     data_len = strlen(data);
-        DecodeFunc df = hashmap_get(&fmu->variables.binary.decode_func, vr_idx);
+        DecodeFunc df =
+            fmu_variable_find(&fmu->variables.binary.decode_func, vr[i]);
         if (df) {
             data = df((char*)data, &data_len);
         }
@@ -603,17 +601,17 @@ void fmi2FreeInstance(fmi2Component c)
     }
 
     fmu_log(fmu, fmi2OK, "Debug", "Destroy the index");
-    hashmap_destroy(&fmu->variables.scalar.input);
-    hashmap_destroy(&fmu->variables.scalar.output);
-    hashmap_destroy(
-        &fmu->variables.string.input);  // NOLINT (build/include_what_you_use)
-    hashmap_destroy(
-        &fmu->variables.string.output);  // NOLINT (build/include_what_you_use)
-    hashmap_destroy(&fmu->variables.binary.rx);
-    hashmap_destroy(&fmu->variables.binary.tx);
-    hashmap_destroy(&fmu->variables.binary.encode_func);
-    hashmap_destroy(&fmu->variables.binary.decode_func);
-    hashlist_destroy(&fmu->variables.binary.free_list);
+    vector_reset(&fmu->variables.scalar.input);
+    vector_reset(&fmu->variables.scalar.output);
+    fmu_variable_index_destroy(&fmu->variables.string.input);
+    // NOLINTNEXTLINE(build/include_what_you_use)
+    fmu_variable_index_destroy(&fmu->variables.string.output);
+    fmu_variable_index_destroy(&fmu->variables.binary.rx);
+    fmu_variable_index_destroy(&fmu->variables.binary.tx);
+    vector_reset(&fmu->variables.binary.encode_func);
+    vector_reset(&fmu->variables.binary.decode_func);
+    VECTOR_FOREACH(&fmu->variables.binary.free_list, void*, p, free(*p));
+    vector_reset(&fmu->variables.binary.free_list);
 
     fmu_log(fmu, fmi2OK, "Debug", "Release FMI instance resources");
     free(fmu->instance.name);

@@ -22,14 +22,14 @@
 int test_fmu_variable_setup(void** state)
 {
     FmuInstanceData* fmu = calloc(1, sizeof(FmuInstanceData));
-    hashmap_init(&fmu->variables.scalar.input);
-    hashmap_init(&fmu->variables.scalar.output);
-    hashmap_init(&fmu->variables.binary.rx);
-    hashmap_init(&fmu->variables.binary.tx);
-    hashmap_init(&fmu->variables.binary.encode_func);
-    hashmap_init(&fmu->variables.binary.decode_func);
+    fmu->variables.scalar.input = fmu_variable_index_make();
+    fmu->variables.scalar.output = fmu_variable_index_make();
+    fmu->variables.binary.rx = fmu_variable_index_make();
+    fmu->variables.binary.tx = fmu_variable_index_make();
+    fmu->variables.binary.encode_func = fmu_variable_index_make();
+    fmu->variables.binary.decode_func = fmu_variable_index_make();
     fmu_load_signal_handlers(fmu);
-    hashlist_init(&fmu->variables.binary.free_list, 1024);
+    fmu->variables.binary.free_list = vector_make(sizeof(void*), 0, NULL);
 
     fmu->instance.resource_location = (char*)"data/test_fmu/resources";
 
@@ -41,13 +41,14 @@ int test_fmu_variable_setup(void** state)
 int test_fmu_variable_teardown(void** state)
 {
     FmuInstanceData* fmu = *state;
-    hashmap_destroy(&fmu->variables.scalar.input);
-    hashmap_destroy(&fmu->variables.scalar.output);
-    hashmap_destroy(&fmu->variables.binary.rx);
-    hashmap_destroy(&fmu->variables.binary.tx);
-    hashmap_destroy(&fmu->variables.binary.encode_func);
-    hashmap_destroy(&fmu->variables.binary.decode_func);
-    hashlist_destroy(&fmu->variables.binary.free_list);
+    vector_reset(&fmu->variables.scalar.input);
+    vector_reset(&fmu->variables.scalar.output);
+    fmu_variable_index_destroy(&fmu->variables.binary.rx);
+    fmu_variable_index_destroy(&fmu->variables.binary.tx);
+    vector_reset(&fmu->variables.binary.encode_func);
+    vector_reset(&fmu->variables.binary.decode_func);
+    VECTOR_FOREACH(&fmu->variables.binary.free_list, void*, p, free(*p));
+    vector_reset(&fmu->variables.binary.free_list);
     if (fmu) free(fmu);
     return 0;
 }
@@ -67,19 +68,19 @@ void test_fmu_variable_encoding(void** state)
 
     // Check the configuration of encode/decode functions.
     // vr=4, bar_1 (input)
-    assert_non_null(hashmap_get(&fmu->variables.binary.encode_func, "4"));
-    assert_non_null(hashmap_get(&fmu->variables.binary.decode_func, "4"));
-    assert_ptr_equal(hashmap_get(&fmu->variables.binary.encode_func, "4"),
+    assert_non_null(fmu_variable_find(&fmu->variables.binary.encode_func, 4));
+    assert_non_null(fmu_variable_find(&fmu->variables.binary.decode_func, 4));
+    assert_ptr_equal(fmu_variable_find(&fmu->variables.binary.encode_func, 4),
         dse_ascii85_encode);
-    assert_ptr_equal(hashmap_get(&fmu->variables.binary.decode_func, "4"),
+    assert_ptr_equal(fmu_variable_find(&fmu->variables.binary.decode_func, 4),
         dse_ascii85_decode);
 
     // vr=5, bar_2 (output)
-    assert_non_null(hashmap_get(&fmu->variables.binary.encode_func, "5"));
-    assert_non_null(hashmap_get(&fmu->variables.binary.decode_func, "5"));
-    assert_ptr_equal(hashmap_get(&fmu->variables.binary.encode_func, "5"),
+    assert_non_null(fmu_variable_find(&fmu->variables.binary.encode_func, 5));
+    assert_non_null(fmu_variable_find(&fmu->variables.binary.decode_func, 5));
+    assert_ptr_equal(fmu_variable_find(&fmu->variables.binary.encode_func, 5),
         dse_ascii85_encode);
-    assert_ptr_equal(hashmap_get(&fmu->variables.binary.decode_func, "5"),
+    assert_ptr_equal(fmu_variable_find(&fmu->variables.binary.decode_func, 5),
         dse_ascii85_decode);
 
 
@@ -153,18 +154,18 @@ void test_fmu_variable_codec(void** state)
 
     // Check the configuration of NCodec variables.
     // vr=4, bar_1 (input)
-    assert_non_null(hashmap_get(&fmu->variables.binary.encode_func, "4"));
-    assert_non_null(hashmap_get(&fmu->variables.binary.decode_func, "4"));
-    assert_ptr_equal(hashmap_get(&fmu->variables.binary.encode_func, "4"),
+    assert_non_null(fmu_variable_find(&fmu->variables.binary.encode_func, 4));
+    assert_non_null(fmu_variable_find(&fmu->variables.binary.decode_func, 4));
+    assert_ptr_equal(fmu_variable_find(&fmu->variables.binary.encode_func, 4),
         dse_ascii85_encode);
-    assert_ptr_equal(hashmap_get(&fmu->variables.binary.decode_func, "4"),
+    assert_ptr_equal(fmu_variable_find(&fmu->variables.binary.decode_func, 4),
         dse_ascii85_decode);
     // vr=5, bar_2 (output)
-    assert_non_null(hashmap_get(&fmu->variables.binary.encode_func, "5"));
-    assert_non_null(hashmap_get(&fmu->variables.binary.decode_func, "5"));
-    assert_ptr_equal(hashmap_get(&fmu->variables.binary.encode_func, "5"),
+    assert_non_null(fmu_variable_find(&fmu->variables.binary.encode_func, 5));
+    assert_non_null(fmu_variable_find(&fmu->variables.binary.decode_func, 5));
+    assert_ptr_equal(fmu_variable_find(&fmu->variables.binary.encode_func, 5),
         dse_ascii85_encode);
-    assert_ptr_equal(hashmap_get(&fmu->variables.binary.decode_func, "5"),
+    assert_ptr_equal(fmu_variable_find(&fmu->variables.binary.decode_func, 5),
         dse_ascii85_decode);
     // NCodec objects
     assert_non_null(sv->ncodec[0]);
@@ -219,6 +220,35 @@ void test_fmu_variable_codec(void** state)
 }
 
 
+void test_fmu_variable_find(void** state)
+{
+    UNUSED(state);
+    static double storage[1000];
+    size_t        sizes[] = { 0, 1, 5, 32, 33, 100, 1000 };
+
+    for (size_t s = 0; s < sizeof(sizes) / sizeof(sizes[0]); s++) {
+        size_t n = sizes[s];
+        Vector v = fmu_variable_index_make();
+        /* Reverse insert order, vr = 3i + 7 (gaps for misses). */
+        for (size_t i = n; i > 0; i--) {
+            fmu_variable_add(&v, 3 * (i - 1) + 7, &storage[i - 1]);
+        }
+        vector_sort(&v);
+
+        for (size_t i = 0; i < n; i++) {
+            uint32_t vr = 3 * i + 7;
+            assert_ptr_equal(fmu_variable_find(&v, vr), &storage[i]);
+            assert_null(fmu_variable_find(&v, vr - 1));
+            assert_null(fmu_variable_find(&v, vr + 1));
+        }
+        assert_null(fmu_variable_find(&v, 0));
+        assert_null(fmu_variable_find(&v, 3 * n + 7));
+        assert_null(fmu_variable_find(&v, UINT32_MAX));
+        vector_reset(&v);
+    }
+}
+
+
 int run_fmu_variable_tests(void)
 {
     void* s = test_fmu_variable_setup;
@@ -227,6 +257,7 @@ int run_fmu_variable_tests(void)
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(test_fmu_variable_encoding, s, t),
         cmocka_unit_test_setup_teardown(test_fmu_variable_codec, s, t),
+        cmocka_unit_test(test_fmu_variable_find),
     };
 
     return cmocka_run_group_tests_name("DEFAULT SIGNALS", tests, NULL, NULL);

@@ -103,14 +103,12 @@ double fmu_register_var(
     FmuInstanceData* fmu, uint32_t vref, bool input, size_t offset)
 {
     double* signal = NULL;
-    char    key[HASHLIST_KEY_LEN];
 
     /* Lookup the signal. */
-    snprintf(key, HASHLIST_KEY_LEN, "%i", vref);
     if (input) {
-        signal = hashmap_get(&fmu->variables.scalar.input, key);
+        signal = fmu_variable_find(&fmu->variables.scalar.input, vref);
     } else {
-        signal = hashmap_get(&fmu->variables.scalar.output, key);
+        signal = fmu_variable_find(&fmu->variables.scalar.output, vref);
     }
     if (signal == NULL) return 0;
 
@@ -152,14 +150,12 @@ void* (NCODEC pointer)
 void* fmu_lookup_ncodec(FmuInstanceData* fmu, uint32_t vref, bool input)
 {
     FmuSignalVectorIndex* idx = NULL;
-    char                  key[HASHLIST_KEY_LEN];
 
     /* Lookup the signal. */
-    snprintf(key, HASHLIST_KEY_LEN, "%i", vref);
     if (input) {
-        idx = hashmap_get(&fmu->variables.binary.rx, key);
+        idx = fmu_variable_find(&fmu->variables.binary.rx, vref);
     } else {
-        idx = hashmap_get(&fmu->variables.binary.tx, key);
+        idx = fmu_variable_find(&fmu->variables.binary.tx, vref);
     }
     if (idx == NULL) return NULL;
 

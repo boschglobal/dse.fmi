@@ -53,8 +53,8 @@ void test_index__scalar(void** state)
     FmuInstanceData   fmu = {
           .data = m,
     };
-    hashmap_init(&fmu.variables.scalar.input);
-    hashmap_init(&fmu.variables.scalar.output);
+    fmu.variables.scalar.input = fmu_variable_index_make();
+    fmu.variables.scalar.output = fmu_variable_index_make();
     m = model_runtime_create(m);
 
     /* Locate the SimBus scalar SV. */
@@ -64,18 +64,18 @@ void test_index__scalar(void** state)
 
     /* Index the scalar signals. */
     fmimodelc_index_scalar_signals(&fmu);
-    assert_int_equal(fmu.variables.scalar.input.used_nodes, 0);
-    assert_int_equal(fmu.variables.scalar.output.used_nodes, 1);
+    assert_int_equal(vector_len(&fmu.variables.scalar.input), 0);
+    assert_int_equal(vector_len(&fmu.variables.scalar.output), 1);
     double* sig_counter = NULL;
-    sig_counter = hashmap_get(&fmu.variables.scalar.output, "1");
+    sig_counter = fmu_variable_find(&fmu.variables.scalar.output, 1);
     assert_non_null(sig_counter);
     assert_string_equal("counter", index.sbv->signal[index.vi]);
     assert_ptr_equal(sig_counter, &index.sbv->scalar[index.vi]);
 
     /* Cleanup. */
     model_runtime_destroy(m);
-    hashmap_destroy(&fmu.variables.scalar.input);
-    hashmap_destroy(&fmu.variables.scalar.output);
+    vector_reset(&fmu.variables.scalar.input);
+    vector_reset(&fmu.variables.scalar.output);
 }
 
 
@@ -85,8 +85,8 @@ void test_index__binary(void** state)
     FmuInstanceData   fmu = {
           .data = m,
     };
-    hashmap_init(&fmu.variables.binary.rx);
-    hashmap_init(&fmu.variables.binary.tx);
+    fmu.variables.binary.rx = fmu_variable_index_make();
+    fmu.variables.binary.tx = fmu_variable_index_make();
     m = model_runtime_create(m);
 
     /* Locate the SimBus network SV. */
@@ -96,36 +96,26 @@ void test_index__binary(void** state)
 
     /* Index the network signals. */
     fmimodelc_index_binary_signals(&fmu);
-    assert_int_equal(fmu.variables.binary.rx.used_nodes, 4);
-    assert_int_equal(fmu.variables.binary.tx.used_nodes, 4);
+    assert_int_equal(vector_len(&fmu.variables.binary.rx), 4);
+    assert_int_equal(vector_len(&fmu.variables.binary.tx), 4);
 
     /* Check the RX index. */
-    const char* rx_vref[] = {
-        "2",
-        "4",
-        "6",
-        "8",
-    };
+    uint32_t rx_vref[] = { 2, 4, 6, 8 };
     for (size_t i = 0; i < ARRAY_SIZE(rx_vref); i++) {
         // Each index should have a ModelSignalIndex with the same content.
         SimbusVectorIndex* var = NULL;
-        var = hashmap_get(&fmu.variables.binary.rx, rx_vref[i]);
+        var = fmu_variable_find(&fmu.variables.binary.rx, rx_vref[i]);
         assert_non_null(var);
         // TODO: Should this check happen, currently memory is only calloc'ed.
         // assert_memory_equal(var, &index, sizeof(SimbusVectorIndex));
     }
 
     /* Check the TX index. */
-    const char* tx_vref[] = {
-        "3",
-        "5",
-        "7",
-        "9",
-    };
+    uint32_t tx_vref[] = { 3, 5, 7, 9 };
     for (size_t i = 0; i < ARRAY_SIZE(tx_vref); i++) {
         // Each index should have a ModelSignalIndex with the same content.
         SimbusVectorIndex* var = NULL;
-        var = hashmap_get(&fmu.variables.binary.tx, tx_vref[i]);
+        var = fmu_variable_find(&fmu.variables.binary.tx, tx_vref[i]);
         assert_non_null(var);
         // TODO: Should this check happen, currently memory is only calloc'ed.
         // assert_memory_equal(var, &index, sizeof(SimbusVectorIndex));
@@ -133,8 +123,8 @@ void test_index__binary(void** state)
 
     /* Cleanup. */
     model_runtime_destroy(m);
-    hashmap_destroy(&fmu.variables.binary.rx);
-    hashmap_destroy(&fmu.variables.binary.tx);
+    fmu_variable_index_destroy(&fmu.variables.binary.rx);
+    fmu_variable_index_destroy(&fmu.variables.binary.tx);
 }
 
 

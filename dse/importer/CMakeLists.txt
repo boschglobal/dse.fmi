@@ -31,8 +31,8 @@ target_include_directories(${MODULE_LC}
         ${REPO_DIR}
         ${FMI2_INCLUDE_DIR}
         ${FMI3_INCLUDE_DIR}
-        ${DSE_MODELC_INCLUDE_DIR}
         ${DSE_CLIB_INCLUDE_DIR}
+        ${DSE_MODELC_INCLUDE_DIR}
 )
 target_link_libraries(${MODULE_LC}
     PRIVATE

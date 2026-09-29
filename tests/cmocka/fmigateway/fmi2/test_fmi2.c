@@ -175,29 +175,29 @@ void test_fmigateway__fmi2_ExitInitializationMode(void** state)
 
     assert_string_equal(fmi_gw->model->mi->name, "gateway");
 
-    assert_int_equal(inst->variables.scalar.input.used_nodes, 5);
-    assert_int_equal(inst->variables.scalar.output.used_nodes, 2);
+    assert_int_equal(vector_len(&inst->variables.scalar.input), 5);
+    assert_int_equal(vector_len(&inst->variables.scalar.output), 2);
     for (SignalVector* sv = fmi_gw->model->sv; sv && sv->name; sv++) {
         if (sv->is_binary) continue;
 
-        /* Check if SignalVector <-> Hashmap is set up correctly. */
+        /* Check if SignalVector <-> Vector is set up correctly. */
         assert_memory_equal(
-            (hashmap_get(&inst->variables.scalar.input, "1001")),
+            fmu_variable_find(&inst->variables.scalar.input, 1001),
             &sv->scalar[0], sizeof(double));
         assert_memory_equal(
-            (hashmap_get(&inst->variables.scalar.input, "1004")),
+            fmu_variable_find(&inst->variables.scalar.input, 1004),
             &sv->scalar[2], sizeof(double));
 
         assert_memory_equal(
-            (hashmap_get(&inst->variables.scalar.output, "1002")),
+            fmu_variable_find(&inst->variables.scalar.output, 1002),
             &sv->scalar[1], sizeof(double));
         assert_memory_equal(
-            (hashmap_get(&inst->variables.scalar.output, "1005")),
+            fmu_variable_find(&inst->variables.scalar.output, 1005),
             &sv->scalar[3], sizeof(double));
     }
 
-    assert_int_equal(inst->variables.binary.rx.used_nodes, 4);
-    assert_int_equal(inst->variables.binary.tx.used_nodes, 4);
+    assert_int_equal(vector_len(&inst->variables.binary.rx), 4);
+    assert_int_equal(vector_len(&inst->variables.binary.tx), 4);
 
     fmi2FreeInstance(inst);
 }
@@ -322,8 +322,8 @@ void test_fmigateway__fmi2_runtime_simer(void** state)
 
     /* Simer runtime parameters registered in input hashmaps during XML parse.
      */
-    assert_non_null(hashmap_get(&inst->variables.string.input, "0"));
-    assert_non_null(hashmap_get(&inst->variables.scalar.input, "1"));
+    assert_non_null(fmu_variable_find(&inst->variables.string.input, 0));
+    assert_non_null(fmu_variable_find(&inst->variables.scalar.input, 1));
 
     /* Script environment variables populated from script.parameter annotations.
      */
@@ -374,8 +374,9 @@ void test_fmigateway__fmi2_runtime_legacy(void** state)
     assert_non_null(strstr(fmi_gw->settings.yaml_files[2], "stack.yaml"));
 
     /* No simer runtime parameters: simer.parameter variables absent. */
-    assert_null(hashmap_get(&inst->variables.string.input, "0"));  // NOLINT
-    assert_null(hashmap_get(&inst->variables.scalar.input, "1"));
+    // NOLINTNEXTLINE(build/include_what_you_use)
+    assert_null(fmu_variable_find(&inst->variables.string.input, 0));
+    assert_null(fmu_variable_find(&inst->variables.scalar.input, 1));
 
     /* Script environment variables from script.parameter annotations. */
     FmiGatewayParameter* envar = fmi_gw->settings.scripts.envar;

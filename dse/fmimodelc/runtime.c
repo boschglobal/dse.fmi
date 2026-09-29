@@ -165,7 +165,7 @@ void fmimodelc_index_scalar_signals(FmuInstanceData* fmu)
         return;
     }
 
-    /* Hashmap based indexing. */
+    /* Vector based indexing. */
     for (ModelInstanceSpec* mi = m->model.sim->instance_list; mi && mi->name;
         mi++) {
         for (SignalVector* sv = mi->model_desc->sv; sv && sv->name; sv++) {
@@ -187,17 +187,20 @@ void fmimodelc_index_scalar_signals(FmuInstanceData* fmu)
                 /* Index based on causality. */
                 const char* causality =
                     signal_annotation(sv, i, "fmi_variable_causality", NULL);
+                uint32_t vr = (uint32_t)strtoul(vref, NULL, 10);
                 if (strcmp(causality, "output") == 0) {
-                    hashmap_set(&fmu->variables.scalar.output, vref, scalar);
+                    fmu_variable_add(&fmu->variables.scalar.output, vr, scalar);
                 } else if (strcmp(causality, "input") == 0) {
-                    hashmap_set(&fmu->variables.scalar.input, vref, scalar);
+                    fmu_variable_add(&fmu->variables.scalar.input, vr, scalar);
                 }
             }
         }
     }
-    _log("  Scalar: input=%lu, output=%lu",
-        hashmap_number_keys(fmu->variables.scalar.input),
-        hashmap_number_keys(fmu->variables.scalar.output));
+    vector_sort(&fmu->variables.scalar.input);
+    vector_sort(&fmu->variables.scalar.output);
+    _log("  Scalar: input=%u, output=%u",
+        (uint32_t)vector_len(&fmu->variables.scalar.input),
+        (uint32_t)vector_len(&fmu->variables.scalar.output));
 }
 
 
@@ -237,7 +240,8 @@ void fmimodelc_index_binary_signals(FmuInstanceData* fmu)
                         SimbusVectorIndex* _ =
                             calloc(1, sizeof(SimbusVectorIndex));
                         *_ = idx;
-                        hashmap_set_alt(&fmu->variables.binary.rx, rx_vref, _);
+                        fmu_variable_add(&fmu->variables.binary.rx,
+                            (uint32_t)strtoul(rx_vref, NULL, 10), _);
                     }
                     free(rx_list);
                 }
@@ -260,16 +264,19 @@ void fmimodelc_index_binary_signals(FmuInstanceData* fmu)
                         SimbusVectorIndex* _ =
                             calloc(1, sizeof(SimbusVectorIndex));
                         *_ = idx;
-                        hashmap_set_alt(&fmu->variables.binary.tx, tx_vref, _);
+                        fmu_variable_add(&fmu->variables.binary.tx,
+                            (uint32_t)strtoul(tx_vref, NULL, 10), _);
                     }
                     free(tx_list);
                 }
             }
         }
     }
-    _log("  Binary: rx=%lu, tx=%lu",
-        hashmap_number_keys(fmu->variables.binary.rx),
-        hashmap_number_keys(fmu->variables.binary.tx));
+    vector_sort(&fmu->variables.binary.rx);
+    vector_sort(&fmu->variables.binary.tx);
+    _log("  Binary: rx=%u, tx=%u",
+        (uint32_t)vector_len(&fmu->variables.binary.rx),
+        (uint32_t)vector_len(&fmu->variables.binary.tx));
 }
 
 
@@ -304,12 +311,12 @@ void fmimodelc_index_text_encoding(FmuInstanceData* fmu)
                 if (vref_list) {
                     for (size_t j = 0; vref_list[j]; j++) {
                         /* Value Reference for the RX variable. */
-                        const char* vref = vref_list[j];
+                        uint32_t vr = (uint32_t)strtoul(vref_list[j], NULL, 10);
 
                         /* Encoding. */
-                        hashmap_set(&fmu->variables.binary.encode_func, vref,
+                        fmu_variable_add(&fmu->variables.binary.encode_func, vr,
                             dse_ascii85_encode);
-                        hashmap_set(&fmu->variables.binary.decode_func, vref,
+                        fmu_variable_add(&fmu->variables.binary.decode_func, vr,
                             dse_ascii85_decode);
                     }
                     free(vref_list);
@@ -317,9 +324,11 @@ void fmimodelc_index_text_encoding(FmuInstanceData* fmu)
             }
         }
     }
-    _log("  Encoding: enc=%lu, dec=%lu",
-        hashmap_number_keys(fmu->variables.binary.encode_func),
-        hashmap_number_keys(fmu->variables.binary.decode_func));
+    vector_sort(&fmu->variables.binary.encode_func);
+    vector_sort(&fmu->variables.binary.decode_func);
+    _log("  Encoding: enc=%u, dec=%u",
+        (uint32_t)vector_len(&fmu->variables.binary.encode_func),
+        (uint32_t)vector_len(&fmu->variables.binary.decode_func));
 }
 
 

@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <dse/clib/collections/hashmap.h>
 #include <dse/clib/collections/hashlist.h>
+#include <dse/clib/collections/vector.h>
 
 
 #ifndef DLL_PUBLIC
@@ -241,6 +242,49 @@ typedef struct FmuVarTableMarshalItem {
 } FmuVarTableMarshalItem;
 
 
+/* FMU Variable Index (Vector sorted by vr) Helper Functions. */
+typedef struct FmuVariable {
+    void*    ref;
+    uint32_t vr;
+} FmuVariable;
+
+
+static __inline__ int fmu_variable_compar(const void* left, const void* right)
+{
+    uint32_t l = ((const FmuVariable*)left)->vr;
+    uint32_t r = ((const FmuVariable*)right)->vr;
+    return (l > r) - (l < r);
+}
+
+
+static __inline__ Vector fmu_variable_index_make(void)
+{
+    return vector_make(sizeof(FmuVariable), 0, fmu_variable_compar);
+}
+
+
+/* Caller must vector_sort() the index after adding. */
+static __inline__ int fmu_variable_add(Vector* v, uint32_t vr, void* ref)
+{
+    return vector_push(v, &(FmuVariable){ .vr = vr, .ref = ref });
+}
+
+
+static __inline__ void* fmu_variable_find(Vector* v, uint32_t vr)
+{
+    FmuVariable* var = vector_find(v, &(FmuVariable){ .vr = vr }, 0, NULL);
+    return var ? var->ref : NULL;
+}
+
+
+/* For indexes which own their refs. */
+static __inline__ void fmu_variable_index_destroy(Vector* v)
+{
+    VECTOR_FOREACH(v, FmuVariable, var, free(var->ref));
+    vector_reset(v);
+}
+
+
 typedef struct FmuInstanceData {
     /* FMI Instance Data. */
     struct {
@@ -261,20 +305,20 @@ typedef struct FmuInstanceData {
     struct {
         /* Variable indexes. */
         struct {
-            HashMap input;
-            HashMap output;
+            Vector input;   // Vector[FmuVariable{ref:double*}]
+            Vector output;  // Vector[FmuVariable{ref:double*}]
         } scalar;
         struct {
-            HashMap input;
-            HashMap output;
-        } string;  // NOLINT(build/include_what_you_use)
+            Vector input;   // Vector[FmuVariable{ref:char*}], owns ref
+            Vector output;  // Vector[FmuVariable{ref:char*}], owns ref
+        } string;           // NOLINT(build/include_what_you_use)
         struct {
-            HashMap  rx;
-            HashMap  tx;
-            HashMap  encode_func;
-            HashMap  decode_func;
+            Vector rx;           // Vector[FmuVariable{ref:Index*}], owns ref
+            Vector tx;           // Vector[FmuVariable{ref:Index*}], owns ref
+            Vector encode_func;  // Vector[FmuVariable{ref:EncodeFunc}]
+            Vector decode_func;  // Vector[FmuVariable{ref:DecodeFunc}]
             /* Lazy free list for allocated strings. */
-            HashList free_list;
+            Vector free_list;  // Vector[void*], owns items
         } binary;
         /* Variable storage, via Signal Vectors. */
         FmuSignalVTable vtable;

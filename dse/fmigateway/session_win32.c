@@ -908,13 +908,14 @@ void fmigateway_run_simer(FmuInstanceData* fmu)
 {
     FmiGateway* fmi_gw = fmu->data;
 
-    const char* simer_cmd =
-        hashmap_get(&fmu->variables.string.input, "0");  // NOLINT
+    // NOLINTNEXTLINE(build/include_what_you_use)
+    const char* simer_cmd = fmu_variable_find(&fmu->variables.string.input, 0);
     if (simer_cmd == NULL || strlen(simer_cmd) == 0) {
-        double* simer_cmd_sel = hashmap_get(&fmu->variables.scalar.input, "1");
-        size_t  idx = (simer_cmd_sel && *simer_cmd_sel >= 0)
-                          ? (size_t)(*simer_cmd_sel)
-                          : 0;
+        double* simer_cmd_sel =
+            fmu_variable_find(&fmu->variables.scalar.input, 1);
+        size_t idx = (simer_cmd_sel && *simer_cmd_sel >= 0)
+                         ? (size_t)(*simer_cmd_sel)
+                         : 0;
         if (idx < vector_len(&fmi_gw->settings.runtime.cmds)) {
             simer_cmd =
                 *(char**)vector_at(&fmi_gw->settings.runtime.cmds, idx, NULL);
