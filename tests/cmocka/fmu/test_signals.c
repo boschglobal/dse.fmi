@@ -15,12 +15,12 @@
 int test_fmu_default_signal_setup(void** state)
 {
     FmuInstanceData* fmu = calloc(1, sizeof(FmuInstanceData));
-    hashmap_init(&fmu->variables.scalar.input);
-    hashmap_init(&fmu->variables.scalar.output);
-    hashmap_init(&fmu->variables.binary.rx);
-    hashmap_init(&fmu->variables.binary.tx);
-    hashmap_init(&fmu->variables.binary.encode_func);
-    hashmap_init(&fmu->variables.binary.decode_func);
+    fmu->variables.scalar.input = fmu_variable_index_make();
+    fmu->variables.scalar.output = fmu_variable_index_make();
+    fmu->variables.binary.rx = fmu_variable_index_make();
+    fmu->variables.binary.tx = fmu_variable_index_make();
+    fmu->variables.binary.encode_func = fmu_variable_index_make();
+    fmu->variables.binary.decode_func = fmu_variable_index_make();
     fmu_load_signal_handlers(fmu);
 
     fmu->instance.resource_location = (char*)"data/test_fmu/resources";
@@ -33,13 +33,14 @@ int test_fmu_default_signal_setup(void** state)
 int test_fmu_default_signal_teardown(void** state)
 {
     FmuInstanceData* fmu = *state;
-    hashmap_destroy(&fmu->variables.scalar.input);
-    hashmap_destroy(&fmu->variables.scalar.output);
-    hashmap_destroy(&fmu->variables.binary.rx);
-    hashmap_destroy(&fmu->variables.binary.tx);
-    hashmap_destroy(&fmu->variables.binary.encode_func);
-    hashmap_destroy(&fmu->variables.binary.decode_func);
-    hashlist_destroy(&fmu->variables.binary.free_list);
+    vector_reset(&fmu->variables.scalar.input);
+    vector_reset(&fmu->variables.scalar.output);
+    fmu_variable_index_destroy(&fmu->variables.binary.rx);
+    fmu_variable_index_destroy(&fmu->variables.binary.tx);
+    vector_reset(&fmu->variables.binary.encode_func);
+    vector_reset(&fmu->variables.binary.decode_func);
+    VECTOR_FOREACH(&fmu->variables.binary.free_list, void*, p, free(*p));
+    vector_reset(&fmu->variables.binary.free_list);
     if (fmu) free(fmu);
     return 0;
 }
@@ -76,11 +77,12 @@ void test_fmu_default_signals(void** state)
             assert_string_equal(tc[i].signal[j], sv[i].signal[j]);
             if (tc[i].is_binary) {
                 FmuSignalVectorIndex* idx = NULL;
+                uint32_t              vr = strtoul(tc[i].vref[j], NULL, 10);
                 /* Input variable. */
                 if (tc[i].causality[j]) {
-                    idx = hashmap_get(&fmu->variables.binary.rx, tc[i].vref[j]);
+                    idx = fmu_variable_find(&fmu->variables.binary.rx, vr);
                 } else {
-                    idx = hashmap_get(&fmu->variables.binary.tx, tc[i].vref[j]);
+                    idx = fmu_variable_find(&fmu->variables.binary.tx, vr);
                 }
                 assert_non_null(idx);
                 assert_non_null(idx->sv);
@@ -88,14 +90,14 @@ void test_fmu_default_signals(void** state)
                 assert_int_equal(idx->sv->count, sv[i].count);
                 assert_int_equal(idx->vi, j);
             } else {
-                double* value = NULL;
+                double*  value = NULL;
+                uint32_t vr = strtoul(tc[i].vref[j], NULL, 10);
                 /* Input variable. */
                 if (tc[i].causality[j]) {
-                    value = hashmap_get(
-                        &fmu->variables.scalar.input, tc[i].vref[j]);
+                    value = fmu_variable_find(&fmu->variables.scalar.input, vr);
                 } else {
-                    value = hashmap_get(
-                        &fmu->variables.scalar.output, tc[i].vref[j]);
+                    value =
+                        fmu_variable_find(&fmu->variables.scalar.output, vr);
                 }
                 assert_non_null(value);
             }
@@ -120,8 +122,10 @@ void test_fmu_default_signals_reset(void** state)
 
     assert_non_null(fmu->data);
 
-    FmuSignalVectorIndex* idx_i = hashmap_get(&fmu->variables.binary.rx, "4");
-    FmuSignalVectorIndex* idx_o = hashmap_get(&fmu->variables.binary.tx, "5");
+    FmuSignalVectorIndex* idx_i =
+        fmu_variable_find(&fmu->variables.binary.rx, 4);
+    FmuSignalVectorIndex* idx_o =
+        fmu_variable_find(&fmu->variables.binary.tx, 5);
     assert_non_null(idx_i);
     assert_non_null(idx_o);
 
@@ -150,8 +154,8 @@ void test_fmu_var_table(void** state)
     FmuInstanceData* fmu = *state;
     fmu->variables.vtable.setup(fmu);
     assert_non_null(fmu->data);
-    double* var_1 = hashmap_get(&fmu->variables.scalar.input, "1");
-    double* var_2 = hashmap_get(&fmu->variables.scalar.output, "2");
+    double* var_1 = fmu_variable_find(&fmu->variables.scalar.input, 1);
+    double* var_2 = fmu_variable_find(&fmu->variables.scalar.output, 2);
     assert_non_null(var_1);
     assert_non_null(var_2);
 
@@ -203,8 +207,10 @@ void test_fmu_lookup_ncodec(void** state)
     FmuInstanceData* fmu = *state;
     fmu->variables.vtable.setup(fmu);
     assert_non_null(fmu->data);
-    FmuSignalVectorIndex* idx_4 = hashmap_get(&fmu->variables.binary.rx, "4");
-    FmuSignalVectorIndex* idx_5 = hashmap_get(&fmu->variables.binary.tx, "5");
+    FmuSignalVectorIndex* idx_4 =
+        fmu_variable_find(&fmu->variables.binary.rx, 4);
+    FmuSignalVectorIndex* idx_5 =
+        fmu_variable_find(&fmu->variables.binary.tx, 5);
     assert_non_null(idx_4);
     assert_non_null(idx_5);
     assert_non_null(idx_4->sv->ncodec[idx_4->vi]);

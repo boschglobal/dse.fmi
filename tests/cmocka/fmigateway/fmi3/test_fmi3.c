@@ -178,8 +178,8 @@ void test_fmigateway__fmi3_runtime_simer(void** state)
 
     /* Simer runtime parameters registered in input hashmaps during XML parse.
      */
-    assert_non_null(hashmap_get(&inst->variables.string.input, "0"));
-    assert_non_null(hashmap_get(&inst->variables.scalar.input, "1"));
+    assert_non_null(fmu_variable_find(&inst->variables.string.input, 0));
+    assert_non_null(fmu_variable_find(&inst->variables.scalar.input, 1));
 
     /* Script environment variables populated from script.parameter annotations.
      */
@@ -231,8 +231,9 @@ void test_fmigateway__fmi3_runtime_legacy(void** state)
     assert_non_null(strstr(fmi_gw->settings.yaml_files[2], "stack.yaml"));
 
     /* No simer runtime parameters: simer.parameter variables absent. */
-    assert_null(hashmap_get(&inst->variables.string.input, "0"));  // NOLINT
-    assert_null(hashmap_get(&inst->variables.scalar.input, "1"));
+    // NOLINTNEXTLINE(build/include_what_you_use)
+    assert_null(fmu_variable_find(&inst->variables.string.input, 0));
+    assert_null(fmu_variable_find(&inst->variables.scalar.input, 1));
 
     /* Script environment variables from script.parameter annotations. */
     FmiGatewayParameter* envar = fmi_gw->settings.scripts.envar;

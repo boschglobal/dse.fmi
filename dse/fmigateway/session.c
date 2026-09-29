@@ -15,11 +15,13 @@
 static char* _get_fmu_env_value(FmuInstanceData* fmu, FmiGatewayParameter* e)
 {
     if (strcmp(e->type, "String") == 0) {
-        const char* value =
-            hashmap_get(&fmu->variables.string.input, e->vref);  // NOLINT
+        const char* value = fmu_variable_find(
+            // NOLINTNEXTLINE(build/include_what_you_use)
+            &fmu->variables.string.input, (uint32_t)strtoul(e->vref, NULL, 10));
         if (value) return strdup(value);
     } else if (strcmp(e->type, "Real") == 0) {
-        double* value = hashmap_get(&fmu->variables.scalar.input, e->vref);
+        double* value = fmu_variable_find(
+            &fmu->variables.scalar.input, (uint32_t)strtoul(e->vref, NULL, 10));
         if (value) {
             char* str_value = calloc(NUMERIC_ENVAR_LEN, sizeof(char));
             snprintf(str_value, NUMERIC_ENVAR_LEN, "%d", (int)*value);

@@ -156,17 +156,35 @@ static void* _cmd_generator(xmlNodePtr node, void* userdata)
 }
 
 
+static void _index_scalar_parameter(
+    FmuInstanceData* fmu, uint32_t vr, double value)
+{
+    FmiGateway* fmi_gw = fmu->data;
+    double*     storage = malloc(sizeof(double));
+    *storage = value;
+    vector_push(&fmi_gw->settings.parameters, &storage);
+    fmu_variable_add(&fmu->variables.scalar.input, vr, storage);
+}
+
+
+static void _index_string_parameter(
+    FmuInstanceData* fmu, uint32_t vr, const char* value)
+{
+    // NOLINTNEXTLINE(build/include_what_you_use)
+    fmu_variable_add(&fmu->variables.string.input, vr, strdup(value));
+}
+
+
 static void* _rt_param_generator(xmlNodePtr node, void* userdata)
 {
     FmiParseGenContext* gctx = userdata;
     xmlChar*            vref = xmlGetProp(node, BAD_CAST "valueReference");
     if (vref) {
+        uint32_t vr = (uint32_t)strtoul((char*)vref, NULL, 10);
         if (gctx->is_string)
-            hashmap_set_string(
-                &gctx->fmu->variables.string.input, (char*)vref, (char*)"");
+            _index_string_parameter(gctx->fmu, vr, "");
         else
-            hashmap_set_double(
-                &gctx->fmu->variables.scalar.input, (char*)vref, 0.0);
+            _index_scalar_parameter(gctx->fmu, vr, 0.0);
         xmlFree(vref);
     }
     return userdata; /* sentinel: non-NULL continues enumeration */
@@ -258,30 +276,32 @@ static void* _envar_generator(xmlNodePtr node, void* userdata)
         return NULL;
     }
 
+    xmlChar* start = _get_start_value(node, gctx->is_string, cfg->fmi_version);
+    double   value = 0.0;
+
     FmiGatewayParameter* envar = calloc(1, sizeof(FmiGatewayParameter));
     envar->vref = strdup((char*)vref);
     envar->name = strdup((char*)sv_name);
-
     if (gctx->is_string) {
-        xmlChar*    start = _get_start_value(node, true, cfg->fmi_version);
-        const char* str_val = start ? (char*)start : "";
-        hashmap_set_string(&fmu->variables.string.input,  // NOLINT
-            (char*)vref, (char*)str_val);
-        envar->default_value = strdup(str_val);
         envar->type = "String";
-        if (start) xmlFree(start);
+        envar->default_value = strdup(start ? (char*)start : "");
     } else {
-        xmlChar* start = _get_start_value(node, false, cfg->fmi_version);
-        double   value = start ? strtod((char*)start, NULL) : 0.0;
-        hashmap_set_double(&fmu->variables.scalar.input, (char*)vref, value);
+        envar->type = "Real";
+        if (start) value = strtod((char*)start, NULL);
         envar->default_value = calloc(NUMERIC_ENVAR_LEN, sizeof(char));
         snprintf(envar->default_value, NUMERIC_ENVAR_LEN, "%f", value);
-        envar->type = "Real";
-        if (start) xmlFree(start);
     }
 
+    if (start) xmlFree(start);
     xmlFree(vref);
     xmlFree(sv_name);
+
+    uint32_t vr = (uint32_t)strtoul(envar->vref, NULL, 10);
+    if (gctx->is_string) {
+        _index_string_parameter(fmu, vr, envar->default_value);
+    } else {
+        _index_scalar_parameter(fmu, vr, value);
+    }
     return envar;
 }
 
@@ -325,6 +345,9 @@ static void fmigateway_parse_xml_config(
         return;
     }
 
+    FmiGateway* fmi_gw = fmu->data;
+    fmi_gw->settings.parameters = vector_make(sizeof(double*), 0, NULL);
+
     xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
     if (ctx) {
         _parse_simulation_settings(fmu, ctx, cfg);
@@ -332,6 +355,9 @@ static void fmigateway_parse_xml_config(
         _parse_xml_script_envar(fmu, ctx, cfg);
         xmlXPathFreeContext(ctx);
     }
+    vector_sort(&fmu->variables.scalar.input);
+    // NOLINTNEXTLINE(build/include_what_you_use)
+    vector_sort(&fmu->variables.string.input);
 
     xmlFreeDoc(doc);
 }

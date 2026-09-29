@@ -107,12 +107,13 @@ cleanup:
 static void __index_scalar_variable(FmuInstanceData* fmu, FmuSignalVector* sv,
     uint32_t sv_idx, xmlChar* vr, xmlChar* causality)
 {
+    uint32_t vref = (uint32_t)strtoul((char*)vr, NULL, 10);
     if (xmlStrcmp(causality, (xmlChar*)"output") == 0) {
-        hashmap_set(
-            &(fmu->variables.scalar.output), (char*)vr, &(sv->scalar[sv_idx]));
+        fmu_variable_add(
+            &(fmu->variables.scalar.output), vref, &(sv->scalar[sv_idx]));
     } else if (xmlStrcmp(causality, (xmlChar*)"input") == 0) {
-        hashmap_set(
-            &(fmu->variables.scalar.input), (char*)vr, &(sv->scalar[sv_idx]));
+        fmu_variable_add(
+            &(fmu->variables.scalar.input), vref, &(sv->scalar[sv_idx]));
     }
 }
 
@@ -123,10 +124,11 @@ static void __index_binary_variable(FmuInstanceData* fmu, FmuSignalVector* sv,
     FmuSignalVectorIndex* idx = calloc(1, sizeof(FmuSignalVectorIndex));
     idx->sv = sv;
     idx->vi = sv_idx;
+    uint32_t vref = (uint32_t)strtoul((char*)vr, NULL, 10);
     if (xmlStrcmp(causality, (xmlChar*)"output") == 0) {
-        hashmap_set_alt(&(fmu->variables.binary.tx), (char*)vr, idx);
+        fmu_variable_add(&(fmu->variables.binary.tx), vref, idx);
     } else if (xmlStrcmp(causality, (xmlChar*)"input") == 0) {
-        hashmap_set_alt(&(fmu->variables.binary.rx), (char*)vr, idx);
+        fmu_variable_add(&(fmu->variables.binary.rx), vref, idx);
     }
 
     /*
@@ -141,10 +143,10 @@ static void __index_binary_variable(FmuInstanceData* fmu, FmuSignalVector* sv,
         node, "dse.standards.fmi-ls-binary-to-text", "encoding");
     if (encoding) {
         if (strcmp((char*)encoding, "ascii85") == 0) {
-            hashmap_set(&fmu->variables.binary.encode_func, (char*)vr,
-                dse_ascii85_encode);
-            hashmap_set(&fmu->variables.binary.decode_func, (char*)vr,
-                dse_ascii85_decode);
+            fmu_variable_add(
+                &fmu->variables.binary.encode_func, vref, dse_ascii85_encode);
+            fmu_variable_add(
+                &fmu->variables.binary.decode_func, vref, dse_ascii85_decode);
         }
         xmlFree(encoding);
     }
@@ -208,6 +210,16 @@ void fmu_variable_index(
         xmlFree(name);
         xmlFree(vr);
         xmlFree(causality);
+    }
+
+    if (is_binary) {
+        vector_sort(&(fmu->variables.binary.rx));
+        vector_sort(&(fmu->variables.binary.tx));
+        vector_sort(&(fmu->variables.binary.encode_func));
+        vector_sort(&(fmu->variables.binary.decode_func));
+    } else {
+        vector_sort(&(fmu->variables.scalar.input));
+        vector_sort(&(fmu->variables.scalar.output));
     }
 
 cleanup:

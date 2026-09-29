@@ -30,8 +30,8 @@ int test_fmigateway__parser_setup(void** state)
 
     fmi_gw->settings.yaml_files = calloc(2, sizeof(char*));
 
-    hashmap_init(&fmu->variables.string.input);
-    hashmap_init(&fmu->variables.scalar.input);
+    fmu->variables.string.input = fmu_variable_index_make();
+    fmu->variables.scalar.input = fmu_variable_index_make();
 
     *state = fmu;
     return 0;
@@ -88,12 +88,14 @@ int test_fmigateway__parser_teardown(void** state)
                     &fmi_gw->settings.runtime.cmds, i, NULL));
             }
             vector_reset(&fmi_gw->settings.runtime.cmds);
+            VECTOR_FOREACH(&fmi_gw->settings.parameters, double*, p, free(*p));
+            vector_reset(&fmi_gw->settings.parameters);
             free((char*)fmi_gw->settings.model_name);
             free(fmi_gw->model);
             free(fmi_gw);
         }
-        hashmap_destroy(&fmu->variables.string.input);
-        hashmap_destroy(&fmu->variables.scalar.input);
+        fmu_variable_index_destroy(&fmu->variables.string.input);
+        vector_reset(&fmu->variables.scalar.input);
     }
     free(fmu);
 
@@ -159,9 +161,9 @@ void test_fmigateway__parser_gw_stack_default(void** state)
     assert_string_equal(
         *(char**)vector_at(&fmi_gw->settings.runtime.cmds, 1, NULL), "cmd1");
     assert_string_equal(
-        (char*)hashmap_get(&fmu->variables.string.input, "0"), "");
+        (char*)fmu_variable_find(&fmu->variables.string.input, 0), "");
     assert_double_equal(
-        *(double*)hashmap_get(&fmu->variables.scalar.input, "1"), 0.0, 0.0);
+        *(double*)fmu_variable_find(&fmu->variables.scalar.input, 1), 0.0, 0.0);
 }
 
 
@@ -237,9 +239,9 @@ void test_fmigateway__parser_gw_stack(void** state)
     assert_string_equal(
         *(char**)vector_at(&fmi_gw->settings.runtime.cmds, 1, NULL), "cmd1");
     assert_string_equal(
-        (char*)hashmap_get(&fmu->variables.string.input, "0"), "");
+        (char*)fmu_variable_find(&fmu->variables.string.input, 0), "");
     assert_double_equal(
-        *(double*)hashmap_get(&fmu->variables.scalar.input, "1"), 0.0, 0.0);
+        *(double*)fmu_variable_find(&fmu->variables.scalar.input, 1), 0.0, 0.0);
 }
 
 
@@ -333,9 +335,10 @@ void test_fmigateway__parser_model_stack(void** state)
     assert_string_equal(
         *(char**)vector_at(&fmi_gw->settings.runtime.cmds, 1, NULL), "cmd1");
     assert_string_equal(
-        (char*)hashmap_get(&fmu->variables.string.input, "0"), "");  // NOLINT
+        // NOLINTNEXTLINE(build/include_what_you_use)
+        (char*)fmu_variable_find(&fmu->variables.string.input, 0), "");
     assert_double_equal(
-        *(double*)hashmap_get(&fmu->variables.scalar.input, "1"), 0.0, 0.0);
+        *(double*)fmu_variable_find(&fmu->variables.scalar.input, 1), 0.0, 0.0);
 }
 
 

@@ -121,17 +121,19 @@ typedef struct FmiGateway {
             const char*          shutdown_cmd;
             FmiGatewayParameter* envar;
         } scripts;
+        /* Storage (double*) for scalar parameters (runtime and scripts). */
+        Vector parameters;
     } settings;
     bool binary_signals_reset;
 } FmiGateway;
 
 /* index.c */
 DLL_PRIVATE void fmigateway_index_scalar_signals(
-    FmuInstanceData* fmu, ModelGatewayDesc* m, HashMap* input, HashMap* output);
+    FmuInstanceData* fmu, ModelGatewayDesc* m, Vector* input, Vector* output);
 DLL_PRIVATE void fmigateway_index_binary_signals(
-    FmuInstanceData* fmu, ModelGatewayDesc* m, HashMap* rx, HashMap* tx);
+    FmuInstanceData* fmu, ModelGatewayDesc* m, Vector* rx, Vector* tx);
 DLL_PRIVATE void fmigateway_index_text_encoding(FmuInstanceData* fmu,
-    ModelGatewayDesc* m, HashMap* encode_func, HashMap* decode_func);
+    ModelGatewayDesc* m, Vector* encode_func, Vector* decode_func);
 
 /* parser.c */
 DLL_PRIVATE void fmigateway_parse(FmuInstanceData* fmu);
