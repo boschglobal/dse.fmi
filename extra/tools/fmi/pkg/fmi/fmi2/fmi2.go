@@ -239,7 +239,7 @@ func ScalarSignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGr
 			start = "0.0"
 		}
 		if causality == "parameter" {
-			variability = stringPtr("tunable")
+			variability = stringPtr("fixed")
 		}
 
 		if v = (*signal.Annotations)["fmi_variable_start_value"]; v != nil {
@@ -403,7 +403,7 @@ func StringSignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGr
 
 		var variability *string = nil
 		if causality == "parameter" {
-			variability = stringPtr("tunable")
+			variability = stringPtr("fixed")
 		}
 
 		if v = (*signal.Annotations)["fmi_variable_vref"]; v != nil {

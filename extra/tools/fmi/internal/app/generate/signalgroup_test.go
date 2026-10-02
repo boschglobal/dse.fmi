@@ -6,6 +6,7 @@ package generate
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/boschglobal/dse.schemas/code/go/dse/kind"
@@ -104,6 +105,7 @@ func TestSignalGrpSignals(t *testing.T) {
 			"fmi_variable_type":        "Real",
 			"fmi_variable_name":        "scalar_1",
 			"fmi_variable_variability": "continuous",
+			"fmi_variable_start_value": "42",
 		},
 		{
 			"Signal":                   "scalar_2",
@@ -129,6 +131,7 @@ func TestSignalGrpSignals(t *testing.T) {
 			"fmi_variable_type":        "Boolean",
 			"fmi_variable_name":        "boolean_1",
 			"fmi_variable_variability": "discrete",
+			"fmi_variable_start_value": "false",
 		},
 		{
 			"Signal":                   "boolean_2",
@@ -178,6 +181,8 @@ func TestSignalGrpSignals(t *testing.T) {
 		assert.Equal(t, (*s.Annotations)["fmi_variable_variability"], test_data[i]["fmi_variable_variability"], "annotation/fmi_variable_variability should match")
 		if expected, ok := test_data[i]["fmi_variable_start_value"]; ok {
 			assert.Equal(t, (*s.Annotations)["fmi_variable_start_value"], expected, "annotation/fmi_variable_start_value should match")
+		} else {
+			assert.Nil(t, (*s.Annotations)["fmi_variable_start_value"], "annotation/fmi_variable_start_value should not be set")
 		}
 		if expected, ok := test_data[i]["internal"]; ok {
 			assert.Equal(t, (*s.Annotations)["internal"], expected, "annotation/internal should match")
@@ -185,4 +190,62 @@ func TestSignalGrpSignals(t *testing.T) {
 			assert.Nil(t, (*s.Annotations)["internal"], "annotation/internal should not be set")
 		}
 	}
+}
+
+func runGenSignalGroup(t *testing.T, variables string) (*kind.SignalGroup, error) {
+	dir := t.TempDir()
+	xml_file := filepath.Join(dir, "modelDescription.xml")
+	signalgroup_file := filepath.Join(dir, "signalgroup.yaml")
+	xml := `<fmiModelDescription fmiVersion="2.0" modelName="Test" guid="{0}">
+    <CoSimulation modelIdentifier="target"></CoSimulation>
+    <ModelVariables>` + variables + `</ModelVariables>
+    <ModelStructure></ModelStructure>
+</fmiModelDescription>`
+	if err := os.WriteFile(xml_file, []byte(xml), 0644); err != nil {
+		t.Fatalf("Failed writing XML: %v", err)
+	}
+
+	cmd := NewGenSignalGroupCommand("test")
+	if err := cmd.Parse([]string{"-input", xml_file, "-output", signalgroup_file}); err != nil {
+		t.Fatalf("Failed parsing: %v", err)
+	}
+	if err := cmd.Run(); err != nil {
+		return nil, err
+	}
+	data, _ := os.ReadFile(signalgroup_file)
+	var sg kind.SignalGroup
+	if err := yaml.Unmarshal(data, &sg); err != nil {
+		t.Fatalf("Failed yaml parsing: %v", err)
+	}
+	return &sg, nil
+}
+
+func TestSignalGrpVariabilityCombinations(t *testing.T) {
+	invalid := map[string]string{
+		"(a) constant/parameter":           `causality="parameter" variability="constant"`,
+		"(a) constant/calculatedParameter": `causality="calculatedParameter" variability="constant"`,
+		"(a) constant/input":               `causality="input" variability="constant"`,
+		"(b) continuous/parameter":         `causality="parameter" variability="continuous"`,
+		"(b) discrete/calculatedParameter": `causality="calculatedParameter" variability="discrete"`,
+		"(c) discrete/independent":         `causality="independent" variability="discrete"`,
+		"(d) fixed/input":                  `causality="input" variability="fixed"`,
+		"(e) tunable/output":               `causality="output" variability="tunable"`,
+	}
+	for name, attrs := range invalid {
+		t.Run(name, func(t *testing.T) {
+			_, err := runGenSignalGroup(t, `<ScalarVariable name="v" valueReference="1" `+attrs+`><Real start="1"/></ScalarVariable>`)
+			assert.Error(t, err)
+		})
+	}
+
+	// Empty variability attribute uses the default.
+	sg, err := runGenSignalGroup(t, `<ScalarVariable name="p" valueReference="1" causality="parameter" variability=""><Real start="1"/></ScalarVariable>`)
+	assert.NoError(t, err)
+	assert.Equal(t, "fixed", (*sg.Spec.Signals[0].Annotations)["fmi_variable_variability"])
+}
+
+func TestSignalGrpMissingStartValue(t *testing.T) {
+	sg, err := runGenSignalGroup(t, `<ScalarVariable name="u" valueReference="1" causality="input"><Real/></ScalarVariable>`)
+	assert.NoError(t, err)
+	assert.Nil(t, (*sg.Spec.Signals[0].Annotations)["fmi_variable_start_value"])
 }

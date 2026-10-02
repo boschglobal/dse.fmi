@@ -10,7 +10,7 @@
 #define UNUSED(x) ((void)x)
 
 
-static int _reset_binary_signal(void* value, void* data)
+static int __attribute__((unused)) _reset_binary_signal(void* value, void* data)
 {
     UNUSED(data);
 

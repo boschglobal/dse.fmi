@@ -109,14 +109,14 @@ static MarshalVar _decode_var_variability(const char* t, MarshalDir dir)
 
 static MarshalDir _decode_var_dir(const char* t)
 {
-    if (t == NULL) return MARSHAL_DIRECTION_TXRX;
+    if (t == NULL) return MARSHAL_DIRECTION_LOCAL;
 
     // clang-format off
     if (strcmp(t, "input") == 0) return MARSHAL_DIRECTION_TXONLY;
     if (strcmp(t, "output") == 0) return MARSHAL_DIRECTION_RXONLY;
-    if (strcmp(t, "inout") == 0) return MARSHAL_DIRECTION_TXRX;
     if (strcmp(t, "parameter") == 0) return MARSHAL_DIRECTION_PARAMETER;
-    if (strcmp(t, "calculatedParameter") == 0) return MARSHAL_DIRECTION_PARAMETER;
+    /* Calculated by the FMU, may not be set. */
+    if (strcmp(t, "calculatedParameter") == 0) return MARSHAL_DIRECTION_RXONLY;
     if (strcmp(t, "local") == 0) return MARSHAL_DIRECTION_LOCAL;
     // clang-format on
 
