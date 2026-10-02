@@ -61,6 +61,16 @@ func (c *GenSignalGroupCommand) Run() error {
 	return nil
 }
 
+// Allowed causality/variability combinations, FMI 2.0 section 2.2.7 (a)-(e).
+var allowedVariability = map[string][]string{
+	"parameter":           {"fixed", "tunable"},
+	"calculatedParameter": {"fixed", "tunable"},
+	"input":               {"discrete", "continuous"},
+	"output":              {"constant", "discrete", "continuous"},
+	"local":               {"constant", "fixed", "tunable", "discrete", "continuous"},
+	"independent":         {"continuous"},
+}
+
 func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.ModelDescription) error {
 	// Build the SignalGroup.
 
@@ -90,20 +100,23 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.ModelDescription
 			"fmi_variable_name":      s.Name,
 		}
 		// Parse variability; apply FMI 2 defaults when not specified.
-		variabilityDefault := "continuous"
+		variability := "continuous"
 		if s.Causality == "parameter" || s.Causality == "calculatedParameter" {
-			variabilityDefault = "fixed"
+			variability = "fixed"
 		}
-		if s.Variability != nil {
-			annotations["fmi_variable_variability"] = *s.Variability
-		} else {
-			annotations["fmi_variable_variability"] = variabilityDefault
+		if s.Variability != nil && *s.Variability != "" {
+			variability = *s.Variability
 		}
+		if !slices.Contains(allowedVariability[s.Causality], variability) {
+			return fmt.Errorf("variable %s: variability %q is not allowed for causality %q",
+				s.Name, variability, s.Causality)
+		}
+		annotations["fmi_variable_variability"] = variability
 		if s.Causality == "local" || s.Causality == "parameter" {
 			annotations["internal"] = true
 		}
 
-		if s.Causality == "parameter" {
+		if s.Causality == "parameter" || s.Causality == "input" {
 			var startValue string
 			switch {
 			case s.Real != nil:
@@ -115,7 +128,10 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.ModelDescription
 			case s.String != nil:
 				startValue = s.String.Start
 			}
-			annotations["fmi_variable_start_value"] = startValue
+			// An absent start attribute must not become an empty start value.
+			if startValue != "" {
+				annotations["fmi_variable_start_value"] = startValue
+			}
 		}
 		if s.Annotations != nil {
 			toolAnnotations := kind.Annotations{}

@@ -17,6 +17,18 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 #define STR_BUFFER    512
 
+bool fmimcl_parse_bool(const char* v)
+{
+    if (strcmp(v, "true") == 0) {
+        return true;
+    } else if (strcmp(v, "false") == 0) {
+        return false;
+    } else {
+        return strtod(v, NULL) != 0;
+    }
+}
+
+
 static size_t _count_signals(FmuModel* m)
 {
     size_t count = 0;
@@ -64,6 +76,11 @@ void fmimcl_allocate_source(FmuModel* m)
             case MARSHAL_TYPE_DOUBLE:
                 m->data.scalar[i] =
                     strtod(m->signals[i].variable_start_value, NULL);
+                break;
+            case MARSHAL_TYPE_BOOL:
+                m->data.scalar[i] =
+                    fmimcl_parse_bool(m->signals[i].variable_start_value) ? 1
+                                                                          : 0;
                 break;
             case MARSHAL_TYPE_STRING:
                 free(m->data.binary[i]);

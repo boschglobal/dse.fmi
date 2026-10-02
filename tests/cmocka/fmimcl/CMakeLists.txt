@@ -118,6 +118,7 @@ install(
         data/parser_sort.yaml
         data/parser_param.yaml
         data/parser_param_string.yaml
+        data/parser_param_bool.yaml
         data/mcl_mock.yaml
         data/mcl.yaml
     DESTINATION

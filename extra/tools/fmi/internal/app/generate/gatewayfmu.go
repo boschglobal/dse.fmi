@@ -356,7 +356,7 @@ func (c *GenFmiGatewayCommand) patchSignal(vr *int, sgType string, signals []sch
 		if (*s.Annotations)["fmi_variable_causality"] != nil {
 			causality = ((*s.Annotations)["fmi_variable_causality"]).(string)
 		}
-		if causality == "local" {
+		if (*s.Annotations)["internal"] != nil && (*s.Annotations)["internal"].(bool) {
 			continue
 		}
 
