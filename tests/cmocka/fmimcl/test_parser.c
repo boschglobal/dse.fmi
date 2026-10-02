@@ -142,7 +142,7 @@ void test_parser__fmu_signal(void** state)
             .variable_name = "count",
             .variable_vref = 2,
             .variable_kind = MARSHAL_KIND_PRIMITIVE,
-            .variable_dir = MARSHAL_DIRECTION_TXRX,
+            .variable_dir = MARSHAL_DIRECTION_LOCAL,
             .variable_type = MARSHAL_TYPE_INT32,
         },
         {
@@ -150,7 +150,7 @@ void test_parser__fmu_signal(void** state)
             .variable_name = "foo",
             .variable_vref = 0,
             .variable_kind = MARSHAL_KIND_PRIMITIVE,
-            .variable_dir = MARSHAL_DIRECTION_TXRX,
+            .variable_dir = MARSHAL_DIRECTION_LOCAL,
             .variable_type = MARSHAL_TYPE_DOUBLE,
         },
         {
@@ -158,7 +158,7 @@ void test_parser__fmu_signal(void** state)
             .variable_name = "bar",
             .variable_vref = 1,
             .variable_kind = MARSHAL_KIND_PRIMITIVE,
-            .variable_dir = MARSHAL_DIRECTION_TXRX,
+            .variable_dir = MARSHAL_DIRECTION_LOCAL,
             .variable_type = MARSHAL_TYPE_DOUBLE,
         },
         {
@@ -166,7 +166,7 @@ void test_parser__fmu_signal(void** state)
             .variable_name = "active",
             .variable_vref = 3,
             .variable_kind = MARSHAL_KIND_PRIMITIVE,
-            .variable_dir = MARSHAL_DIRECTION_TXRX,
+            .variable_dir = MARSHAL_DIRECTION_LOCAL,
             .variable_type = MARSHAL_TYPE_BOOL,
         },
 

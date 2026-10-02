@@ -2,8 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#include <string.h>
+#include <errno.h>
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <dlfcn.h>
 #include <dse/modelc/runtime.h>
 #include <dse/fmimcl/fmimcl.h>
@@ -30,6 +34,7 @@ static void fmu2_logger_callback(fmi2ComponentEnvironment componentEnvironment,
     UNUSED(componentEnvironment);
     UNUSED(instanceName);
     UNUSED(status);
+    if (LOG_LEVEL > LOG_DEBUG) return;
 
     static char buffer[2048];
     va_list     ap;
@@ -49,7 +54,49 @@ static void fmu2_step_finished_callback(
 }
 
 
-const char* fmi2_func_names[] = {
+/* Track error/fatal states (FMI 2.0 section 2.1.3); warnings are not errors. */
+static int32_t _check(FmuModel* m, int32_t status, const char* func)
+{
+    if (status == fmi2OK || status == fmi2Warning) return 0;
+
+    errno = 0; /* Otherwise log_error() prints an unrelated stale errno. */
+    log_error("%s returned status %d", func, status);
+    if (status == fmi2Fatal) {
+        m->runtime.state = FMU_STATE_FATAL;
+    } else if (status != fmi2Discard) {
+        m->runtime.state = FMU_STATE_ERROR;
+    }
+    return EBADMSG;
+}
+
+
+static void _trace_values(const char* op, MarshalGroup* mg, size_t i, size_t n)
+{
+    if (LOG_LEVEL > LOG_TRACE) return;
+
+    log_trace(
+        "  %s (name: %s, count: %zu, type: %d)", op, mg->name, n, mg->type);
+    for (size_t k = i; k < i + n; k++) {
+        uint32_t vr = mg->target.ref[k];
+        switch (mg->type) {
+        case MARSHAL_TYPE_DOUBLE:
+            log_trace("    vr[%u]=%f", vr, mg->target._double[k]);
+            break;
+        case MARSHAL_TYPE_INT32:
+        case MARSHAL_TYPE_BOOL:
+            log_trace("    vr[%u]=%d", vr, mg->target._int32[k]);
+            break;
+        case MARSHAL_TYPE_STRING:
+            log_trace("    vr[%u]=%s", vr, mg->target._string[k]);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+
+static const char* const fmi2_func_names[] = {
     "fmi2Instantiate",
     "fmi2SetupExperiment",
     "fmi2EnterInitializationMode",
@@ -71,14 +118,9 @@ const char* fmi2_func_names[] = {
 /* can be perhaps reused for other adapter */
 static inline int _get_func(void* handle, const char* name, void** func)
 {
-    if (func == NULL) return EINVAL;
-
-    /* try to find the function in the shared lib */
     *func = dlsym(handle, name);
-    char* dl_error = dlerror();
-    if (dl_error != NULL) {
-        *func = NULL;
-        log_error("Could not load fmi2 function: %s (%s)", name, dl_error);
+    if (*func == NULL) {
+        log_error("Could not load fmi2 function: %s (%s)", name, dlerror());
         return EINVAL;
     }
     return 0;
@@ -87,17 +129,13 @@ static inline int _get_func(void* handle, const char* name, void** func)
 
 static int32_t fmi2mcl_load(FmuModel* m)
 {
-    char*        dlerror_str;
-    void*        handle;
     int          rc = 0;
     Fmi2Adapter* a = m->adapter;
 
     log_debug("Load fmu from path: %s", m->model_path);
-    dlerror();
-    handle = dlopen(m->model_path, RTLD_NOW | RTLD_LOCAL);
-    dlerror_str = dlerror();
-    if (dlerror_str) {
-        log_error(dlerror_str);
+    a->dl_handle = dlopen(m->model_path, RTLD_NOW | RTLD_LOCAL);
+    if (a->dl_handle == NULL) {
+        log_error("%s", dlerror());
         return -1;
     }
 
@@ -106,10 +144,11 @@ static int32_t fmi2mcl_load(FmuModel* m)
 
     void** vt = (void**)&a->vtable;
     for (size_t i = 0; i < len; i++) {
-        rc |= _get_func(handle, fmi2_func_names[i], &vt[i]);
+        rc |= _get_func(a->dl_handle, fmi2_func_names[i], &vt[i]);
     }
     if (rc != 0) {
         log_error("Not all fmi2 functions loaded!");
+        return rc;
     }
 
     a->callbacks.allocateMemory = calloc;
@@ -121,53 +160,200 @@ static int32_t fmi2mcl_load(FmuModel* m)
 }
 
 
+static int32_t _get_values(FmuModel* m, MarshalGroup* mg)
+{
+    Fmi2Adapter* a = m->adapter;
+    uint32_t*    vr = mg->target.ref;
+    size_t       n = mg->count;
+    const char*  func;
+    int32_t      status;
+
+    switch (mg->type) {
+    case MARSHAL_TYPE_DOUBLE:
+        func = "fmi2GetReal";
+        status = a->vtable.get_real(a->fmi2_inst, vr, n, mg->target._double);
+        break;
+    case MARSHAL_TYPE_INT32:
+        func = "fmi2GetInteger";
+        status = a->vtable.get_integer(a->fmi2_inst, vr, n, mg->target._int32);
+        break;
+    case MARSHAL_TYPE_BOOL:
+        func = "fmi2GetBoolean";
+        status = a->vtable.get_boolean(a->fmi2_inst, vr, n, mg->target._int32);
+        break;
+    case MARSHAL_TYPE_STRING:
+        func = "fmi2GetString";
+        status = a->vtable.get_string(a->fmi2_inst, vr, n, mg->target._string);
+        break;
+    default:
+        return 0;
+    }
+    int32_t rc = _check(m, status, func);
+    if (rc == 0) _trace_values("get", mg, 0, n);
+    return rc;
+}
+
+
+static int32_t _set_values(FmuModel* m, MarshalGroup* mg, size_t i, size_t n)
+{
+    Fmi2Adapter* a = m->adapter;
+    uint32_t*    vr = &mg->target.ref[i];
+    const char*  func;
+    int32_t      status;
+
+    _trace_values("set", mg, i, n);
+    switch (mg->type) {
+    case MARSHAL_TYPE_DOUBLE:
+        func = "fmi2SetReal";
+        status =
+            a->vtable.set_real(a->fmi2_inst, vr, n, &mg->target._double[i]);
+        break;
+    case MARSHAL_TYPE_INT32:
+        func = "fmi2SetInteger";
+        status =
+            a->vtable.set_integer(a->fmi2_inst, vr, n, &mg->target._int32[i]);
+        break;
+    case MARSHAL_TYPE_BOOL:
+        func = "fmi2SetBoolean";
+        status =
+            a->vtable.set_boolean(a->fmi2_inst, vr, n, &mg->target._int32[i]);
+        break;
+    case MARSHAL_TYPE_STRING:
+        func = "fmi2SetString";
+        status =
+            a->vtable.set_string(a->fmi2_inst, vr, n, &mg->target._string[i]);
+        break;
+    default:
+        return 0;
+    }
+    return _check(m, status, func);
+}
+
+
+/* The FMU already holds its start values (FMI 2.0 section 2.2.7). */
+static bool _is_start_value(MarshalGroup* mg, size_t k, FmuSignal* s)
+{
+    const char* v = s->variable_start_value;
+    if (v == NULL) return false;
+
+    size_t idx = mg->source.offset + k;
+    switch (mg->type) {
+    case MARSHAL_TYPE_DOUBLE:
+    case MARSHAL_TYPE_INT32:
+        return mg->source.scalar[idx] == strtod(v, NULL);
+    case MARSHAL_TYPE_BOOL:
+        return mg->source.scalar[idx] ==
+               ((strcmp(v, "true") == 0 || strtod(v, NULL) != 0) ? 1 : 0);
+    case MARSHAL_TYPE_STRING: {
+        const char* src = mg->source.binary[idx];
+        return src && strcmp(src, v) == 0;
+    }
+    default:
+        return false;
+    }
+}
+
+
+/* Compares against target, which holds the value last passed to the FMU. */
+static bool _is_changed(MarshalGroup* mg, size_t k)
+{
+    size_t idx = mg->source.offset + k;
+    switch (mg->type) {
+    case MARSHAL_TYPE_DOUBLE:
+        return mg->target._double[k] != mg->source.scalar[idx];
+    case MARSHAL_TYPE_INT32:
+    case MARSHAL_TYPE_BOOL:
+        return mg->target._int32[k] != (int32_t)mg->source.scalar[idx];
+    case MARSHAL_TYPE_STRING: {
+        const char* src = mg->source.binary[idx];
+        const char* tgt = mg->target._string[k];
+        if (src == NULL || tgt == NULL) return src != tgt;
+        return strcmp(src, tgt) != 0;
+    }
+    default:
+        return true;
+    }
+}
+
+
+static bool _is_group_changed(MarshalGroup* mg)
+{
+    /* DOUBLE source and target are contiguous and unconverted: one memcmp. */
+    if (mg->type == MARSHAL_TYPE_DOUBLE) {
+        return memcmp(mg->target._double, &mg->source.scalar[mg->source.offset],
+                   mg->count * sizeof(double)) != 0;
+    }
+    for (size_t i = 0; i < mg->count; i++) {
+        if (_is_changed(mg, i)) return true;
+    }
+    return false;
+}
+
+
+/* FMI 2.0.5 section 4.2.4: parameters are settable in instantiated, tunable
+   parameters also in stepComplete (here only when changed). */
+static bool _is_settable(FmuModel* m, MarshalGroup* mg, size_t k)
+{
+    Fmi2Adapter* a = m->adapter;
+    size_t       idx = mg->source.offset + k;
+    FmuSignal*   s = &m->signals[idx];
+
+    switch (m->runtime.state) {
+    case FMU_STATE_INSTANTIATED:
+        return !_is_start_value(mg, k, s);
+    case FMU_STATE_RUN:
+        return a->changed[idx] &&
+               s->variable_variability == MARSHAL_VARIABILITY_TUNABLE;
+    default:
+        return false;
+    }
+}
+
+
 static int32_t fmi2mcl_init(FmuModel* m)
 {
-    Fmi2Adapter* adapter = m->adapter;
-    int          rc = 0;
+    Fmi2Adapter* a = m->adapter;
+    int32_t      rc;
 
-    errno = 0;
-    adapter->fmi2_inst = adapter->vtable.instantiate(m->name, m->cosim, m->guid,
-        m->resource_dir, &(adapter->callbacks), fmi2False, fmi2True);
-    if (errno) {
-        log_debug("FMU set errno (%d): %s", errno, strerror(errno));
-        errno = 0;
+    /* Parameter change flags, covering every group's source range. */
+    size_t n = 0, n_mg = 0;
+    for (MarshalGroup* mg = m->data.mg_table; mg && mg->name; mg++, n_mg++) {
+        if (mg->source.offset + mg->count > n) {
+            n = mg->source.offset + mg->count;
+        }
     }
-    if (adapter->fmi2_inst == NULL) {
+    a->changed = calloc(n ? n : 1, sizeof(bool));
+    a->mg_changed = calloc(n_mg ? n_mg : 1, sizeof(bool));
+
+    a->fmi2_inst = a->vtable.instantiate(m->name, m->cosim, m->guid,
+        m->resource_dir, &(a->callbacks), fmi2False,
+        (LOG_LEVEL <= LOG_DEBUG) ? fmi2True : fmi2False);
+    if (a->fmi2_inst == NULL) {
         log_error("FMI2 Instance could not be created.");
         return EINVAL;
     }
     m->runtime.state = FMU_STATE_INSTANTIATED;
 
-    errno = 0;
-    rc = adapter->vtable.enter_initialization(adapter->fmi2_inst);
-    if (errno) {
-        log_debug("FMU set errno (%d): %s", errno, strerror(errno));
-        errno = 0;
-    }
-    if (rc > 0) {
-        log_error("FMI2 enter initialization did not return OK (%d).", rc);
-        return rc;
-    }
+    rc = _check(m,
+        a->vtable.setup_experiment(
+            a->fmi2_inst, fmi2False, 0.0, m->mcl.model_time, fmi2False, 0.0),
+        "fmi2SetupExperiment");
+    if (rc) return rc;
+
+    rc = fmi2mcl_marshal_out(m);
+    if (rc) return rc;
+
+    rc = _check(m, a->vtable.enter_initialization(a->fmi2_inst),
+        "fmi2EnterInitializationMode");
+    if (rc) return rc;
     m->runtime.state = FMU_STATE_INIT;
 
-    /* Set parameter start values before exiting initialization mode. */
     rc = fmi2mcl_marshal_out(m);
-    if (rc != 0) {
-        log_error("FMI2 could not marshal start values (%d).", rc);
-        return rc;
-    }
+    if (rc) return rc;
 
-    errno = 0;
-    rc = adapter->vtable.exit_initialization(adapter->fmi2_inst);
-    if (errno) {
-        log_debug("FMU set errno (%d): %s", errno, strerror(errno));
-        errno = 0;
-    }
-    if (rc > 0) {
-        log_error("FMI2 exit initialization did not return OK (%d).", rc);
-        return rc;
-    }
+    rc = _check(m, a->vtable.exit_initialization(a->fmi2_inst),
+        "fmi2ExitInitializationMode");
+    if (rc) return rc;
     m->runtime.state = FMU_STATE_RUN;
 
     return 0;
@@ -179,18 +365,14 @@ static int32_t fmi2mcl_step(FmuModel* m, double* model_time, double end_time)
     log_trace("Step: model_time: %f, end_time: %f", *model_time, end_time);
 
     Fmi2Adapter* a = m->adapter;
-    int          rc = 0;
+    if (m->runtime.state != FMU_STATE_RUN) return EBADMSG;
 
-    errno = 0;
-    rc = a->vtable.do_step(
+    int32_t status = a->vtable.do_step(
         a->fmi2_inst, *model_time, (end_time - *model_time), fmi2True);
-    if (errno) {
-        log_debug("FMU set errno (%d): %s", errno, strerror(errno));
-        errno = 0;
-    }
-    if (rc > 0) {
-        return EBADMSG;
-    };
+    int32_t rc = _check(m, status, "fmi2DoStep");
+    if (status == fmi2Discard) m->runtime.state = FMU_STATE_STEP_FAILED;
+    if (rc) return rc;
+
     *model_time = end_time;
     return 0;
 }
@@ -198,8 +380,7 @@ static int32_t fmi2mcl_step(FmuModel* m, double* model_time, double end_time)
 
 static int32_t fmi2mcl_marshal_in(FmuModel* m)
 {
-    Fmi2Adapter* a = m->adapter;
-    int          rc = 0;
+    if (m->runtime.state != FMU_STATE_RUN) return 0;
 
     log_trace("Marshal IN (FMU -> target):");
     for (MarshalGroup* mg = m->data.mg_table; mg && mg->name; mg++) {
@@ -211,84 +392,8 @@ static int32_t fmi2mcl_marshal_in(FmuModel* m)
         default:
             continue;
         }
-
-        log_trace(
-            "  (name: %s, count: %d, type: %d)", mg->name, mg->count, mg->type);
-
-        switch (mg->type) {
-        case MARSHAL_TYPE_DOUBLE: {
-            errno = 0;
-            rc = a->vtable.get_real(
-                a->fmi2_inst, mg->target.ref, mg->count, mg->target._double);
-            if (errno) {
-                log_debug("FMU set errno (%d): %s", errno, strerror(errno));
-                errno = 0;
-            }
-            if (rc > 0) {
-                return EBADMSG;
-            };
-            for (uint32_t i = 0; i < mg->count; i++) {
-                log_trace("  get_real[%d]: vr[%d]=%f", i, mg->target.ref[i],
-                    mg->target._double[i]);
-            }
-            break;
-        }
-        case MARSHAL_TYPE_INT32: {
-            errno = 0;
-            rc = a->vtable.get_integer(
-                a->fmi2_inst, mg->target.ref, mg->count, mg->target._int32);
-            if (errno) {
-                log_debug("FMU set errno (%d): %s", errno, strerror(errno));
-                errno = 0;
-            }
-            if (rc > 0) {
-                return EBADMSG;
-            };
-            for (uint32_t i = 0; i < mg->count; i++) {
-                log_trace("  get_integer[%d]: vr[%d]=%d", i, mg->target.ref[i],
-                    mg->target._int32[i]);
-            }
-            break;
-        }
-        case MARSHAL_TYPE_BOOL: {
-            errno = 0;
-            rc = a->vtable.get_boolean(
-                a->fmi2_inst, mg->target.ref, mg->count, mg->target._int32);
-            if (errno) {
-                log_debug("FMU set errno (%d): %s", errno, strerror(errno));
-                errno = 0;
-            }
-            if (rc > 0) {
-                return EBADMSG;
-            };
-            for (uint32_t i = 0; i < mg->count; i++) {
-                log_trace("  get_boolean[%d]: vr[%d]=%d", i, mg->target.ref[i],
-                    mg->target._int32[i]);
-            }
-
-            break;
-        }
-        case MARSHAL_TYPE_STRING: {
-            errno = 0;
-            rc = a->vtable.get_string(
-                a->fmi2_inst, mg->target.ref, mg->count, mg->target._string);
-            if (errno) {
-                log_debug("FMU set errno (%d): %s", errno, strerror(errno));
-                errno = 0;
-            }
-            if (rc > 0) {
-                return EBADMSG;
-            };
-            for (uint32_t i = 0; i < mg->count; i++) {
-                log_trace("  get_string[%d]: vr[%d]=%s", i, mg->target.ref[i],
-                    mg->target._string[i]);
-            }
-
-            break;
-        }
-        default:
-            break;
-        }
+        int32_t rc = _get_values(m, mg);
+        if (rc) return rc;
     }
 
     marshal_group_in(NULL, m->data.mg_table);
@@ -300,94 +405,48 @@ static int32_t fmi2mcl_marshal_in(FmuModel* m)
 static int32_t fmi2mcl_marshal_out(FmuModel* m)
 {
     Fmi2Adapter* a = m->adapter;
-    int          rc = 0;
+    FmuState     state = m->runtime.state;
+    int32_t      rc = 0;
+    size_t       g;
+
+    /* Detect changes before marshal_group_out() overwrites the target. */
+    if (m->signals && state == FMU_STATE_RUN) {
+        g = 0;
+        for (MarshalGroup* mg = m->data.mg_table; mg && mg->name; mg++, g++) {
+            a->mg_changed[g] =
+                mg->dir == MARSHAL_DIRECTION_PARAMETER && _is_group_changed(mg);
+            if (!a->mg_changed[g]) continue;
+            /* Per-element flags only for groups that changed (rare). */
+            for (size_t i = 0; i < mg->count; i++) {
+                a->changed[mg->source.offset + i] = _is_changed(mg, i);
+            }
+        }
+    }
 
     marshal_group_out(NULL, m->data.mg_table);
+    if (m->signals == NULL) return 0;
 
     log_trace("Marshal OUT (target -> FMU):");
-    for (MarshalGroup* mg = m->data.mg_table; mg && mg->name; mg++) {
+    g = 0;
+    for (MarshalGroup* mg = m->data.mg_table; rc == 0 && mg && mg->name;
+        mg++, g++) {
         switch (mg->dir) {
-        case MARSHAL_DIRECTION_TXRX:
         case MARSHAL_DIRECTION_TXONLY:
+            /* Section 4.2.4: inputs are settable in initializationMode and
+               stepComplete; always set as they usually change every step. */
+            if (state == FMU_STATE_INIT || state == FMU_STATE_RUN) {
+                rc = _set_values(m, mg, 0, mg->count);
+            }
             break;
-        case MARSHAL_DIRECTION_PARAMETER:
-            /* Parameters are only marshalled during initialisation. */
-            if (m->runtime.state != FMU_STATE_INIT) continue;
-            break;
-        default:
-            continue;
-        }
-
-        log_trace(
-            "  (name: %s, count: %d, type: %d)", mg->name, mg->count, mg->type);
-
-        switch (mg->type) {
-        case MARSHAL_TYPE_DOUBLE: {
-            for (uint32_t i = 0; i < mg->count; i++) {
-                log_trace("  set_real[%d]: vr[%d]=%f", i, mg->target.ref[i],
-                    mg->target._double[i]);
+        case MARSHAL_DIRECTION_PARAMETER: {
+            if (state == FMU_STATE_RUN && !a->mg_changed[g]) break;
+            /* Batch each contiguous run of settable parameters in one call. */
+            size_t start = 0;
+            for (size_t i = 0; rc == 0 && i <= mg->count; i++) {
+                if (i < mg->count && _is_settable(m, mg, i)) continue;
+                if (i > start) rc = _set_values(m, mg, start, i - start);
+                start = i + 1;
             }
-            errno = 0;
-            rc = a->vtable.set_real(
-                a->fmi2_inst, mg->target.ref, mg->count, mg->target._double);
-            if (errno) {
-                log_debug("FMU set errno (%d): %s", errno, strerror(errno));
-                errno = 0;
-            }
-            if (rc > 0) {
-                return EBADMSG;
-            };
-            break;
-        }
-        case MARSHAL_TYPE_INT32: {
-            for (uint32_t i = 0; i < mg->count; i++) {
-                log_trace("  set_integer[%d]: vr[%d]=%d", i, mg->target.ref[i],
-                    mg->target._int32[i]);
-            }
-            errno = 0;
-            rc = a->vtable.set_integer(
-                a->fmi2_inst, mg->target.ref, mg->count, mg->target._int32);
-            if (errno) {
-                log_debug("FMU set errno (%d): %s", errno, strerror(errno));
-                errno = 0;
-            }
-            if (rc > 0) {
-                return EBADMSG;
-            };
-            break;
-        }
-        case MARSHAL_TYPE_BOOL: {
-            for (uint32_t i = 0; i < mg->count; i++) {
-                log_trace("  set_boolean[%d]: vr[%d]=%d", i, mg->target.ref[i],
-                    mg->target._int32[i]);
-            }
-            errno = 0;
-            rc = a->vtable.set_boolean(
-                a->fmi2_inst, mg->target.ref, mg->count, mg->target._int32);
-            if (errno) {
-                log_debug("FMU set errno (%d): %s", errno, strerror(errno));
-                errno = 0;
-            }
-            if (rc > 0) {
-                return EBADMSG;
-            };
-            break;
-        }
-        case MARSHAL_TYPE_STRING: {
-            for (uint32_t i = 0; i < mg->count; i++) {
-                log_trace("  set_string[%d]: vr[%d]=%s", i, mg->target.ref[i],
-                    mg->target._string[i]);
-            }
-            errno = 0;
-            rc = a->vtable.set_string(
-                a->fmi2_inst, mg->target.ref, mg->count, mg->target._string);
-            if (errno) {
-                log_debug("FMU set errno (%d): %s", errno, strerror(errno));
-                errno = 0;
-            }
-            if (rc > 0) {
-                return EBADMSG;
-            };
             break;
         }
         default:
@@ -395,7 +454,7 @@ static int32_t fmi2mcl_marshal_out(FmuModel* m)
         }
     }
 
-    return 0;
+    return rc;
 }
 
 
@@ -403,10 +462,22 @@ static int32_t fmi2mcl_unload(FmuModel* m)
 {
     Fmi2Adapter* a = m->adapter;
 
-    a->vtable.free_instance(a->fmi2_inst);
+    /* fmi2Terminate is allowed in stepComplete and stepFailed only. */
+    if (m->runtime.state == FMU_STATE_RUN ||
+        m->runtime.state == FMU_STATE_STEP_FAILED) {
+        _check(m, a->vtable.terminate(a->fmi2_inst), "fmi2Terminate");
+    }
+    /* No FMI calls are allowed after fmi2Fatal. */
+    if (a->fmi2_inst && m->runtime.state != FMU_STATE_FATAL) {
+        a->vtable.free_instance(a->fmi2_inst);
+    }
     m->runtime.state = FMU_STATE_TERMINATED;
 
-    if (m->adapter) free(m->adapter);
+    if (a->dl_handle) dlclose(a->dl_handle);
+    free(a->changed);
+    free(a->mg_changed);
+    free(m->adapter);
+    m->adapter = NULL;
 
     return 0;
 }
