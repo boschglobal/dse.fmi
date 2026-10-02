@@ -43,9 +43,12 @@ typedef struct Fmi2VTable {
 } Fmi2VTable;
 
 typedef struct Fmi2Adapter {
+    void*                 dl_handle;
     void*                 fmi2_inst;
     Fmi2VTable            vtable;
     fmi2CallbackFunctions callbacks;
+    bool*                 changed;    /* Indexed by source index. */
+    bool*                 mg_changed; /* Indexed by marshal group. */
 } Fmi2Adapter;
 
 

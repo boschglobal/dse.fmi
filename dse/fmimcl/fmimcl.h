@@ -5,6 +5,7 @@
 #ifndef DSE_FMIMCL_FMIMCL_H_
 #define DSE_FMIMCL_FMIMCL_H_
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <dse/platform.h>
 #include <dse/clib/data/marshal.h>
@@ -261,8 +262,10 @@ typedef enum FmuState {
     FMU_STATE_INSTANTIATED,
     FMU_STATE_INIT,
     FMU_STATE_RUN,
+    FMU_STATE_STEP_FAILED,
     FMU_STATE_TERMINATED,
     FMU_STATE_ERROR,
+    FMU_STATE_FATAL,
 } FmuState;
 
 
@@ -310,6 +313,7 @@ DLL_PRIVATE void fmimcl_parse(FmuModel* fmu_model);
 DLL_PRIVATE void fmimcl_load(FmuModel* fmu_model);
 
 /* engine.c */
+DLL_PRIVATE bool fmimcl_parse_bool(const char* v);
 DLL_PRIVATE void fmimcl_allocate_source(FmuModel* m);
 DLL_PRIVATE void fmimcl_generate_marshal_table(FmuModel* m);
 DLL_PRIVATE void fmimcl_load_encoder_funcs(FmuModel* m);

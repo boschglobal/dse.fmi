@@ -401,6 +401,34 @@ int test_engine_setup_param(void** state)
 }
 
 
+int test_engine_setup_param_bool(void** state)
+{
+    const char* yaml_files[] = {
+        "data/parser_param_bool.yaml",
+        NULL,
+    };
+    YamlDocList* doc_list = NULL;
+    for (const char** _ = yaml_files; *_ != NULL; _++) {
+        doc_list = dse_yaml_load_file(NULL, *_, doc_list);
+    }
+
+    FmimclMock* mock = malloc(sizeof(FmimclMock));
+    *mock = (FmimclMock) {
+        .model = {
+            .name = "FMU"
+        },
+        .model_instance = {
+            .name = (char*)"fmu_inst",
+            .yaml_doc_list = doc_list,
+        },
+    };
+    mock->model.mcl.model.mi = &mock->model_instance;
+
+    *state = mock;
+    return 0;
+}
+
+
 int test_engine_setup_param_string(void** state)
 {
     /* Load yaml files. */
@@ -449,6 +477,23 @@ void test_engine__allocate_source_params(void** state)
 
     assert_string_equal(fmu_model->data.name[0], "real_param_fixed");
     assert_string_equal(fmu_model->data.name[1], "real_param_tunable");
+
+    fmimcl_destroy(fmu_model);
+}
+
+
+void test_engine__allocate_source_params_bool(void** state)
+{
+    FmimclMock* mock = *state;
+    FmuModel*   fmu_model = &mock->model;
+
+    fmimcl_parse(fmu_model);
+    fmimcl_allocate_source(fmu_model);
+
+    assert_int_equal(fmu_model->data.count, 3);
+    assert_double_equal(fmu_model->data.scalar[0], 1.0, 0.0);  // 'true'
+    assert_double_equal(fmu_model->data.scalar[1], 0.0, 0.0);  // 'false'
+    assert_double_equal(fmu_model->data.scalar[2], 1.0, 0.0);  // '1'
 
     fmimcl_destroy(fmu_model);
 }
@@ -604,6 +649,7 @@ int run_engine_tests(void)
     void* s = test_engine_setup;
     void* s_param = test_engine_setup_param;
     void* s_param_string = test_engine_setup_param_string;
+    void* s_param_bool = test_engine_setup_param_bool;
     void* t = test_engine_teardown;
 
     const struct CMUnitTest tests[] = {
@@ -615,6 +661,8 @@ int run_engine_tests(void)
             test_engine__marshal_from_adapter, s, t),
         cmocka_unit_test_setup_teardown(
             test_engine__allocate_source_params, s_param, t),
+        cmocka_unit_test_setup_teardown(
+            test_engine__allocate_source_params_bool, s_param_bool, t),
         cmocka_unit_test_setup_teardown(
             test_engine__create_marshal_tables_params, s_param, t),
         cmocka_unit_test_setup_teardown(

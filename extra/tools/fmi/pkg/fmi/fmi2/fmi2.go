@@ -226,6 +226,16 @@ func annotationsFromSignal(signal schema_kind.Signal) *Annotations {
 	return &Annotations{Tool: tools}
 }
 
+func variabilityFromSignal(signal schema_kind.Signal, causality string) *string {
+	if v, ok := (*signal.Annotations)["fmi_variable_variability"].(string); ok && v != "" {
+		return stringPtr(v)
+	}
+	if causality == "parameter" {
+		return stringPtr("fixed")
+	}
+	return nil
+}
+
 func ScalarSignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGroupSpec) error {
 	for _, signal := range signalGroupSpec.Signals {
 		v := (*signal.Annotations)["fmi_variable_causality"]
@@ -234,12 +244,9 @@ func ScalarSignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGr
 		}
 		causality := v.(string)
 		start := ""
-		var variability *string = nil
+		variability := variabilityFromSignal(signal, causality)
 		if causality == "input" || causality == "parameter" {
 			start = "0.0"
-		}
-		if causality == "parameter" {
-			variability = stringPtr("tunable")
 		}
 
 		if v = (*signal.Annotations)["fmi_variable_start_value"]; v != nil {
@@ -250,6 +257,8 @@ func ScalarSignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGr
 				start = fmt.Sprintf("%f", v)
 			case float64:
 				start = fmt.Sprintf("%f", v)
+			case string:
+				start = v
 			}
 		}
 		if v = (*signal.Annotations)["fmi_variable_vref"]; v != nil {
@@ -401,10 +410,7 @@ func StringSignal(FmiXml *ModelDescription, signalGroupSpec schema_kind.SignalGr
 			}
 		}
 
-		var variability *string = nil
-		if causality == "parameter" {
-			variability = stringPtr("tunable")
-		}
+		variability := variabilityFromSignal(signal, causality)
 
 		if v = (*signal.Annotations)["fmi_variable_vref"]; v != nil {
 			ScalarVariable := ScalarVariable{
