@@ -1,6 +1,6 @@
 ---
-title: FMI MCL API Reference
 linkTitle: MCL
+title: FMI MCL API Reference
 ---
 ## FMI Model Compatibility Library
 
@@ -274,6 +274,9 @@ typedef struct FmuModel {
         int* cg;
         int mdf;
     } measurement;
+    struct {
+        FmuState state;
+    } runtime;
 }
 ```
 
@@ -287,6 +290,8 @@ typedef struct FmuSignal {
     int variable_kind;
     int variable_dir;
     int variable_type;
+    MarshalVar variable_variability;
+    const char* variable_start_value;
     const char* variable_annotation_encoding;
 }
 ```
@@ -363,6 +368,23 @@ function attempt to load the configured encoder functions to:
 
 fmu_model (FmuModel*)
 : FMU Model descriptor object.
+
+
+
+### fmimcl_load_parameters
+
+Load parameter start values from an INI file. For each FMU signal, if a
+matching key is present in the INI file then its value replaces the start
+value otherwise loaded from the YAML. Only double-typed signals are
+supported.
+
+#### Parameters
+
+fmu_model (FmuModel*)
+: FMU Model descriptor object.
+
+path (const char*)
+: Path to the INI file. If NULL or missing, no parameters are loaded.
 
 
 

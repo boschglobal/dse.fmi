@@ -26,19 +26,6 @@ TASK_CMD := docker run -it --rm \
 ###############
 ## Document Modules
 
-# File "_index.md"
-define _INDEX_MD_FILE =
----
-title: "DSE FMI API Reference"
-linkTitle: "FMI"
-weight: 400
----
-
-## DSE FMI API Reference
-endef
-export _INDEX_MD_FILE
-DOC_OUTPUT_index := doc/content/apis/fmi/_index.md
-
 # Module "fmimcl"
 DOC_INPUT_fmimcl := dse/fmimcl/fmimcl.h
 DOC_CDIR_fmimcl := dse/fmimcl/engine.c,dse/fmimcl/fmimcl.c,dse/fmimcl/model.c,dse/fmimcl/parser.c
@@ -90,11 +77,6 @@ model:
 			> doc/content/docs/user/models/modelcfmu/task.md
 #		--template model.task.md.template \
 
-.PHONY: index
-index:
-	@cd ..; mkdir -p $$(dirname $(DOC_OUTPUT_index))
-	@cd ..; echo "$$_INDEX_MD_FILE" > $(DOC_OUTPUT_index)
-
 .PHONY: $(DOC_C_MODULES)
 $(DOC_C_MODULES):
 	@cd ..; mkdir -p $$(dirname $(DOC_OUTPUT_$@))
@@ -114,4 +96,4 @@ $(DOC_C_MODULES):
 			-tpng  $$(basename $(DOC_OUTPUT_$@))
 
 .PHONY: generate
-generate: index examples model $(DOC_C_MODULES)
+generate: examples model $(DOC_C_MODULES)

@@ -80,8 +80,9 @@ GenModelCFmuAnnotationCommand
 
 ## Simulation (DSE)
 
-{{< readfile file="script.md" code="true" lang="hs" >}}
-
+```md
+--8<-- "user/models/modelcfmu/script.md"
+```
 
 ## Workflow
 
@@ -91,6 +92,7 @@ GenModelCFmuAnnotationCommand
 task generate-modelcfmu FMU_NAME=foo
 ```
 
-### Task CLI
+```md
+--8<-- "user/models/modelcfmu/task.md"
+```
 
-{{< readfile file="task.md" code="true" lang="bash" >}}

@@ -8,7 +8,6 @@ tags:
 - Model
 github_repo: "https://github.com/boschglobal/dse.fmi"
 github_subdir: "doc"
-draft: true
 ---
 
 ## Synposis
@@ -18,17 +17,15 @@ draft: true
 
 ### Structure
 
-```
-```
-
 ## Transformations
 
 
 
 ## Simulation (DSE)
 
-{{< readfile file="script.md" code="true" lang="hs" >}}
-
+```md
+--8<-- "user/models/fmimcl/script.md"
+```
 
 ## Workflow
 
@@ -38,4 +35,6 @@ draft: true
 task generate-fmimcl -- FMU_NAME=foo
 ```
 
-{{< readfile file="task.md" code="true" lang="bash" >}}
+```md
+--8<-- "user/models/fmimcl/task.md"
+```

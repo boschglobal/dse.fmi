@@ -1,36 +1,8 @@
 ---
-title: FMI ModelC FMU API Reference
 linkTitle: ModelC FMU
+title: FMI ModelC FMU API Reference
 ---
-## default_log
-
-
-Default logging function in case the FMU caller does not provide any logger.
-
-
-
-## fmi2ExitInitializationMode
-
-
-Initialise the Model Runtime (of the ModelC library) and in the process
-establish the simulation that this ModelC FMU is wrapping/operating.
-
-This function will generate indexes to map between FMI Variables and ModelC
-Signals; both scaler signals (double) and binary signals (string/binary).
-
-### Parameters
-
-c (fmi2Component*)
-: An FmuInstanceData object representing an instance of this FMU.
-
-### Returns
-
-fmi2OK (fmi2Status)
-: The simulation that this FMU represents is ready to be operated.
-
-
-
-## fmi2GetString
+## fmi2GetReal
 
 
 Get values for the provided list of value references.
@@ -46,7 +18,7 @@ vr (fmi2ValueReference[])
 nvr (int)
 : The number of value references to retrieve.
 
-value (fmi2String[])
+value (fmi2Real[])
 : Storage for the retrieved values.
 
 ### Returns
@@ -82,7 +54,7 @@ fmi2OK (fmi2Status)
 
 
 
-## fmi2SetString
+## fmi2DoStep
 
 
 Set values for the provided list of value references and values. String/Binary
@@ -97,43 +69,45 @@ variables are always appended to the ModelC Binary Signal.
 c (fmi2Component*)
 : An FmuInstanceData object representing an instance of this FMU.
 
-vr (fmi2ValueReference[])
-: List of value references to set.
+currentCommunicationPoint (fmi2Real)
+: The model time (for the start of this step).
 
-nvr (int)
-: The number of value references to set.
+communicationStepSize (fmi2Real)
+: The model step size.
 
-value (fmi2String[])
-: Storage for the values to be set.
+noSetFMUStatePriorToCurrentPoint (fmi2Boolean)
+: Not used.
 
 ### Returns
 
 fmi2OK (fmi2Status)
-: The requested variables have been set (where available).
+: The step completed.
+
+fmi2Error (fmi2Status)
+: An error occurred when stepping the ModelC Simulation.
 
 
 
-## fmu_signals_reset
+## fmi2SetDebugLogging
 
 
-> Required by FMU.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-
-
-## fmu_signals_remove
-
-
-This method frees the allocated binary signal indexes.
+Enable or disable logging and set the active logging categories.
 
 ### Parameters
 
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
+c (fmi2Component*)
+: An FmuInstanceData object representing an instance of this FMU.
+loggingOn (fmi2Boolean)
+: Enable or disable logging.
+nCategories (size_t)
+: The number of logging categories.
+categories (const fmi2String[])
+: An array of logging category names.
+
+### Returns
+
+fmi2OK (fmi2Status)
+: Logging settings updated successfully.
 
 
 
@@ -179,6 +153,113 @@ center footer Dynamic Simulation Environment
 
 
 
+## fmi2ExitInitializationMode
+
+
+Initialise the Model Runtime (of the ModelC library) and in the process
+establish the simulation that this ModelC FMU is wrapping/operating.
+
+This function will generate indexes to map between FMI Variables and ModelC
+Signals; both scaler signals (double) and binary signals (string/binary).
+
+### Parameters
+
+c (fmi2Component*)
+: An FmuInstanceData object representing an instance of this FMU.
+
+### Returns
+
+fmi2OK (fmi2Status)
+: The simulation that this FMU represents is ready to be operated.
+
+
+
+## fmi2FreeInstance
+
+
+Free memory and resources related to the provided FMU instance.
+
+### Parameters
+
+c (fmi2Component*)
+: An FmuInstanceData object representing an instance of this FMU.
+
+
+
+## fmu_signals_reset
+
+
+> Required by FMU.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+
+
+## fmu_signals_setup
+
+
+Placeholder to signal the FMU to not use the default signal allocation.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+
+
+## fmu_signals_remove
+
+
+This method frees the allocated binary signal indexes.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+
+
+## default_log
+
+
+Default logging function in case the FMU caller does not provide any logger.
+
+
+
+## fmi2SetString
+
+
+Set values for the provided list of value references and values. String/Binary
+variables are always appended to the ModelC Binary Signal.
+
+> Note: If several variables are indexed against the same ModelC Binary Signal,
+  for instance in a Bus Topology, then each variable will be appended to that
+  ModelC Binary Signal.
+
+### Parameters
+
+c (fmi2Component*)
+: An FmuInstanceData object representing an instance of this FMU.
+
+vr (fmi2ValueReference[])
+: List of value references to set.
+
+nvr (int)
+: The number of value references to set.
+
+value (fmi2String[])
+: Storage for the values to be set.
+
+### Returns
+
+fmi2OK (fmi2Status)
+: The requested variables have been set (where available).
+
+
+
 ## fmi2Instantiate
 
 
@@ -196,7 +277,7 @@ fmi2Component (pointer)
 
 
 
-## fmi2GetReal
+## fmi2GetString
 
 
 Get values for the provided list of value references.
@@ -212,71 +293,13 @@ vr (fmi2ValueReference[])
 nvr (int)
 : The number of value references to retrieve.
 
-value (fmi2Real[])
+value (fmi2String[])
 : Storage for the retrieved values.
 
 ### Returns
 
 fmi2OK (fmi2Status)
 : The requested variables are retrieved (where available).
-
-
-
-## fmi2DoStep
-
-
-Set values for the provided list of value references and values. String/Binary
-variables are always appended to the ModelC Binary Signal.
-
-> Note: If several variables are indexed against the same ModelC Binary Signal,
-  for instance in a Bus Topology, then each variable will be appended to that
-  ModelC Binary Signal.
-
-### Parameters
-
-c (fmi2Component*)
-: An FmuInstanceData object representing an instance of this FMU.
-
-currentCommunicationPoint (fmi2Real)
-: The model time (for the start of this step).
-
-communicationStepSize (fmi2Real)
-: The model step size.
-
-noSetFMUStatePriorToCurrentPoint (fmi2Boolean)
-: Not used.
-
-### Returns
-
-fmi2OK (fmi2Status)
-: The step completed.
-
-fmi2Error (fmi2Status)
-: An error occurred when stepping the ModelC Simulation.
-
-
-
-## fmi2FreeInstance
-
-
-Free memory and resources related to the provided FMU instance.
-
-### Parameters
-
-c (fmi2Component*)
-: An FmuInstanceData object representing an instance of this FMU.
-
-
-
-## fmu_signals_setup
-
-
-Placeholder to signal the FMU to not use the default signal allocation.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
 
 
 

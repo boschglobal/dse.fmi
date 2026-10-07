@@ -1,49 +1,44 @@
 ---
-title: FMI Gateway FMU API Reference
 linkTitle: Gateway FMU
+title: FMI Gateway FMU API Reference
 ---
-## fmu_step
+## fmigateway_session_configure
 
 
-This method executes one step of the gateway model and signals are exchanged
-with the other simulation participants.
-
-> Required by FMU.
-
-### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-communication_point (double)
-: The current model time of the FMU in seconds.
-step_size (double)
-: The step size of the FMU in seconds.
-
-### Returns
-
-0 (int32_t)
-: The FMU step was performed correctly.
-
-
-
-
-## fmu_destroy
-
-
-Releases memory and system resources allocated by gateway.
-
-> Required by FMU.
+If session parameters were parsed from the model description, this method
+configures and starts the additional models, or executes the given command.
 
 ### Parameters
 
 fmu (FmuInstanceData*)
 : The FMU Descriptor object representing an instance of the FMU Model.
 
-### Returns
 
-0 (int32_t)
-: The FMU data was released correctly.
 
+## fmigateway_session_windows_start
+
+
+Creates windows processes based on the parameters
+configured in a yaml file. Process informations are
+stored for later termination.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+ 
+
+
+## fmigateway_sync_extra_step
+
+
+Performs an extra step to shutdown models.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+ 
 
 
 ## FMI ModelC Gateway
@@ -128,6 +123,50 @@ fmu (FmuInstanceData*)
 
 
 
+## fmu_step
+
+
+This method executes one step of the gateway model and signals are exchanged
+with the other simulation participants.
+
+> Required by FMU.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+communication_point (double)
+: The current model time of the FMU in seconds.
+step_size (double)
+: The step size of the FMU in seconds.
+
+### Returns
+
+0 (int32_t)
+: The FMU step was performed correctly.
+
+
+
+
+## fmu_destroy
+
+
+Releases memory and system resources allocated by gateway.
+
+> Required by FMU.
+
+### Parameters
+
+fmu (FmuInstanceData*)
+: The FMU Descriptor object representing an instance of the FMU Model.
+
+### Returns
+
+0 (int32_t)
+: The FMU data was released correctly.
+
+
+
 ## Typedefs
 
 ### FmiGateway
@@ -135,22 +174,35 @@ fmu (FmuInstanceData*)
 ```c
 typedef struct FmiGateway {
     int* model;
+    FmiGatewayState state;
     struct {
         int* doc_list;
         const char** yaml_files;
+        const char* model_name;
         double step_size;
         double end_time;
         int log_level;
         FmiGatewaySession* session;
+        struct {
+            FmiGatewayRuntimeType type;
+            int cmds;
+            const char* log_location;
+            void* simer_process;
+        } runtime;
+        struct {
+            const char* startup_cmd;
+            const char* shutdown_cmd;
+            FmiGatewayParameter* envar;
+        } scripts;
     } settings;
     int binary_signals_reset;
 }
 ```
 
-### FmiGatewayEnvvar
+### FmiGatewayParameter
 
 ```c
-typedef struct FmiGatewayEnvvar {
+typedef struct FmiGatewayParameter {
     const char* name;
     const char* type;
     char* vref;
@@ -172,11 +224,7 @@ typedef struct FmiGatewaySession {
         int simbus;
         int transport;
     } visibility;
-    const char* init_cmd;
-    const char* shutdown_cmd;
-    FmiGatewayEnvvar* envar;
     int logging;
-    const char* log_location;
     double last_step;
 }
 ```
@@ -195,7 +243,7 @@ typedef struct WindowsModel {
     double current_step;
     double timeout;
     int stacked;
-    FmiGatewayEnvvar* envar;
+    FmiGatewayParameter* envar;
     void* w_process;
 }
 ```
@@ -206,18 +254,6 @@ typedef struct WindowsModel {
 
 This method loads the required yaml files from the resource location of the fmu.
 The loaded yaml files are parsed into the fmu descriptor object.
-
-#### Parameters
-
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
-
-
-
-### fmigateway_session_configure
-
-If session parameters were parsed from the model description, this method
-configures and starts the additional models, or executes the given command.
 
 #### Parameters
 
@@ -238,24 +274,29 @@ fmu (FmuInstanceData*)
 
 
 
-### fmigateway_session_windows_end
+### fmigateway_setenv
 
-Termiantes all previously started windows processes.
-After sending the termination signals, one additionally
-step is made by the gateway to close the simulation.
+Set an environment variable.
 
 #### Parameters
 
-fmu (FmuInstanceData*)
-: The FMU Descriptor object representing an instance of the FMU Model.
- 
+name (const char*)
+: The name of the environment variable.
+value (const char*)
+: The value to set for the environment variable.
+
+#### Returns
+
+int
+: Non-zero on success, zero on failure.
 
 
-### fmigateway_session_windows_start
 
-Creates windows processes based on the parameters
-configured in a yaml file. Process informations are
-stored for later termination.
+### fmigateway_shutdown_models
+
+Terminates all previously started windows processes.
+After sending the termination signals, one additional
+step is made by the gateway to close the simulation.
 
 #### Parameters
 

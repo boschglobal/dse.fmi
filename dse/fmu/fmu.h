@@ -29,22 +29,22 @@ FMU API
 The FMU API provides a simplified FMU inteface with an abstracted variable
 interface (indexing and storage). The FMU Interface includes the methods:
 * Implemented by FMU developer:
-    * `[fmu_create()]({{< ref "#fmu_create" >}})`
-    * `[fmu_init()]({{< ref "#fmu_init" >}})`
-    * `[fmu_step()]({{< ref "#fmu_step" >}})`
-    * `[fmu_destroy()]({{< ref "#fmu_destroy" >}})`
+    * [fmu_create()](#fmu_create)
+    * [fmu_init()](#fmu_init)
+    * [fmu_step()](#fmu_step)
+    * [fmu_destroy()](#fmu_destroy)
 * Additional provided functions:
-    * `[fmu_log()]({{< ref "#fmu_log" >}})` - logging function
+    * [fmu_log()](#fmu_log) - logging function
 * Supporting Variable Table mechanism:
-    * `[fmu_register_var()]({{< ref "#fmu_register_var" >}})`
-    * `[fmu_register_var_table()]({{< ref "#fmu_register_var_table" >}})`
-    * `[fmu_var_table()]({{< ref "#fmu_var_table" >}})`
+    * [fmu_register_var()](#fmu_register_var)
+    * [fmu_register_var_table()](#fmu_register_var_table)
+    * [fmu_var_table()](#fmu_var_table)
 
 
 An additional FMU Signal Interface is available for more complex integrations:
-* `[fmu_signals_reset()]({{< ref "#fmu_signals_reset" >}})`
-* `[fmu_signals_setup()]({{< ref "#fmu_signals_setup" >}})`
-* `[fmu_signals_remove()]({{< ref "#fmu_signals_remove" >}})`
+* [fmu_signals_reset()](#fmu_signals_reset)
+* [fmu_signals_setup()](#fmu_signals_setup)
+* [fmu_signals_remove()](#fmu_signals_remove)
 
 
 FMUs implemented using this simplified FMU API can be built for both FMI 2
@@ -124,7 +124,9 @@ Example
 The following example demonstrates an FMU which implements an incrementing
 counter.
 
-{{< readfile file="../examples/fmu/fmu.c" code="true" lang="c" >}}
+```c
+--8<-- "apis/fmi/examples/fmu/fmu.c"
+```
 
 */
 

@@ -6,5 +6,6 @@ aliases:
  - generate-fmimodelc
 
 commands:
+ - Task: info
  - Task: gen-modelcfmu-annotations
  - Task: gen-modelcfmu
