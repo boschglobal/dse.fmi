@@ -8,6 +8,9 @@ set(MODEL_PATH "${MODULE_LC}/examples")
 project(Fmi2FMU)
 
 
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/resources)
+
+
 # Target - FMU for testing FMI MCL
 # ================================
 set(TARGET "mclfmi2fmu")
@@ -31,6 +34,12 @@ install(
         ${TARGET}
     LIBRARY DESTINATION
         ${MODEL_PATH}/fmu/binaries/linux64
+)
+install(
+    DIRECTORY
+        ${CMAKE_CURRENT_BINARY_DIR}/resources
+    DESTINATION
+        ${MODEL_PATH}/fmu
 )
 install(
     FILES

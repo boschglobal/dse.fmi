@@ -91,6 +91,30 @@ static ChannelSpec* _model_build_channel_spec(
 }
 
 
+typedef struct BinaryIndex {
+    FmuSignalVectorIndex index; /* Must be first, freed by the owning index. */
+    FmuSignalVector      sv;
+} BinaryIndex;
+
+
+static FmuSignalVectorIndex* _binary_index_make(const SimbusVectorIndex* idx)
+{
+    /* The FMU layer expects an FmuSignalVector, SimbusVector has a different
+       layout (so can't be referenced directly). */
+    BinaryIndex* b = calloc(1, sizeof(BinaryIndex));
+    b->sv.count = idx->sbv->count;
+    b->sv.signal = idx->sbv->signal;
+    b->sv.uid = idx->sbv->uid;
+    b->sv.scalar = idx->sbv->scalar;
+    b->sv.binary = idx->sbv->binary;
+    b->sv.length = idx->sbv->length;
+    b->sv.buffer_size = idx->sbv->buffer_size;
+    b->index.sv = &b->sv;
+    b->index.vi = idx->vi;
+    return &b->index;
+}
+
+
 static const char** _signal_annotation_list(ModelInstanceSpec* mi,
     SignalVector* sv, const char* signal, const char* name)
 {
@@ -236,12 +260,9 @@ void fmimodelc_index_binary_signals(FmuInstanceData* fmu)
                         if (idx.sbv == NULL) continue;
 
                         /* Complete the index entry. */
-                        // TODO: should this object be duplicate of idx?
-                        SimbusVectorIndex* _ =
-                            calloc(1, sizeof(SimbusVectorIndex));
-                        *_ = idx;
                         fmu_variable_add(&fmu->variables.binary.rx,
-                            (uint32_t)strtoul(rx_vref, NULL, 10), _);
+                            (uint32_t)strtoul(rx_vref, NULL, 10),
+                            _binary_index_make(&idx));
                     }
                     free(rx_list);
                 }
@@ -260,12 +281,9 @@ void fmimodelc_index_binary_signals(FmuInstanceData* fmu)
                         if (idx.sbv == NULL) continue;
 
                         /* Complete the index entry. */
-                        // TODO: should this object be duplicate of idx?
-                        SimbusVectorIndex* _ =
-                            calloc(1, sizeof(SimbusVectorIndex));
-                        *_ = idx;
                         fmu_variable_add(&fmu->variables.binary.tx,
-                            (uint32_t)strtoul(tx_vref, NULL, 10), _);
+                            (uint32_t)strtoul(tx_vref, NULL, 10),
+                            _binary_index_make(&idx));
                     }
                     free(tx_list);
                 }

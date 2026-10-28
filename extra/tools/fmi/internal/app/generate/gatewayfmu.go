@@ -50,7 +50,7 @@ type GenFmiGatewayCommand struct {
 
 	// Model parameters
 	startTime float64
-	endTime   float64
+	endTime   float64 // 0: omitted from the XML.
 	stepSize  float64
 
 	// Number of Signals processed so far, used for assigning unique vrefs.
@@ -77,8 +77,6 @@ func NewFmiGatewayCommand(name string) *GenFmiGatewayCommand {
 		fs:          flag.NewFlagSet(name, flag.ExitOnError),
 		// Default values
 		startTime: 0.0,
-		endTime:   999999.0,
-		stepSize:  0.0005,
 		signalIdx: 0,
 	}
 
@@ -99,8 +97,10 @@ func NewFmiGatewayCommand(name string) *GenFmiGatewayCommand {
 	c.fs.StringVar(&c.parameters, "parameters", "", "Path to a CSV file with parameters (name,type,default)")
 	c.fs.StringVar(&c.modelIdentifier, "modelidentifier", "", "ModelIdentifier field in the FMU modelDescription.xml")
 	c.fs.StringVar(&c.uuid, "uuid", "", "UUID to assign to the FMU, set to '' to generate a new UUID")
-	c.fs.StringVar(&c.stack, "stack", "", "[Legacy] Path to the stack.yaml")
 	c.fs.StringVar(&c.fmiPackage, "fmiPackage", "", "Fmi Package path")
+	c.fs.StringVar(&c.stack, "stack", "", "[Legacy] Path to the stack.yaml")
+	c.fs.Float64Var(&c.stepSize, "stepsize", 0.0005, "Step size (seconds); overridden by the stack")
+	c.fs.Float64Var(&c.endTime, "endtime", 0, "End time (seconds), 0 to omit; overridden by the stack")
 
 	// Supports unit testing.
 	c.fs.StringVar(&c.libRootPath, "libroot", "/usr/local", "System lib root path (where lib & lib32 directory are found)")
@@ -146,6 +146,11 @@ func (c *GenFmiGatewayCommand) Run() error {
 	/* Legacy Support. */
 	if err := c.parseStack(); err != nil {
 		return err
+	}
+
+	// Validate after the stack has had a chance to override the values.
+	if c.stepSize <= 0 || c.endTime < 0 {
+		return fmt.Errorf("stepsize must be positive and endtime must not be negative")
 	}
 
 	if err := c.parseParametersCsv(); err != nil {
@@ -324,6 +329,9 @@ func (c *GenFmiGatewayCommand) patchSignal(vr *int, sgType string, signals []sch
 	var signalList []schemaKind.Signal
 	if sgType == "string" {
 		for _, s := range signals {
+			if internal, ok := (*s.Annotations)["internal"].(bool); ok && internal {
+				continue
+			}
 			(*s.Annotations)["fmi_variable_vref"] = *vr
 			(*s.Annotations)["fmi_variable_vref_input"] = *vr
 			(*s.Annotations)["fmi_variable_vref_output"] = *vr + 1
@@ -335,6 +343,9 @@ func (c *GenFmiGatewayCommand) patchSignal(vr *int, sgType string, signals []sch
 		return signalList, nil
 	}
 	for _, s := range signals {
+		if internal, ok := (*s.Annotations)["internal"].(bool); ok && internal {
+			continue
+		}
 		if slices.Contains(*usedSignals, s.Signal) {
 			continue
 		}
@@ -356,10 +367,6 @@ func (c *GenFmiGatewayCommand) patchSignal(vr *int, sgType string, signals []sch
 		if (*s.Annotations)["fmi_variable_causality"] != nil {
 			causality = ((*s.Annotations)["fmi_variable_causality"]).(string)
 		}
-		if (*s.Annotations)["internal"] != nil && (*s.Annotations)["internal"].(bool) {
-			continue
-		}
-
 		annotations := schemaKind.Annotations{
 			"fmi_variable_causality": causality,
 			"fmi_variable_vref":      *vr,
@@ -466,13 +473,17 @@ func (c *GenFmiGatewayCommand) createFmuXml() (interface{}, []string, error) {
 		c.annotations[k] = v
 	}
 
+	var stopTime *float64
+	if c.endTime > 0 {
+		stopTime = &c.endTime
+	}
 	fmiConfig := fmi.FmiConfig{
 		Name:           c.name,
 		UUID:           c.uuid,
 		Version:        c.version,
 		Description:    "Gateway to connect to the DSE Co-Simulation",
 		StartTime:      c.startTime,
-		StopTime:       c.endTime,
+		StopTime:       stopTime,
 		StepSize:       c.stepSize,
 		GenerationTool: "DSE FMI - GATEWAY FMU",
 		Annotations:    c.annotations,
@@ -623,21 +634,31 @@ func (c *GenFmiGatewayCommand) parseStack() error {
 	if err := yaml.Unmarshal(stackFile, &stack); err != nil {
 		return fmt.Errorf("unable to unmarshal stack.yaml")
 	}
+	if stack.Spec.Models == nil {
+		return nil
+	}
 	for _, model := range *stack.Spec.Models {
-		if model.Model.Name == "Gateway" {
-			if stepSize := (*model.Annotations)["step_size"]; stepSize != nil {
-				c.stepSize = stepSize.(float64)
+		if strings.ToLower(model.Model.Name) != "gateway" || model.Annotations == nil {
+			continue
+		}
+		for key, target := range map[string]*float64{
+			"step_size":      &c.stepSize,
+			"end_time":       &c.endTime,
+			"fmi_start_time": &c.startTime,
+		} {
+			v := (*model.Annotations)[key]
+			if v == nil {
+				continue
 			}
-			if endTime := (*model.Annotations)["end_time"]; endTime != nil {
-				c.endTime = endTime.(float64)
+			f, ok := fmi.ToFloat64(v)
+			if !ok {
+				return fmt.Errorf("stack gateway annotation %q is not a number: %v", key, v)
 			}
-			if startTime := (*model.Annotations)["fmi_start_time"]; startTime != nil {
-				c.startTime = startTime.(float64)
-			}
-			if envarList := (*model.Annotations)["cmd_envvars"]; envarList != nil {
-				c.getEnvar(envarList, "real")
-				c.getEnvar(envarList, "string")
-			}
+			*target = f
+		}
+		if envarList := (*model.Annotations)["cmd_envvars"]; envarList != nil {
+			c.getEnvar(envarList, "real")
+			c.getEnvar(envarList, "string")
 		}
 	}
 	return nil

@@ -140,6 +140,7 @@ static void _parse_simulation_settings(
 
     fmi_gw->settings.log_level = LOG_ERROR;                    /* default */
     fmi_gw->settings.runtime.type = FMIGATEWAY_RUNTIME_LEGACY; /* default */
+    fmi_gw->settings.end_time = FMIGATEWAY_END_TIME_DEFAULT;   /* default */
 
     xml_load_object(ctx, fmi_gw, _spec, sizeof(_spec) / sizeof(_spec[0]));
 

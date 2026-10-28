@@ -40,7 +40,8 @@ Example
 */
 
 
-#define NUMERIC_ENVAR_LEN 24
+#define NUMERIC_ENVAR_LEN           24
+#define FMIGATEWAY_END_TIME_DEFAULT (60 * 60 * 24)
 
 
 typedef struct FmiGatewayParameter {

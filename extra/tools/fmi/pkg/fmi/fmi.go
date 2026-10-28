@@ -18,11 +18,34 @@ type FmiConfig struct {
 	FmiVersion      string
 	Description     string
 	StartTime       float64
-	StopTime        float64
+	StopTime        *float64
 	StepSize        float64
 	ModelIdentifier string
 	GenerationTool  string
 	Annotations     map[string]string
+}
+
+// FormatReal formats a float as the shortest string that parses back to the
+// same value (xs:double compatible, e.g. 2.38587666666667e-05).
+func FormatReal(v float64) string {
+	return strconv.FormatFloat(v, 'g', -1, 64)
+}
+
+// ToFloat64 converts a YAML numeric value (int or float) to float64.
+func ToFloat64(v any) (float64, bool) {
+	switch v := v.(type) {
+	case float64:
+		return v, true
+	case float32:
+		return float64(v), true
+	case int:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	case uint64:
+		return float64(v), true
+	}
+	return 0, false
 }
 
 // StartValue formats a fmi_variable_start_value annotation for a numeric start
@@ -33,12 +56,28 @@ func StartValue(v any) (string, bool) {
 		return v, v != ""
 	case int:
 		return strconv.Itoa(v), true
+	case int64:
+		return strconv.FormatInt(v, 10), true
+	case uint64:
+		return strconv.FormatUint(v, 10), true
 	case float32:
-		return fmt.Sprintf("%f", v), true
+		return strconv.FormatFloat(float64(v), 'g', -1, 32), true
 	case float64:
-		return fmt.Sprintf("%f", v), true
+		return FormatReal(v), true
 	}
 	return "", false
+}
+
+// StartString returns a fmi_variable_start_value annotation as a string start
+// attribute; non-string YAML scalars (e.g. 5 or true) are formatted, not rejected.
+func StartString(v any) string {
+	if v == nil {
+		return ""
+	}
+	if s, ok := StartValue(v); ok {
+		return s
+	}
+	return fmt.Sprint(v)
 }
 
 func GetFmuBinaryDirName(platform string, fmiVersion string) (dir string) {

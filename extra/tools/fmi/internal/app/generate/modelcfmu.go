@@ -186,7 +186,7 @@ func (c *GenModelCFmuCommand) createFmuXml(name string, uuid string, version str
 		Version:         version,
 		Description:     fmt.Sprintf("Model: %s, via FMI ModelC FMU (using DSE ModelC Runtime).", name),
 		StartTime:       c.startTime,
-		StopTime:        c.endTime,
+		StopTime:        &c.endTime,
 		StepSize:        c.stepSize,
 		GenerationTool:  "DSE FMI - ModelC FMU",
 		FmiVersion:      c.fmiVersion,

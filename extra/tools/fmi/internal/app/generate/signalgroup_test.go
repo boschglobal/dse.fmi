@@ -168,7 +168,6 @@ func TestSignalGrpSignals(t *testing.T) {
 			"fmi_variable_name":        "scalar_param_tunable",
 			"fmi_variable_variability": "tunable",
 			"fmi_variable_start_value": "1.0",
-			"internal":                 true,
 		},
 	}
 
@@ -242,6 +241,36 @@ func TestSignalGrpVariabilityCombinations(t *testing.T) {
 	sg, err := runGenSignalGroup(t, `<ScalarVariable name="p" valueReference="1" causality="parameter" variability=""><Real start="1"/></ScalarVariable>`)
 	assert.NoError(t, err)
 	assert.Equal(t, "fixed", (*sg.Spec.Signals[0].Annotations)["fmi_variable_variability"])
+}
+
+func TestSignalGrpFixedParameters(t *testing.T) {
+	var xml_file = "../../../test/testdata/fmimcl/fmimcl.xml"
+
+	for _, fixed := range []bool{false, true} {
+		signalgroup_file := filepath.Join(t.TempDir(), "signalgroup.yaml")
+		args := []string{"-input", xml_file, "-output", signalgroup_file}
+		if fixed {
+			args = append(args, "-fixed-parameters")
+		}
+		cmd := NewGenSignalGroupCommand("test")
+		assert.NoError(t, cmd.Parse(args))
+		assert.NoError(t, cmd.Run())
+
+		data, err := os.ReadFile(signalgroup_file)
+		assert.NoError(t, err)
+		var sg kind.SignalGroup
+		assert.NoError(t, yaml.Unmarshal(data, &sg))
+
+		for _, s := range sg.Spec.Signals {
+			if s.Signal == "scalar_param_tunable" {
+				expected := "tunable"
+				if fixed {
+					expected = "fixed"
+				}
+				assert.Equal(t, expected, (*s.Annotations)["fmi_variable_variability"])
+			}
+		}
+	}
 }
 
 func TestSignalGrpMissingStartValue(t *testing.T) {

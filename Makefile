@@ -307,7 +307,7 @@ super-linter:
 		--env VALIDATE_DOCKERFILE=true \
 		--env VALIDATE_MARKDOWN=true \
 		--env VALIDATE_YAML=true \
-		ghcr.io/super-linter/super-linter:slim-v8
+		ghcr.io/super-linter/super-linter:slim-v9
 
 	$(MAKE) -C extra/tools/fmi lint
 

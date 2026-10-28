@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -295,23 +296,163 @@ static bool _is_group_changed(MarshalGroup* mg)
 }
 
 
+static bool _is_tunable_group(FmuModel* m, MarshalGroup* mg)
+{
+    if (mg->dir != MARSHAL_DIRECTION_PARAMETER) return false;
+    for (size_t i = 0; i < mg->count; i++) {
+        if (m->signals[mg->source.offset + i].variable_variability ==
+            MARSHAL_VARIABILITY_TUNABLE) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+static void _parameter_create(FmuModel* m)
+{
+    Fmi2Adapter*   a = m->adapter;
+    Fmi2Parameter* p = &a->parameter;
+    if (m->signals == NULL) return;
+
+    size_t groups = 0;
+    size_t size = 0;
+    for (MarshalGroup* mg = m->data.mg_table; mg && mg->name; mg++) {
+        if (_is_tunable_group(m, mg) == false) continue;
+        groups++;
+        if (mg->source.offset + mg->count > size) {
+            size = mg->source.offset + mg->count;
+        }
+    }
+    p->tunable = calloc(groups ? groups : 1, sizeof(Fmi2TunableGroup));
+    p->changed = calloc(size ? size : 1, sizeof(bool));
+    for (MarshalGroup* mg = m->data.mg_table; mg && mg->name; mg++) {
+        if (_is_tunable_group(m, mg)) p->tunable[p->tunable_count++].mg = mg;
+    }
+}
+
+
+/* Must run before marshal_group_out() overwrites the target. */
+static void _parameter_detect_changes(FmuModel* m)
+{
+    Fmi2Adapter*   a = m->adapter;
+    Fmi2Parameter* p = &a->parameter;
+
+    for (size_t t = 0; t < p->tunable_count; t++) {
+        Fmi2TunableGroup* tg = &p->tunable[t];
+        MarshalGroup*     mg = tg->mg;
+
+        tg->changed = _is_group_changed(mg);
+        if (tg->changed == false) continue;
+        /* Per-element flags only for groups that changed (rare). */
+        for (size_t i = 0; i < mg->count; i++) {
+            size_t idx = mg->source.offset + i;
+            p->changed[idx] =
+                _is_changed(mg, i) && m->signals[idx].variable_variability ==
+                                          MARSHAL_VARIABILITY_TUNABLE;
+        }
+    }
+}
+
+
 /* FMI 2.0.5 section 4.2.4: parameters are settable in instantiated, tunable
    parameters also in stepComplete (here only when changed). */
 static bool _is_settable(FmuModel* m, MarshalGroup* mg, size_t k)
 {
     Fmi2Adapter* a = m->adapter;
     size_t       idx = mg->source.offset + k;
-    FmuSignal*   s = &m->signals[idx];
 
     switch (m->runtime.state) {
     case FMU_STATE_INSTANTIATED:
-        return !_is_start_value(mg, k, s);
+        return !_is_start_value(mg, k, &m->signals[idx]);
     case FMU_STATE_RUN:
-        return a->changed[idx] &&
-               s->variable_variability == MARSHAL_VARIABILITY_TUNABLE;
+        return a->parameter.changed[idx];
     default:
         return false;
     }
+}
+
+
+/* Batch each contiguous run of settable parameters in one call. */
+static int32_t _set_parameters(FmuModel* m, MarshalGroup* mg)
+{
+    int32_t rc = 0;
+    size_t  start = 0;
+    for (size_t i = 0; rc == 0 && i <= mg->count; i++) {
+        if (i < mg->count && _is_settable(m, mg, i)) continue;
+        if (i > start) rc = _set_values(m, mg, start, i - start);
+        start = i + 1;
+    }
+    return rc;
+}
+
+
+static char* _absolute_path(const char* path)
+{
+#ifdef _WIN32
+    return _fullpath(NULL, path, 0);
+#else
+    int save_errno = errno;
+    char* _path = realpath(path, NULL);
+    errno = (errno == EINVAL) ? save_errno : errno; /* Consume: EINVAL. */
+    return _path;
+#endif
+}
+
+
+/* Unreserved URI characters (RFC 3986) plus the path separator. */
+static bool _is_uri_safe(unsigned char c)
+{
+    return isalnum(c) || c == '-' || c == '.' || c == '_' || c == '~' ||
+           c == '/';
+}
+
+
+/* Appends c as a percent-escape, e.g. ' ' -> "%20". Returns the new end. */
+static char* _append_escaped(char* out, unsigned char c)
+{
+    static const char hex[] = "0123456789ABCDEF";
+
+    out[0] = '%';
+    out[1] = hex[c / 16];
+    out[2] = hex[c % 16];
+    return out + 3;
+}
+
+
+/* FMI 2.0 fmuResourceLocation must be an absolute URI (file:///C:/...). */
+static char* _resource_uri(const char* path)
+{
+    char*       abs_path = _absolute_path(path);
+    const char* src = abs_path ? abs_path : path;
+    size_t      scheme_len = strlen(FILE_URI_SCHEME);
+
+    /* Worst case every character is escaped to 3 characters. */
+    char* uri = malloc(scheme_len + strlen(src) * 3 + 1);
+    if (uri == NULL) {
+        free(abs_path);
+        return NULL;
+    }
+
+    char* out = uri;
+    memcpy(out, FILE_URI_SCHEME, scheme_len);
+    out += scheme_len;
+    for (size_t i = 0; src[i]; i++) {
+        unsigned char c = (unsigned char)src[i];
+        bool          is_drive_colon = (i == 1 && c == ':');
+
+        if (_is_uri_safe(c) || is_drive_colon) {
+            *out++ = c;
+        } else if (c == '\\') {
+            *out++ = '/';
+        } else {
+            out = _append_escaped(out, c);
+        }
+    }
+    *out = '\0';
+
+    free(abs_path);
+    return uri;
 }
 
 
@@ -320,19 +461,13 @@ static int32_t fmi2mcl_init(FmuModel* m)
     Fmi2Adapter* a = m->adapter;
     int32_t      rc;
 
-    /* Parameter change flags, covering every group's source range. */
-    size_t n = 0, n_mg = 0;
-    for (MarshalGroup* mg = m->data.mg_table; mg && mg->name; mg++, n_mg++) {
-        if (mg->source.offset + mg->count > n) {
-            n = mg->source.offset + mg->count;
-        }
-    }
-    a->changed = calloc(n ? n : 1, sizeof(bool));
-    a->mg_changed = calloc(n_mg ? n_mg : 1, sizeof(bool));
+    _parameter_create(m);
+    char* resource_uri = _resource_uri(m->resource_dir);
 
     a->fmi2_inst = a->vtable.instantiate(m->name, m->cosim, m->guid,
-        m->resource_dir, &(a->callbacks), fmi2False,
+        resource_uri, &(a->callbacks), fmi2False,
         (LOG_LEVEL <= LOG_DEBUG) ? fmi2True : fmi2False);
+    free(resource_uri);
     if (a->fmi2_inst == NULL) {
         log_error("FMI2 Instance could not be created.");
         return EINVAL;
@@ -409,32 +544,19 @@ static int32_t fmi2mcl_marshal_in(FmuModel* m)
 
 static int32_t fmi2mcl_marshal_out(FmuModel* m)
 {
-    Fmi2Adapter* a = m->adapter;
-    FmuState     state = m->runtime.state;
-    int32_t      rc = 0;
-    size_t       g;
+    Fmi2Adapter*   a = m->adapter;
+    Fmi2Parameter* p = &a->parameter;
+    FmuState       state = m->runtime.state;
+    int32_t        rc = 0;
+    size_t         t = 0; /* Cursor into p->tunable, which follows mg_table. */
 
-    /* Detect changes before marshal_group_out() overwrites the target. */
-    if (m->signals && state == FMU_STATE_RUN) {
-        g = 0;
-        for (MarshalGroup* mg = m->data.mg_table; mg && mg->name; mg++, g++) {
-            a->mg_changed[g] =
-                mg->dir == MARSHAL_DIRECTION_PARAMETER && _is_group_changed(mg);
-            if (!a->mg_changed[g]) continue;
-            /* Per-element flags only for groups that changed (rare). */
-            for (size_t i = 0; i < mg->count; i++) {
-                a->changed[mg->source.offset + i] = _is_changed(mg, i);
-            }
-        }
-    }
+    if (m->signals && state == FMU_STATE_RUN) _parameter_detect_changes(m);
 
     marshal_group_out(NULL, m->data.mg_table);
     if (m->signals == NULL) return 0;
 
     log_trace("Marshal OUT (target -> FMU):");
-    g = 0;
-    for (MarshalGroup* mg = m->data.mg_table; rc == 0 && mg && mg->name;
-        mg++, g++) {
+    for (MarshalGroup* mg = m->data.mg_table; rc == 0 && mg && mg->name; mg++) {
         switch (mg->dir) {
         case MARSHAL_DIRECTION_TXONLY:
             /* Section 4.2.4: inputs are settable in initializationMode and
@@ -443,17 +565,22 @@ static int32_t fmi2mcl_marshal_out(FmuModel* m)
                 rc = _set_values(m, mg, 0, mg->count);
             }
             break;
-        case MARSHAL_DIRECTION_PARAMETER: {
-            if (state == FMU_STATE_RUN && !a->mg_changed[g]) break;
-            /* Batch each contiguous run of settable parameters in one call. */
-            size_t start = 0;
-            for (size_t i = 0; rc == 0 && i <= mg->count; i++) {
-                if (i < mg->count && _is_settable(m, mg, i)) continue;
-                if (i > start) rc = _set_values(m, mg, start, i - start);
-                start = i + 1;
+        case MARSHAL_DIRECTION_PARAMETER:
+            switch (state) {
+            case FMU_STATE_INSTANTIATED:
+                rc = _set_parameters(m, mg);
+                break;
+            case FMU_STATE_RUN:
+                if (t >= p->tunable_count) break;
+                if (p->tunable[t].mg == mg) {
+                    if (p->tunable[t].changed) rc = _set_parameters(m, mg);
+                    t++;
+                }
+                break;
+            default:
+                break;
             }
             break;
-        }
         default:
             break;
         }
@@ -479,8 +606,8 @@ static int32_t fmi2mcl_unload(FmuModel* m)
     m->runtime.state = FMU_STATE_TERMINATED;
 
     if (a->dl_handle) dlclose(a->dl_handle);
-    free(a->changed);
-    free(a->mg_changed);
+    free(a->parameter.tunable);
+    free(a->parameter.changed);
     free(m->adapter);
     m->adapter = NULL;
 
