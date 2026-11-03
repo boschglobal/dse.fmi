@@ -387,39 +387,68 @@ static int32_t _set_parameters(FmuModel* m, MarshalGroup* mg)
 }
 
 
+static char* _absolute_path(const char* path)
+{
+#ifdef _WIN32
+    return _fullpath(NULL, path, 0);
+#else
+    return realpath(path, NULL);
+#endif
+}
+
+
+/* Unreserved URI characters (RFC 3986) plus the path separator. */
+static bool _is_uri_safe(unsigned char c)
+{
+    return isalnum(c) || c == '-' || c == '.' || c == '_' || c == '~' ||
+           c == '/';
+}
+
+
+/* Appends c as a percent-escape, e.g. ' ' -> "%20". Returns the new end. */
+static char* _append_escaped(char* out, unsigned char c)
+{
+    static const char hex[] = "0123456789ABCDEF";
+
+    out[0] = '%';
+    out[1] = hex[c / 16];
+    out[2] = hex[c % 16];
+    return out + 3;
+}
+
+
 /* FMI 2.0 fmuResourceLocation must be an absolute URI (file:///C:/...). */
 static char* _resource_uri(const char* path)
 {
-#ifdef _WIN32
-    char* abs = _fullpath(NULL, path, 0);
-#else
-    char* abs = realpath(path, NULL);
-#endif
-    const char* p = abs ? abs : path;
+    char*       abs_path = _absolute_path(path);
+    const char* src = abs_path ? abs_path : path;
     size_t      scheme_len = strlen(FILE_URI_SCHEME);
-    char*       uri = malloc(scheme_len + strlen(p) * 3 + 1);
+
+    /* Worst case every character is escaped to 3 characters. */
+    char* uri = malloc(scheme_len + strlen(src) * 3 + 1);
     if (uri == NULL) {
-        free(abs);
+        free(abs_path);
         return NULL;
     }
 
-    char* o = uri;
-    memcpy(o, FILE_URI_SCHEME, scheme_len);
-    o += scheme_len;
-    for (size_t i = 0; p[i]; i++) {
-        unsigned char c = (unsigned char)p[i];
-        if (isalnum(c) || strchr("-._~/", c)) {
-            *o++ = c;
+    char* out = uri;
+    memcpy(out, FILE_URI_SCHEME, scheme_len);
+    out += scheme_len;
+    for (size_t i = 0; src[i]; i++) {
+        unsigned char c = (unsigned char)src[i];
+        bool          is_drive_colon = (i == 1 && c == ':');
+
+        if (_is_uri_safe(c) || is_drive_colon) {
+            *out++ = c;
         } else if (c == '\\') {
-            *o++ = '/';
-        } else if (c == ':' && i == 1) {
-            *o++ = c; /* Windows drive letter. */
+            *out++ = '/';
         } else {
-            o += sprintf(o, "%%%02X", c);
+            out = _append_escaped(out, c);
         }
     }
-    *o = '\0';
-    free(abs);
+    *out = '\0';
+
+    free(abs_path);
     return uri;
 }
 
