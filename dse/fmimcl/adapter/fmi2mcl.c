@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -386,6 +387,43 @@ static int32_t _set_parameters(FmuModel* m, MarshalGroup* mg)
 }
 
 
+/* FMI 2.0 fmuResourceLocation must be an absolute URI (file:///C:/...). */
+static char* _resource_uri(const char* path)
+{
+#ifdef _WIN32
+    char* abs = _fullpath(NULL, path, 0);
+#else
+    char* abs = realpath(path, NULL);
+#endif
+    const char* p = abs ? abs : path;
+    size_t      scheme_len = strlen(FILE_URI_SCHEME);
+    char*       uri = malloc(scheme_len + strlen(p) * 3 + 1);
+    if (uri == NULL) {
+        free(abs);
+        return NULL;
+    }
+
+    char* o = uri;
+    memcpy(o, FILE_URI_SCHEME, scheme_len);
+    o += scheme_len;
+    for (size_t i = 0; p[i]; i++) {
+        unsigned char c = (unsigned char)p[i];
+        if (isalnum(c) || strchr("-._~/", c)) {
+            *o++ = c;
+        } else if (c == '\\') {
+            *o++ = '/';
+        } else if (c == ':' && i == 1) {
+            *o++ = c; /* Windows drive letter. */
+        } else {
+            o += sprintf(o, "%%%02X", c);
+        }
+    }
+    *o = '\0';
+    free(abs);
+    return uri;
+}
+
+
 static int32_t fmi2mcl_init(FmuModel* m)
 {
     Fmi2Adapter* a = m->adapter;
@@ -393,9 +431,12 @@ static int32_t fmi2mcl_init(FmuModel* m)
 
     _parameter_create(m);
 
+    char* resource_uri = _resource_uri(m->resource_dir);
+
     a->fmi2_inst = a->vtable.instantiate(m->name, m->cosim, m->guid,
-        m->resource_dir, &(a->callbacks), fmi2False,
+        resource_uri, &(a->callbacks), fmi2False,
         (LOG_LEVEL <= LOG_DEBUG) ? fmi2True : fmi2False);
+    free(resource_uri);
     if (a->fmi2_inst == NULL) {
         log_error("FMI2 Instance could not be created.");
         return EINVAL;
