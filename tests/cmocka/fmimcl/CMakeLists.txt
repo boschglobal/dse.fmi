@@ -150,6 +150,7 @@ target_link_directories(test_mstep
 target_link_libraries(test_mstep
     PUBLIC
         modelc_mock
+        ab-codec-impl
         -Wl,-Bstatic modelc_bundled -Wl,-Bdynamic ${CMAKE_DL_LIBS}
     PRIVATE
         lua

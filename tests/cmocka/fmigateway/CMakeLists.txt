@@ -67,8 +67,9 @@ add_library(modelcgateway_runtime OBJECT
     ${DSE_MODELC_SOURCE_DIR}/controller/modelc_args.c
     ${DSE_MODELC_SOURCE_DIR}/controller/step.c
     ${DSE_MODELC_SOURCE_DIR}/controller/model_runtime.c
-    ${DSE_MODELC_SOURCE_DIR}/adapter/adapter_loopb.c
+    ${DSE_MODELC_SOURCE_DIR}/controller/transform.c
     ${DSE_MODELC_SOURCE_DIR}/adapter/index.c
+    ${DSE_MODELC_SOURCE_DIR}/adapter/uid_index.c
 )
 target_include_directories(modelcgateway_runtime
     PUBLIC

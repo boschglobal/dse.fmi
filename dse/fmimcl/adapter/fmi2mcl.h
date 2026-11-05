@@ -42,13 +42,24 @@ typedef struct Fmi2VTable {
     fmi2FreeInstance            free_instance;
 } Fmi2VTable;
 
+typedef struct Fmi2TunableGroup {
+    MarshalGroup* mg;
+    bool          changed; /* Any value differs from the last one sent. */
+} Fmi2TunableGroup;
+
+/* Only PARAMETER groups holding tunable signals are tracked. */
+typedef struct Fmi2Parameter {
+    Fmi2TunableGroup* tunable;
+    size_t            tunable_count;
+    bool*             changed; /* Indexed by source index; tunable only. */
+} Fmi2Parameter;
+
 typedef struct Fmi2Adapter {
     void*                 dl_handle;
     void*                 fmi2_inst;
     Fmi2VTable            vtable;
     fmi2CallbackFunctions callbacks;
-    bool*                 changed;    /* Indexed by source index. */
-    bool*                 mg_changed; /* Indexed by marshal group. */
+    Fmi2Parameter         parameter;
 } Fmi2Adapter;
 
 

@@ -111,13 +111,14 @@ tasks:
           MODEL_NAME: '{{.MODEL_NAME}}'
           INPUT: '{{.FMU_MODELDESC}}'
           OUTPUT: '{{.SIGNAL_GROUP}}'
+          FIXED_PARAMETERS: '{{.FIXED_PARAMETERS}}'
     requires:
       vars: [FMU_DIR, MCL_PATH]
     metadata:
       vars:
         MODEL_NAME:
           required: false
-          hint: The model name used for this FMU.
+          hint: The model name used for this FMU (defaults to the ModelName of the FMU).
         FMU_DIR:
           required: true
           hint: URI identifying an FMU (select from 'uses' or manually enter a path).
@@ -130,15 +131,20 @@ tasks:
           hint: Path where the FMI MCL shared library is located.
         FMU_MODELDESC:
           required: false
-          hint: Path where the FMI modelDescription.xml should be created.
+          hint: Path of the FMU modelDescription.xml used as input for the Signal Group.
           default: '{{.FMU_DIR}}/modelDescription.xml'
         SIGNAL_GROUP:
           required: false
           hint: Path where the associated Signal Group should be created.
           default: '{{.OUT_DIR}}/signalgroup.yaml'
+        FIXED_PARAMETERS:
+          required: false
+          hint: Convert all tunable parameters to fixed parameters (true/false).
+          default: 'false'
         PLATFORM:
           required: false
           hint: Platform of the FMU being generated (normally set automatically).
+          default: linux-amd64
       generates:
         - data/model.yaml
         - data/signalgroup.yaml
@@ -225,7 +231,12 @@ tasks:
           ANNOTATIONS: '{{.ANNOTATIONS}}'
           STACK: '{{.STACK}}'
           RUNTIME: '{{.RUNTIME}}'
-          PLATFORM: '{{.PLATFORM}}'
+          PLATFORM: '{{coalesce .PLATFORM .PLATFORM_ARCH}}'
+          STEPSIZE: '{{.STEPSIZE}}'
+          ENDTIME: '{{.ENDTIME}}'
+          PARAMETERS: '{{.PARAMETERS}}'
+          SIM_DIR: '{{.SIM_DIR}}'
+          FMI_PACKAGE: '{{.FMI_PACKAGE}}'
     requires:
       vars: [SIGNAL_GROUPS]
     metadata:
@@ -235,30 +246,66 @@ tasks:
           hint: Signalgroups represented by this Gateway.
         OUT_DIR:
           required: false
-          hint: Path where the FMU should be created.
-          default: out
+          hint: |
+            URI identifying the output folder for the FMU. A container relative
+            path, defaults to /out (mounted from the host output folder).
+          default: /out
         RUNTIME:
           required: false
-          hint: Runtime environment for the FMU.
+          hint: Runtime environment for the FMU (legacy or simer).
+          default: legacy
         VERSION:
           required: false
           hint: Version of the generated FMU.
+          default: 0.0.1
         FMI_VERSION:
           required: false
           hint: FMI version of the generated FMU (i.e. 2 or 3).
+          default: '2'
         UUID:
           required: false
-          hint: UUID of the generated FMU.
+          hint: UUID of the generated FMU (generated if not specified).
         FMU_NAME:
           required: false
-          hint: ModelName field in the FMU modelDescription.xml.
+          hint: Name of the FMU (used for the FMU filename, model directory and ModelName in the modelDescription.xml).
           default: Gateway
         MODEL_IDENTIFIER:
           required: false
           hint: MODEL_IDENTIFIER field in the FMU modelDescription.xml.
+          default: fmi<FMI_VERSION>gateway
         ANNOTATIONS:
           required: false
           hint: extra arbitary information as annotations in dictionary format.
+          default: '{}'
+        STACK:
+          required: false
+          hint: |
+            [Legacy] Path to a stack.yaml. Gateway annotations (step_size,
+            end_time, fmi_start_time, cmd_envvars) override STEPSIZE, ENDTIME
+            and add parameters.
+        PLATFORM:
+          required: false
+          hint: Platform of the FMU being generated (normally set automatically).
+          default: linux-amd64
+        SIM_DIR:
+          required: false
+          hint: Container path of the simulation (Simer layout) packaged by the simer runtime.
+          default: /sim
+        FMI_PACKAGE:
+          required: false
+          hint: Container path of the FMI package containing the gateway binaries.
+          default: /package/<PLATFORM>/fmigateway
+        STEPSIZE:
+          required: false
+          hint: Step size in seconds (overridden by the stack).
+          default: '0.0005'
+        ENDTIME:
+          required: false
+          hint: End time in seconds, 0 to omit StopTime from the XML (overridden by the stack).
+          default: '0'
+        PARAMETERS:
+          required: false
+          hint: Path to a CSV file with parameters (name,type,default).
 
   gen-fmimcl:
     internal: true
@@ -294,6 +341,7 @@ tasks:
     vars:
       FMI_IMAGE: '{{if .FMI_IMAGE}}{{.FMI_IMAGE}}{{else}}{{.FMI_REGISTRY}}/dse-fmi:{{.FMI_TAG}}{{end}}'
       MODEL_NAME: "{{if .MODEL_NAME}}--name '{{.MODEL_NAME}}'{{else}}{{end}}"
+      FIXED_PARAMETERS: '{{if eq (.FIXED_PARAMETERS | default "false") "true"}}--fixed-parameters{{end}}'
     cmds:
       - docker run --rm
           --user {{.FMI_USER}}:{{.FMI_GROUP}}
@@ -303,6 +351,7 @@ tasks:
             --input {{.INPUT}}
             --output {{.OUTPUT}}
             {{.MODEL_NAME}}
+            {{.FIXED_PARAMETERS}}
     requires:
       vars: [INPUT, OUTPUT]
 
@@ -386,6 +435,11 @@ tasks:
       ANNOTATIONS: '{{if .ANNOTATIONS}}--annotations {{squote .ANNOTATIONS}}{{else}}{{end}}'
       STACK: "{{if .STACK}}--stack '{{.STACK}}'{{else}}{{end}}"
       PLATFORM: "{{if .PLATFORM}}--platform '{{.PLATFORM}}'{{else}}{{end}}"
+      STEPSIZE: "{{if .STEPSIZE}}--stepsize '{{.STEPSIZE}}'{{else}}{{end}}"
+      ENDTIME: "{{if .ENDTIME}}--endtime '{{.ENDTIME}}'{{else}}{{end}}"
+      PARAMETERS: "{{if .PARAMETERS}}--parameters '{{.PARAMETERS}}'{{else}}{{end}}"
+      SIM_DIR: "{{if .SIM_DIR}}--sim '{{.SIM_DIR}}'{{else}}{{end}}"
+      FMI_PACKAGE: "{{if .FMI_PACKAGE}}--fmiPackage '{{.FMI_PACKAGE}}'{{else}}{{end}}"
     cmds:
       - echo "USING {{.FMI_IMAGE}} CMD {{.TASK}}"
       - docker run --rm
@@ -405,6 +459,11 @@ tasks:
             {{.ANNOTATIONS}}
             {{.STACK}}
             {{.PLATFORM}}
+            {{.STEPSIZE}}
+            {{.ENDTIME}}
+            {{.PARAMETERS}}
+            {{.SIM_DIR}}
+            {{.FMI_PACKAGE}}
     requires:
       vars: [SIGNAL_GROUPS]
 

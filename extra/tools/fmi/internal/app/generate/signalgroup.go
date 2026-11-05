@@ -19,10 +19,11 @@ type GenSignalGroupCommand struct {
 	commandName string
 	fs          *flag.FlagSet
 
-	modelName  string
-	inputFile  string
-	outputFile string
-	logLevel   int
+	modelName       string
+	inputFile       string
+	outputFile      string
+	fixedParameters bool
+	logLevel        int
 }
 
 func NewGenSignalGroupCommand(name string) *GenSignalGroupCommand {
@@ -30,6 +31,7 @@ func NewGenSignalGroupCommand(name string) *GenSignalGroupCommand {
 	c.fs.StringVar(&c.modelName, "name", "", "Model Name for this FMU (defaults to FMU Name)")
 	c.fs.StringVar(&c.inputFile, "input", "", "path to FMU Model Description file (XML)")
 	c.fs.StringVar(&c.outputFile, "output", "", "path to write generated signal group file")
+	c.fs.BoolVar(&c.fixedParameters, "fixed-parameters", false, "convert all tunable parameters to fixed parameters")
 	c.fs.IntVar(&c.logLevel, "log", 4, "Loglevel")
 	return c
 }
@@ -107,12 +109,17 @@ func (c *GenSignalGroupCommand) generateSignalVector(fmiMD fmi2.ModelDescription
 		if s.Variability != nil && *s.Variability != "" {
 			variability = *s.Variability
 		}
+		if c.fixedParameters && variability == "tunable" &&
+			(s.Causality == "parameter" || s.Causality == "calculatedParameter") {
+			variability = "fixed"
+		}
 		if !slices.Contains(allowedVariability[s.Causality], variability) {
 			return fmt.Errorf("variable %s: variability %q is not allowed for causality %q",
 				s.Name, variability, s.Causality)
 		}
 		annotations["fmi_variable_variability"] = variability
-		if s.Causality == "local" || s.Causality == "parameter" {
+		// Tunable parameters stay on the simbus so they can change at runtime.
+		if s.Causality == "local" || (s.Causality == "parameter" && variability != "tunable") {
 			annotations["internal"] = true
 		}
 

@@ -64,6 +64,7 @@ target_compile_definitions(${FMI2_GW}
 )
 target_link_libraries(${FMI2_GW}
     PRIVATE
+        ab-codec-impl
         yaml
         xml
         lua
@@ -112,6 +113,7 @@ target_compile_definitions(${FMI3_GW}
 )
 target_link_libraries(${FMI3_GW}
     PRIVATE
+        ab-codec-impl
         yaml
         xml
         lua

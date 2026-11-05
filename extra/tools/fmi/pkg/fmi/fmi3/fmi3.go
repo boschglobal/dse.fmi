@@ -87,7 +87,7 @@ type LogCategories struct {
 type DefaultExperiment struct {
 	Text      string `xml:",chardata"`
 	StartTime string `xml:"startTime,attr"`
-	StopTime  string `xml:"stopTime,attr"`
+	StopTime  string `xml:"stopTime,attr,omitempty"`
 	StepSize  string `xml:"stepSize,attr"`
 	Tolerance string `xml:"tolerance,attr,omitempty"`
 }
@@ -318,10 +318,7 @@ func buildBinarySignal(signal schema_kind.Signal, vref any, causality string, id
 	mime_type := (*signal.Annotations)["mime_type"].(string)
 	encoding := (*signal.Annotations)["dse.standards.fmi-ls-binary-to-text.encoding"].(string)
 
-	start := ""
-	if (*signal.Annotations)["fmi_variable_start_value"] != nil {
-		start = (*signal.Annotations)["fmi_variable_start_value"].(string)
-	}
+	start := fmi.StartString((*signal.Annotations)["fmi_variable_start_value"])
 
 	var _causality string
 	if causality == "rx" {
@@ -414,16 +411,11 @@ func StringSignal(signalGroupSpec schema_kind.SignalGroupSpec, FmiXml *ModelDesc
 	for _, signal := range signalGroupSpec.Signals {
 
 		causality := (*signal.Annotations)["fmi_variable_causality"].(string)
-		_start := (*signal.Annotations)["fmi_variable_start_value"]
 		start := ""
 		var variability = stringPtr("discrete")
 
 		if causality == "input" || causality == "parameter" {
-			if _start != nil {
-				start = _start.(string)
-			} else {
-				start = ""
-			}
+			start = fmi.StartString((*signal.Annotations)["fmi_variable_start_value"])
 		}
 		if causality == "parameter" {
 			variability = stringPtr("tunable")
@@ -463,9 +455,11 @@ func SetGeneralFmuXmlFields(fmiConfig fmi.FmiConfig, fmuXml *ModelDescription) e
 	fmuXml.Description = fmiConfig.Description
 
 	// Runtime Information.
-	fmuXml.DefaultExperiment.StartTime = fmt.Sprintf("%f", fmiConfig.StartTime)
-	fmuXml.DefaultExperiment.StopTime = fmt.Sprintf("%f", fmiConfig.StopTime)
-	fmuXml.DefaultExperiment.StepSize = fmt.Sprintf("%f", fmiConfig.StepSize)
+	fmuXml.DefaultExperiment.StartTime = fmi.FormatReal(fmiConfig.StartTime)
+	if fmiConfig.StopTime != nil {
+		fmuXml.DefaultExperiment.StopTime = fmi.FormatReal(*fmiConfig.StopTime)
+	}
+	fmuXml.DefaultExperiment.StepSize = fmi.FormatReal(fmiConfig.StepSize)
 
 	// Model Information.
 	fmuXml.CoSimulation.ModelIdentifier = fmiConfig.ModelIdentifier // This is the packaged SO/DLL file.

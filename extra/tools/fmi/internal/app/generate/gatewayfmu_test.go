@@ -188,6 +188,32 @@ func TestGatewayFmu_FMI3_AllSignalGroups(t *testing.T) {
 	}
 }
 
+// TestGatewayFmu_FMI2_StepEndTimeArgs checks -stepsize/-endtime and that a stack overrides them.
+func TestGatewayFmu_FMI2_StepEndTimeArgs(t *testing.T) {
+	base := gatewayTestdataPath(t)
+	sgs := sgList(base, "SG4.yaml")
+
+	md := readFmi2Xml(t, runSimer(t, "-name", "defgw", "-signalgroups", sgs))
+	assert.Equal(t, "", md.DefaultExperiment.StopTime)
+	assert.Equal(t, "0.0005", md.DefaultExperiment.StepSize)
+
+	md = readFmi2Xml(t, runSimer(t, "-name", "argsgw", "-signalgroups", sgs,
+		"-stepsize", "0.001", "-endtime", "10"))
+	assert.Equal(t, "10", md.DefaultExperiment.StopTime)
+	assert.Equal(t, "0.001", md.DefaultExperiment.StepSize)
+
+	// Step sizes below 5e-7 must not collapse to zero.
+	md = readFmi2Xml(t, runSimer(t, "-name", "smallgw", "-signalgroups", sgs,
+		"-stepsize", "1e-7"))
+	assert.Equal(t, "1e-07", md.DefaultExperiment.StepSize)
+
+	// With a stack its values take precedence.
+	md = readFmi2Xml(t, runSimer(t, "-name", "stackargsgw", "-signalgroups", sgs,
+		"-stack", filepath.Join(base, "stack.yaml"), "-stepsize", "0.001", "-endtime", "10"))
+	assert.Equal(t, "0.02", md.DefaultExperiment.StopTime)
+	assert.Equal(t, "0.0005", md.DefaultExperiment.StepSize)
+}
+
 // TestGatewayFmu_FMI2_WithStack exercises FMI2 with the stack.yaml (simer mode).
 // The stack contains a Gateway model with step_size, end_time and cmd_envvars.
 func TestGatewayFmu_FMI2_WithStack(t *testing.T) {
@@ -203,8 +229,8 @@ func TestGatewayFmu_FMI2_WithStack(t *testing.T) {
 	assert.Equal(t, "stackgw", md.ModelName)
 
 	// stack.yaml Gateway has step_size: 0.0005 and end_time: 0.0200
-	assert.Equal(t, "0.020000", md.DefaultExperiment.StopTime)
-	assert.Equal(t, "0.000500", md.DefaultExperiment.StepSize)
+	assert.Equal(t, "0.02", md.DefaultExperiment.StopTime)
+	assert.Equal(t, "0.0005", md.DefaultExperiment.StepSize)
 
 	// stack.yaml Gateway has cmd_envvars: envar0 (string), envar1 (real), envar2 (no type → real).
 	// In simer mode they must appear as parameter variables in the XML alongside the
