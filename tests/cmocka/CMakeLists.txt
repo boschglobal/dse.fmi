@@ -33,86 +33,14 @@ add_compile_options(${C_CXX_WARNING_FLAGS})
 set(REPO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 
 
-# External Project - yaml
-# -----------------------
-set(YAML_SOURCE_DIR "$ENV{EXTERNAL_BUILD_DIR}/yaml")
-set(YAML_BINARY_DIR "$ENV{EXTERNAL_BUILD_DIR}/yaml")
-find_library(YAML_LIB
-    NAMES
-        libyaml.a
-    PATHS
-        ${YAML_BINARY_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH
-)
-add_library(yaml STATIC IMPORTED GLOBAL)
-set_target_properties(yaml
-    PROPERTIES
-        IMPORTED_LOCATION "${YAML_LIB}"
-        INTERFACE_INCLUDE_DIRECTORIES "${YAML_BINARY_DIR}"
-)
-
-
-# External Project - xml
-# ----------------------
-set(XML_SOURCE_DIR "$ENV{EXTERNAL_BUILD_DIR}/libxml2")
-set(XML_BINARY_DIR "$ENV{EXTERNAL_BUILD_DIR}/libxml2")
-set(XML_INCLUDE_DIR "$ENV{EXTERNAL_BUILD_DIR}/libxml2/install/include/libxml2")
-find_library(XML_LIB
-    NAMES
-        libxml2.a
-    PATHS
-        ${XML_BINARY_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH
-)
-add_library(xml STATIC IMPORTED GLOBAL)
-add_dependencies(xml libxml2)
-set_target_properties(xml
-    PROPERTIES
-        IMPORTED_LOCATION "${XML_LIB}"
-        INTERFACE_INCLUDE_DIRECTORIES "${XML_INCLUDE_DIR}"
-)
-
-
-# External Project - msgpackc
-# ---------------------------
-set(MSGPACKC_SOURCE_DIR "$ENV{EXTERNAL_BUILD_DIR}/msgpackc")
-set(MSGPACKC_BINARY_DIR "$ENV{EXTERNAL_BUILD_DIR}/msgpackc-build")
-find_library(MSGPACKC_LIB
-    NAMES
-        libmsgpackc.a
-    PATHS
-        ${MSGPACKC_BINARY_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH
-)
-add_library(msgpackc STATIC IMPORTED GLOBAL)
-set_target_properties(msgpackc
-    PROPERTIES
-        IMPORTED_LOCATION "${MSGPACKC_LIB}"
-        INTERFACE_INCLUDE_DIRECTORIES "${MSGPACKC_BINARY_DIR}"
-)
-
-
-# External Project - lua
-# ----------------------
-set(LUA_SOURCE_DIR "$ENV{EXTERNAL_BUILD_DIR}/lua")
-set(LUA_BINARY_DIR "$ENV{EXTERNAL_BUILD_DIR}/lua")
-find_library(LUA_LIB
-    NAMES
-        liblua.a
-    PATHS
-        ${LUA_BINARY_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH
-)
-add_library(lua STATIC IMPORTED GLOBAL)
-set_target_properties(lua
-    PROPERTIES
-        IMPORTED_LOCATION "${LUA_LIB}"
-        INTERFACE_INCLUDE_DIRECTORIES "${LUA_BINARY_DIR}"
-)
+# External Projects
+# =================
+set(DSE_FMI_EXTERNAL_DIR ${REPO_DIR}/extra/external)
+include(${DSE_FMI_EXTERNAL_DIR}/yaml.cmake)
+include(${DSE_FMI_EXTERNAL_DIR}/xml2.cmake)
+include(${DSE_FMI_EXTERNAL_DIR}/msgpackc.cmake)
+include(${DSE_FMI_EXTERNAL_DIR}/lua.cmake)
+include(${DSE_FMI_EXTERNAL_DIR}/dlfcnwin32.cmake)
 
 
 # External Project - DSE C Lib
@@ -161,7 +89,7 @@ FetchContent_Declare(dse_ncodec
     URL                 $ENV{DSE_NCODEC_URL}
     HTTP_USERNAME       $ENV{DSE_NCODEC_URL_USER}
     HTTP_PASSWORD       $ENV{DSE_NCODEC_URL_TOKEN}
-    SOURCE_SUBDIR       dse/ncodec
+    SOURCE_SUBDIR       dse
 )
 FetchContent_MakeAvailable(dse_ncodec)
 set(DSE_NCODEC_INCLUDE_DIR ${dse_ncodec_SOURCE_DIR})
@@ -181,7 +109,10 @@ target_include_directories(clib_runtime
     PRIVATE
         ${DSE_CLIB_INCLUDE_DIR}
         ${FMI2_INCLUDE_DIR}
-        ${YAML_SOURCE_DIR}/include
+)
+target_link_libraries(clib_runtime
+    PRIVATE
+        dse_external_yaml
 )
 
 

@@ -64,9 +64,9 @@ target_compile_definitions(${FMI2_GW}
 )
 target_link_libraries(${FMI2_GW}
     PRIVATE
-        yaml
-        xml
-        lua
+        dse_external_yaml
+        dse_external_xml2
+        dse_external_lua
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${UNIX}>:-Wl,--whole-archive,--export-dynamic>
         $<$<BOOL:${UNIX}>:modelc_bundled>
@@ -74,7 +74,7 @@ target_link_libraries(${FMI2_GW}
         $<$<BOOL:${UNIX}>:-Wl,--no-whole-archive>
         $<$<BOOL:${UNIX}>:rt>
         $<$<BOOL:${WIN32}>:modelc>
-        $<$<BOOL:${WIN32}>:dl>
+        $<$<BOOL:${WIN32}>:dse_external_dl>
 )
 install(
     TARGETS
@@ -112,9 +112,9 @@ target_compile_definitions(${FMI3_GW}
 )
 target_link_libraries(${FMI3_GW}
     PRIVATE
-        yaml
-        xml
-        lua
+        dse_external_yaml
+        dse_external_xml2
+        dse_external_lua
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${UNIX}>:-Wl,--whole-archive,--export-dynamic>
         $<$<BOOL:${UNIX}>:modelc_bundled>
@@ -122,7 +122,7 @@ target_link_libraries(${FMI3_GW}
         $<$<BOOL:${UNIX}>:-Wl,--no-whole-archive>
         $<$<BOOL:${UNIX}>:rt>
         $<$<BOOL:${WIN32}>:modelc>
-        $<$<BOOL:${WIN32}>:dl>
+        $<$<BOOL:${WIN32}>:dse_external_dl>
 )
 install(
     TARGETS

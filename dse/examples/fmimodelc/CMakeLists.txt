@@ -31,7 +31,7 @@ target_link_directories(fmimodelctarget
 target_link_libraries(fmimodelctarget
     PRIVATE
         modelc
-        yaml
+        dse_external_yaml
 )
 
 

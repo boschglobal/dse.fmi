@@ -32,7 +32,7 @@ target_link_directories(${MODULE_LC}
 target_link_libraries(${MODULE_LC}
     PRIVATE
         modelc
-        yaml
+        dse_external_yaml
 )
 install(
     TARGETS

@@ -37,9 +37,9 @@ target_link_libraries(fmu2${MODULE_LC}
     PRIVATE
         fmi2-common
         ab-codec
-        xml
+        dse_external_xml2
         $<$<BOOL:${WIN32}>:bcrypt>
-        $<$<BOOL:${WIN32}>:dl>
+        $<$<BOOL:${WIN32}>:dse_external_dl>
         m
 )
 set_target_properties(fmu2${MODULE_LC}
@@ -84,9 +84,9 @@ target_link_libraries(fmu3${MODULE_LC}
     PRIVATE
         fmi2-common
         ab-codec
-        xml
+        dse_external_xml2
         $<$<BOOL:${WIN32}>:bcrypt>
-        $<$<BOOL:${WIN32}>:dl>
+        $<$<BOOL:${WIN32}>:dse_external_dl>
         m
 )
 set_target_properties(fmu3${MODULE_LC}

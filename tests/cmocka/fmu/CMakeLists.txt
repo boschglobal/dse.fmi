@@ -28,9 +28,9 @@ target_link_libraries(fmi2_runtime
     PUBLIC
         ab-codec
     PRIVATE
-        xml
+        dse_external_xml2
         $<$<BOOL:${WIN32}>:bcrypt>
-        $<$<BOOL:${WIN32}>:dl>
+        $<$<BOOL:${WIN32}>:dse_external_dl>
         m
 )
 add_library(fmi3_runtime OBJECT
@@ -51,9 +51,9 @@ target_link_libraries(fmi3_runtime
     PUBLIC
         ab-codec
     PRIVATE
-        xml
+        dse_external_xml2
         $<$<BOOL:${WIN32}>:bcrypt>
-        $<$<BOOL:${WIN32}>:dl>
+        $<$<BOOL:${WIN32}>:dse_external_dl>
         m
 )
 
@@ -77,10 +77,10 @@ function(fmiXfmu_executable FMI_VERSION)
             clib_runtime
         PRIVATE
             ab-codec
-            yaml
-            xml
+            dse_external_yaml
+            dse_external_xml2
             cmocka
-            dl
+            dse_external_dl
             m
     )
     target_compile_definitions(${EXE_NAME}
@@ -130,10 +130,10 @@ target_link_libraries(test_fmu
         clib_runtime
     PRIVATE
         ab-codec
-        yaml
-        xml
+        dse_external_yaml
+        dse_external_xml2
         cmocka
-        dl
+        dse_external_dl
         m
 )
 install(TARGETS test_fmu)

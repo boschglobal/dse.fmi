@@ -20,7 +20,7 @@ add_compile_options(-Wall -W -Wwrite-strings -Wno-missing-field-initializers)
 # Load URLs
 # =========
 include(oss_repos.cmake)
-if($ENV{REPO_MIRRORS})
+if(DEFINED ENV{REPO_MIRRORS})
     include($ENV{REPO_MIRRORS} OPTIONAL)
 endif()
 
@@ -74,7 +74,7 @@ FetchContent_Declare(dse_ncodec
     URL                 $ENV{DSE_NCODEC_URL}
     HTTP_USERNAME       $ENV{DSE_NCODEC_URL_USER}
     HTTP_PASSWORD       $ENV{DSE_NCODEC_URL_TOKEN}
-    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse.ncodec/dse/ncodec"
+    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dse.ncodec"
 )
 FetchContent_MakeAvailable(dse_ncodec)
 set(DSE_NCODEC_SOURCE_DIR ${dse_ncodec_SOURCE_DIR}/dse/ncodec)
@@ -94,127 +94,32 @@ set(DSE_NCODEC_INCLUDE_DIR "${DSE_NCODEC_SOURCE_DIR}/../..")
 #     INSTALL_COMMAND     ""
 # )
 
-# External Project - yaml (unit test only)
-# -----------------------
-ExternalProject_Add(yaml
-    URL                 ${ExternalProject__YAML__URL}
-    HTTP_USERNAME       ${ExternalProject__YAML__USERNAME}
-    HTTP_PASSWORD       ${ExternalProject__YAML__PASSWORD}
-    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/yaml"
-    BINARY_DIR          "$ENV{EXTERNAL_BUILD_DIR}/yaml"
-    CMAKE_ARGS
-        -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -DBUILD_SHARED_LIBS=OFF
-    INSTALL_COMMAND     ""
-)
-
-# External Project - xml
-# ----------------------
-ExternalProject_Add(libxml2
-    URL https://github.com/GNOME/libxml2/archive/refs/tags/v2.13.5.zip
-    URL                 ${ExternalProject__XML2__URL}
-    HTTP_USERNAME       ${ExternalProject__XML2__USERNAME}
-    HTTP_PASSWORD       ${ExternalProject__XML2__PASSWORD}
-    CMAKE_ARGS
-        -D CMAKE_INSTALL_PREFIX=$ENV{EXTERNAL_BUILD_DIR}/libxml2/install
-        -D CMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -D BUILD_SHARED_LIBS=OFF
-        -D LIBXML2_WITH_HTML=OFF
-        -D LIBXML2_WITH_HTTP=OFF
-        -D LIBXML2_WITH_ICONV=OFF
-        -D LIBXML2_WITH_LZMA=OFF
-        -D LIBXML2_WITH_PYTHON=OFF
-        -D LIBXML2_WITH_SCHEMATRON=OFF
-        -D LIBXML2_WITH_TESTS=OFF
-        -D LIBXML2_WITH_THREAD_ALLOC=OFF
-        -D LIBXML2_WITH_THREADS=OFF
-        -D LIBXML2_WITH_TREE=OFF
-        -D LIBXML2_WITH_VALID=OFF
-        -D LIBXML2_WITH_WRITER=OFF
-        -D LIBXML2_WITH_ZLIB=OFF
-    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/libxml2"
-    BINARY_DIR          "$ENV{EXTERNAL_BUILD_DIR}/libxml2"
-    INSTALL_DIR         "$ENV{EXTERNAL_BUILD_DIR}/libxml2/install"
-    UPDATE_COMMAND ""
-)
-ExternalProject_Get_property(libxml2 SOURCE_DIR BINARY_DIR INSTALL_DIR)
-set(XML_SOURCE_DIR "${SOURCE_DIR}")
-set(XML_BINARY_DIR "${BINARY_DIR}")
-set(XML_INSTALL_DIR "${INSTALL_DIR}")
-file(MAKE_DIRECTORY "${XML_SOURCE_DIR}/include")
-file(MAKE_DIRECTORY "${XML_INSTALL_DIR}/include/libxml2")
-
-# dlfcn-win32
-# -----------
-if(NOT WIN32)
-    set(DLFCNWIN32_BUILD_COMMAND "")
-endif()
-ExternalProject_Add(dlfcnwin32
-    URL                 ${ExternalProject__DLFCNWIN32__URL}
-    HTTP_USERNAME       ${ExternalProject__DLFCNWIN32__USERNAME}
-    HTTP_PASSWORD       ${ExternalProject__DLFCNWIN32__PASSWORD}
-    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dlfcnwin32"
-    BINARY_DIR          "$ENV{EXTERNAL_BUILD_DIR}/dlfcnwin32-build"
-    CMAKE_ARGS
-        -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -DBUILD_SHARED_LIBS=OFF
-        -DBUILD_TESTS=OFF
-    BUILD_COMMAND       ${DLFCNWIN32_BUILD_COMMAND}
-    INSTALL_COMMAND     ""
-)
-
-# MsgpackC
-# --------
-ExternalProject_Add(msgpackc
-    URL                 ${ExternalProject__MSGPACK__URL}
-    HTTP_USERNAME       ${ExternalProject__MSGPACK__USERNAME}
-    HTTP_PASSWORD       ${ExternalProject__MSGPACK__PASSWORD}
-    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/msgpackc"
-    BINARY_DIR          "$ENV{EXTERNAL_BUILD_DIR}/msgpackc-build"
-    CMAKE_ARGS
-        -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -DBUILD_SHARED_LIBS=OFF
-        -DMSGPACK_BUILD_EXAMPLES=OFF
-        -DMSGPACK_BUILD_TESTS=OFF
-        -DMSGPACK_GEN_COVERAGE=OFF
-    INSTALL_COMMAND     ""
-)
-
-# Lua
-# ---
-ExternalProject_Add(lua
-    URL                 ${ExternalProject__LUA__URL}
-    SOURCE_DIR          "$ENV{EXTERNAL_BUILD_DIR}/lua"
-    BINARY_DIR          "$ENV{EXTERNAL_BUILD_DIR}/lua"
-    PATCH_COMMAND       ${CMAKE_COMMAND} -E copy
-                        ${CMAKE_CURRENT_SOURCE_DIR}/lua_makefile
-                        <SOURCE_DIR>/makefile
-    CONFIGURE_COMMAND   ""
-    BUILD_COMMAND       make
-                        CMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-                        CC=${CMAKE_C_COMPILER}
-    INSTALL_COMMAND     ""
-)
+# OSS Sources
+# ===========
+include(xml2.cmake)
+include(dlfcnwin32.cmake)
+include(msgpackc.cmake)
 
 
 # OSS Target
 # ==========
 add_custom_target(oss)
+# src: a directory, or an ExternalProject target (its downloaded source is copied).
 function(oss_copy src dst)
+    if(TARGET ${src})
+        add_dependencies(oss ${src}-download)
+        ExternalProject_Get_Property(${src} SOURCE_DIR)
+        set(src ${SOURCE_DIR})
+    endif()
     add_custom_command(TARGET oss PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             "${src}"
             "../../../dse/__oss__/${dst}"
     )
 endfunction()
-add_dependencies(oss
-    dlfcnwin32-download
-    libxml2-download
-    msgpackc-download
-)
 oss_copy(${dse_clib_SOURCE_DIR}                 boschglobal/dse.clib)
 oss_copy(${dse_modelc_SOURCE_DIR}               boschglobal/dse.modelc)
 oss_copy(${dse_ncodec_SOURCE_DIR}               boschglobal/dse.ncodec)
-oss_copy($ENV{EXTERNAL_BUILD_DIR}/dlfcnwin32    dlfcn-win32/dlfcn-win32)
-oss_copy($ENV{EXTERNAL_BUILD_DIR}/libxml2       GNOME/libxml2)
-oss_copy($ENV{EXTERNAL_BUILD_DIR}/msgpackc      msgpack/msgpackc)
+oss_copy(dse_external_dl_build                  dlfcn-win32/dlfcn-win32)
+oss_copy(dse_external_xml2_build                GNOME/libxml2)
+oss_copy(dse_external_msgpackc_build            msgpack/msgpackc)

@@ -38,10 +38,10 @@ target_include_directories(${MODULE_LC}
 target_link_libraries(${MODULE_LC}
     PRIVATE
         ab-codec
-        xml
+        dse_external_xml2
         $<$<BOOL:${WIN32}>:bcrypt>
         $<$<BOOL:${UNIX}>:mcheck>
-        dl
+        dse_external_dl
         m
 )
 install(

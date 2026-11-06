@@ -17,12 +17,12 @@ target_include_directories(modelc_runtime
     PUBLIC
         ${DSE_MODELC_INCLUDE_DIR}
         ${DSE_MODELC_SOURCE_INCLUDE_DIR}
-        ${YAML_SOURCE_DIR}/include
 )
 target_link_libraries(modelc_runtime
     PRIVATE
-        lua
-        xml
+        dse_external_yaml
+        dse_external_lua
+        dse_external_xml2
         m
 )
 
@@ -43,7 +43,7 @@ target_compile_definitions(modelc_mock
 target_link_libraries(modelc_mock
     PRIVATE
         cmocka
-        lua
+        dse_external_lua
         m
 )
 
@@ -71,7 +71,7 @@ target_compile_definitions(fmimcl_runtime
 target_link_libraries(fmimcl_runtime
     PRIVATE
         cmocka
-        lua
+        dse_external_lua
 )
 
 
@@ -102,9 +102,9 @@ target_link_libraries(test_fmimcl
         modelc_runtime
         clib_runtime
     PRIVATE
-        yaml
+        dse_external_yaml
         cmocka
-        dl
+        dse_external_dl
         m
 )
 install(
@@ -152,9 +152,9 @@ target_link_libraries(test_mstep
         modelc_mock
         -Wl,-Bstatic modelc_bundled -Wl,-Bdynamic ${CMAKE_DL_LIBS}
     PRIVATE
-        lua
+        dse_external_lua
         cmocka
-        dl
+        dse_external_dl
         rt
         m
 )

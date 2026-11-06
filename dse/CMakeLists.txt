@@ -37,6 +37,15 @@ add_compile_options(${C_CXX_WARNING_FLAGS})
 add_compile_definitions(DLL_BUILD)
 
 
+# External Projects
+# =================
+set(DSE_FMI_EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../extra/external)
+include(${DSE_FMI_EXTERNAL_DIR}/yaml.cmake)
+include(${DSE_FMI_EXTERNAL_DIR}/xml2.cmake)
+include(${DSE_FMI_EXTERNAL_DIR}/lua.cmake)
+include(${DSE_FMI_EXTERNAL_DIR}/dlfcnwin32.cmake)
+
+
 # External Project - DSE C Lib
 # ----------------------------
 FetchContent_Declare(dse_clib
@@ -81,93 +90,9 @@ FetchContent_Declare(dse_ncodec
     URL                 $ENV{DSE_NCODEC_URL}
     HTTP_USERNAME       $ENV{DSE_NCODEC_URL_USER}
     HTTP_PASSWORD       $ENV{DSE_NCODEC_URL_TOKEN}
-    SOURCE_SUBDIR       dse/ncodec
+    SOURCE_SUBDIR       dse
 )
 FetchContent_MakeAvailable(dse_ncodec)
-
-
-# External Project - yaml
-# -----------------------
-set(YAML_SOURCE_DIR "$ENV{EXTERNAL_BUILD_DIR}/yaml")
-set(YAML_BINARY_DIR "$ENV{EXTERNAL_BUILD_DIR}/yaml")
-find_library(YAML_LIB
-    NAMES
-        libyaml.a
-    PATHS
-        ${YAML_BINARY_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH
-)
-add_library(yaml STATIC IMPORTED GLOBAL)
-set_target_properties(yaml
-    PROPERTIES
-        IMPORTED_LOCATION "${YAML_LIB}"
-        INTERFACE_INCLUDE_DIRECTORIES "${YAML_BINARY_DIR}"
-)
-
-
-# External Project - xml
-# ----------------------
-set(XML_SOURCE_DIR "$ENV{EXTERNAL_BUILD_DIR}/libxml2")
-set(XML_BINARY_DIR "$ENV{EXTERNAL_BUILD_DIR}/libxml2")
-set(XML_INCLUDE_DIR "$ENV{EXTERNAL_BUILD_DIR}/libxml2/install/include/libxml2")
-find_library(XML_LIB
-    NAMES
-        libxml2.a
-    PATHS
-        ${XML_BINARY_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH
-)
-add_library(xml STATIC IMPORTED GLOBAL)
-add_dependencies(xml libxml2)
-set_target_properties(xml
-    PROPERTIES
-        IMPORTED_LOCATION "${XML_LIB}"
-        INTERFACE_INCLUDE_DIRECTORIES "${XML_INCLUDE_DIR}"
-)
-
-
-# External Project - lua
-# ----------------------
-set(LUA_SOURCE_DIR "$ENV{EXTERNAL_BUILD_DIR}/lua")
-set(LUA_BINARY_DIR "$ENV{EXTERNAL_BUILD_DIR}/lua")
-find_library(LUA_LIB
-    NAMES
-        liblua.a
-    PATHS
-        ${LUA_BINARY_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH
-)
-add_library(lua STATIC IMPORTED GLOBAL)
-set_target_properties(lua
-    PROPERTIES
-        IMPORTED_LOCATION "${LUA_LIB}"
-        INTERFACE_INCLUDE_DIRECTORIES "${LUA_BINARY_DIR}"
-)
-
-
-# External Project - dlfcn-win32
-# ------------------------------
-if(WIN32)
-set(DLFCNWIN32_SOURCE_DIR "$ENV{EXTERNAL_BUILD_DIR}/dlfcnwin32/src")
-set(DLFCNWIN32_BINARY_DIR "$ENV{EXTERNAL_BUILD_DIR}/dlfcnwin32-build/lib")
-find_library(DLFCNWIN32_LIB
-    NAMES
-        libdl.a
-    PATHS
-        ${DLFCNWIN32_BINARY_DIR}
-    REQUIRED
-    NO_DEFAULT_PATH
-)
-add_library(dl STATIC IMPORTED GLOBAL)
-set_target_properties(dl
-    PROPERTIES
-        IMPORTED_LOCATION "${DLFCNWIN32_LIB}"
-        INTERFACE_INCLUDE_DIRECTORIES "${DLFCNWIN32_SOURCE_DIR}"
-)
-endif()
 
 
 # Common Targets
@@ -201,9 +126,9 @@ target_link_libraries(fmi2-common
     PUBLIC
         ab-codec
     PRIVATE
-        xml
+        dse_external_xml2
         $<$<BOOL:${WIN32}>:bcrypt>
-        $<$<BOOL:${WIN32}>:dl>
+        $<$<BOOL:${WIN32}>:dse_external_dl>
         m
 )
 

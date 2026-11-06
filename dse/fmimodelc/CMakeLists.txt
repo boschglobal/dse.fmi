@@ -52,11 +52,11 @@ target_link_directories(${FMI2_MODELC}
 target_link_libraries(${FMI2_MODELC}
     PRIVATE
         modelc
-        xml
-        yaml
+        dse_external_xml2
+        dse_external_yaml
         m
         $<$<BOOL:${WIN32}>:bcrypt>
-        $<$<BOOL:${WIN32}>:dl>
+        $<$<BOOL:${WIN32}>:dse_external_dl>
         $<$<BOOL:${WIN32}>:-Wl,-Bstatic>
         $<$<BOOL:${WIN32}>:pthread>
         $<$<BOOL:${WIN32}>:-Wl,-Bdynamic>
@@ -97,11 +97,11 @@ target_link_directories(${FMI3_MODELC}
 target_link_libraries(${FMI3_MODELC}
     PRIVATE
         modelc
-        yaml
-        xml
+        dse_external_yaml
+        dse_external_xml2
         m
         $<$<BOOL:${WIN32}>:bcrypt>
-        $<$<BOOL:${WIN32}>:dl>
+        $<$<BOOL:${WIN32}>:dse_external_dl>
         $<$<BOOL:${WIN32}>:-Wl,-Bstatic>
         $<$<BOOL:${WIN32}>:pthread>
         $<$<BOOL:${WIN32}>:-Wl,-Bdynamic>

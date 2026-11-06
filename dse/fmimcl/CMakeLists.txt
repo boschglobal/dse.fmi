@@ -43,7 +43,7 @@ target_link_directories(${MODULE_LC}
 target_link_libraries(${MODULE_LC}
     PRIVATE
         $<$<BOOL:${WIN32}>:modelc>
-        $<$<BOOL:${WIN32}>:dl>
+        $<$<BOOL:${WIN32}>:dse_external_dl>
 )
 install(
     TARGETS
