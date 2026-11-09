@@ -161,8 +161,8 @@ int32_t fmu_destroy(FmuInstanceData* fmu)
     assert(m);
 
     fmu_log(fmu, 0, "Debug", "Call model_runtime_destroy() ...");
-    free(m->runtime.sim_path);
     model_runtime_destroy(m);
+    free(m->runtime.sim_path);
     free(m->model.sim);
     free(m);
 
