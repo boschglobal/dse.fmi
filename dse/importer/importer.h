@@ -88,7 +88,7 @@ typedef struct CsvDesc {
 } CsvDesc;
 
 
-#define CSV_LINE_MAXLEN 1024
+#define CSV_LINE_MAXLEN 4096
 #define CSV_DELIMITER   ",;\n"
 
 

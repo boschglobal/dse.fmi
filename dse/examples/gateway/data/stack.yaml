@@ -1,7 +1,7 @@
 ---
 kind: Stack
 metadata:
-  name: stack
+  name: gateway
 spec:
   connection:
     transport:

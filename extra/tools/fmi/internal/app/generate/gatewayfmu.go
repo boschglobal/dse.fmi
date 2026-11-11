@@ -339,6 +339,7 @@ func (c *GenFmiGatewayCommand) patchSignal(vr *int, sgType string, signals []sch
 			(*s.Annotations)["dse.standards.fmi-ls-bus-topology.rx_vref"] = []int{*vr}
 			(*s.Annotations)["dse.standards.fmi-ls-bus-topology.tx_vref"] = []int{*vr + 1}
 			signalList = append(signalList, s)
+			*vr += 2
 		}
 		return signalList, nil
 	}
