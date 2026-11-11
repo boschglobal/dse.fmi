@@ -218,7 +218,7 @@ static int _model_match_handler(ModelInstanceSpec* mi, SchemaObject* o)
 
     /* Make sure that a resource dir is set. */
     if (m->resource_dir == NULL) {
-        m->resource_dir = strdup("/tmp");
+        log_fatal("Resource directory is not set.");
     }
 
     /* FMU Library. */
