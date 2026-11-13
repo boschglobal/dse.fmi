@@ -93,7 +93,6 @@ target_link_libraries(modelcgateway_runtime
         m
     PRIVATE
         cmocka
-        dse_external_msgpackc
         dse_external_yaml
         dse_external_dl
 )

@@ -98,7 +98,6 @@ set(DSE_NCODEC_INCLUDE_DIR "${DSE_NCODEC_SOURCE_DIR}/../..")
 # ===========
 include(xml2.cmake)
 include(dlfcnwin32.cmake)
-include(msgpackc.cmake)
 
 
 # OSS Target
@@ -122,4 +121,3 @@ oss_copy(${dse_modelc_SOURCE_DIR}               boschglobal/dse.modelc)
 oss_copy(${dse_ncodec_SOURCE_DIR}               boschglobal/dse.ncodec)
 oss_copy(dse_external_dl_build                  dlfcn-win32/dlfcn-win32)
 oss_copy(dse_external_xml2_build                GNOME/libxml2)
-oss_copy(dse_external_msgpackc_build            msgpack/msgpackc)

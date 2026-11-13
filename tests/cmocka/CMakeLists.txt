@@ -38,7 +38,6 @@ set(REPO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 set(DSE_FMI_EXTERNAL_DIR ${REPO_DIR}/extra/external)
 include(${DSE_FMI_EXTERNAL_DIR}/yaml.cmake)
 include(${DSE_FMI_EXTERNAL_DIR}/xml2.cmake)
-include(${DSE_FMI_EXTERNAL_DIR}/msgpackc.cmake)
 include(${DSE_FMI_EXTERNAL_DIR}/lua.cmake)
 include(${DSE_FMI_EXTERNAL_DIR}/dlfcnwin32.cmake)
 
