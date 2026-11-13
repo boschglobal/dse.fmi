@@ -22,8 +22,8 @@ typedef struct {
     uint64_t calls;
 } BenchmarkFmuTime;
 
-__attribute__((visibility("default"))) volatile BenchmarkFmuTime
-    benchmark_fmu_time;
+__attribute__((
+    visibility("default"))) volatile BenchmarkFmuTime benchmark_fmu_time;
 
 static inline uint64_t _now_ns(void)
 {
@@ -71,8 +71,8 @@ static int _reserve(BenchmarkFmu* f, size_t count)
     if (is_set) f->is_set = is_set;
     if (value == NULL || is_set == NULL) return -1;
 
-    memset(&f->value[f->capacity], 0,
-        (capacity - f->capacity) * sizeof(double));
+    memset(
+        &f->value[f->capacity], 0, (capacity - f->capacity) * sizeof(double));
     memset(&f->is_set[f->capacity], 0, capacity - f->capacity);
     f->capacity = capacity;
     return 0;
@@ -127,7 +127,8 @@ static fmi2Status _do_step(fmi2Component c)
 }
 
 fmi2Status fmi2DoStep(fmi2Component c, fmi2Real currentCommunicationPoint,
-    fmi2Real communicationStepSize, fmi2Boolean noSetFMUStatePriorToCurrentPoint)
+    fmi2Real    communicationStepSize,
+    fmi2Boolean noSetFMUStatePriorToCurrentPoint)
 {
     UNUSED(currentCommunicationPoint);
     UNUSED(communicationStepSize);

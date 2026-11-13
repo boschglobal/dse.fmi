@@ -392,7 +392,7 @@ static char* _absolute_path(const char* path)
 #ifdef _WIN32
     return _fullpath(NULL, path, 0);
 #else
-    int save_errno = errno;
+    int   save_errno = errno;
     char* _path = realpath(path, NULL);
     errno = (errno == EINVAL) ? save_errno : errno; /* Consume: EINVAL. */
     return _path;

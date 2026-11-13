@@ -4,6 +4,7 @@
 
 #define _GNU_SOURCE
 #include <dlfcn.h>
+#include <inttypes.h>
 #include <link.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -12,7 +13,8 @@
 #include <time.h>
 
 
-/* Times model_step() of the FMI MCL without modifying it (see scripts/timing.sh).
+/* Times model_step() of the FMI MCL without modifying it (see
+ * scripts/timing.sh).
  *
  * This library is installed in place of the FMI MCL (same file name), the real
  * FMI MCL is installed next to it with the prefix `real_`. ModelC calls the
@@ -37,7 +39,7 @@ typedef struct {
     uint64_t calls;
 } BenchmarkFmuTime;
 
-static void*       real;
+static void* real;
 static ModelDesc* (*real_create)(ModelDesc*);
 static int (*real_step)(ModelDesc*, double*, double);
 static void (*real_destroy)(ModelDesc*);
@@ -82,7 +84,8 @@ static void _find_fmu_time(void)
 {
     struct link_map* lm;
     if (dlinfo(real, RTLD_DI_LINKMAP, &lm) != 0) return;
-    while (lm->l_prev) lm = lm->l_prev;
+    while (lm->l_prev)
+        lm = lm->l_prev;
     for (; lm; lm = lm->l_next) {
         if (lm->l_name == NULL || lm->l_name[0] == '\0') continue;
         void* h = dlopen(lm->l_name, RTLD_LAZY | RTLD_NOLOAD);
@@ -108,11 +111,11 @@ static int _load_real(void)
     size_t      dir_len = slash ? (size_t)(slash - info.dli_fname + 1) : 0;
     const char* base = info.dli_fname + dir_len;
 
-    char* path = malloc(dir_len + strlen("real_") + strlen(base) + 1);
+    size_t path_len = dir_len + strlen("real_") + strlen(base) + 1;
+    char* path = malloc(path_len);
     if (path == NULL) return -1;
     memcpy(path, info.dli_fname, dir_len);
-    strcpy(path + dir_len, "real_");
-    strcat(path, base);
+    snprintf(path + dir_len, path_len - dir_len, "real_%s", base);
     real = dlopen(path, RTLD_NOW | RTLD_LOCAL);
     if (real == NULL) fprintf(stderr, "mcl_timing_shim: %s\n", dlerror());
     free(path);
@@ -139,12 +142,11 @@ static void _report(void)
     if (fp == NULL) return;
     fprintf(fp,
         "steps=%zu mcl_wall_us_per_step=%.3f mcl_wall_us_median=%.3f "
-        "mcl_wall_us_p95=%.3f fmu_wall_us_median=%.3f clock_ns=%lld "
+        "mcl_wall_us_p95=%.3f fmu_wall_us_median=%.3f clock_ns=%" PRId64 " "
         "fmu_excluded=%d\n",
-        count, mcl_sum * 1e-3 / (double)count,
-        (double)mcl_ns[count / 2] * 1e-3,
+        count, mcl_sum * 1e-3 / (double)count, (double)mcl_ns[count / 2] * 1e-3,
         (double)mcl_ns[count * 95 / 100] * 1e-3,
-        (double)fmu_ns[count / 2] * 1e-3, (long long)clock_ns,
+        (double)fmu_ns[count / 2] * 1e-3, clock_ns,
         fmu_time != &no_fmu_time);
     fclose(fp);
 }
