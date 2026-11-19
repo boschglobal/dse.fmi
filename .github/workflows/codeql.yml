@@ -27,7 +27,7 @@ jobs:
           build-mode: manual
 
       - name: Build C/C++ code
-        run: make -C dse build MAKE_NPROC=2
+        run: make build MAKE_NPROC=2
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
