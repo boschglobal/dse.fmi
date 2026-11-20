@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <ctype.h>
+#include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -365,7 +366,9 @@ static bool _is_settable(FmuModel* m, MarshalGroup* mg, size_t k)
     switch (m->runtime.state) {
     case FMU_STATE_INSTANTIATED:
         return !_is_start_value(mg, k, &m->signals[idx]);
+        return !_is_start_value(mg, k, &m->signals[idx]);
     case FMU_STATE_RUN:
+        return a->parameter.changed[idx];
         return a->parameter.changed[idx];
     default:
         return false;
@@ -395,6 +398,7 @@ static char* _absolute_path(const char* path)
     int   save_errno = errno;
     char* _path = realpath(path, NULL);
     errno = (errno == EINVAL) ? save_errno : errno; /* Consume: EINVAL. */
+    if (errno) return NULL;
     return _path;
 #endif
 }
@@ -421,17 +425,29 @@ static char* _append_escaped(char* out, unsigned char c)
 
 
 /* FMI 2.0 fmuResourceLocation must be an absolute URI (file:///C:/...). */
-static char* _resource_uri(const char* path)
+static uint32_t _resource_uri(FmuModel* m)
 {
-    char*       abs_path = _absolute_path(path);
-    const char* src = abs_path ? abs_path : path;
-    size_t      scheme_len = strlen(FILE_URI_SCHEME);
+    /* Early return if resource dir is already an URI. */
+    if (strncmp(m->resource_dir, FILE_URI_SCHEME, strlen(FILE_URI_SCHEME)) ==
+        0) {
+        return 0;
+    }
+
+    char* abs_path = _absolute_path(m->resource_dir);
+    if (abs_path == NULL) {
+        log_error("Failed to get absolute path for resource directory: %s",
+            m->resource_dir);
+        return errno;
+    }
+
+    size_t scheme_len = strlen(FILE_URI_SCHEME);
 
     /* Worst case every character is escaped to 3 characters. */
-    char* uri = malloc(scheme_len + strlen(src) * 3 + 1);
+    const char* src = abs_path;
+    char*       uri = malloc(scheme_len + strlen(src) * 3 + 1);
     if (uri == NULL) {
         free(abs_path);
-        return NULL;
+        return EINVAL;
     }
 
     char* out = uri;
@@ -452,7 +468,10 @@ static char* _resource_uri(const char* path)
     *out = '\0';
 
     free(abs_path);
-    return uri;
+    free(m->resource_dir);
+    m->resource_dir = uri;
+
+    return 0;
 }
 
 
@@ -462,12 +481,13 @@ static int32_t fmi2mcl_init(FmuModel* m)
     int32_t      rc;
 
     _parameter_create(m);
-    char* resource_uri = _resource_uri(m->resource_dir);
+
+    rc = _resource_uri(m);
+    if (rc) return rc;
 
     a->fmi2_inst = a->vtable.instantiate(m->name, m->cosim, m->guid,
-        resource_uri, &(a->callbacks), fmi2False,
+        m->resource_dir, &(a->callbacks), fmi2False,
         (LOG_LEVEL <= LOG_DEBUG) ? fmi2True : fmi2False);
-    free(resource_uri);
     if (a->fmi2_inst == NULL) {
         log_error("FMI2 Instance could not be created.");
         return EINVAL;
@@ -606,6 +626,8 @@ static int32_t fmi2mcl_unload(FmuModel* m)
     m->runtime.state = FMU_STATE_TERMINATED;
 
     if (a->dl_handle) dlclose(a->dl_handle);
+    free(a->parameter.tunable);
+    free(a->parameter.changed);
     free(a->parameter.tunable);
     free(a->parameter.changed);
     free(m->adapter);

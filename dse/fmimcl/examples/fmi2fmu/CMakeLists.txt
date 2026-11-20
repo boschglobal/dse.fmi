@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.21)
 
 set(MODEL_PATH "${MODULE_LC}/examples")
 project(Fmi2FMU)
-
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/resources)
 
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/resources)
 
