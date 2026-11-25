@@ -13,9 +13,12 @@ jobs:
   analyze:
     name: Analyze (c-cpp)
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/boschglobal/dse-gcc-builder:latest
     permissions:
       actions: read
       contents: read
+      packages: read
       security-events: write
     steps:
       - name: Checkout repository
