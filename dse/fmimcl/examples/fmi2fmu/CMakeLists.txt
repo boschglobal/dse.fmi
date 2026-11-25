@@ -8,8 +8,6 @@ set(MODEL_PATH "${MODULE_LC}/examples")
 project(Fmi2FMU)
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/resources)
 
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/resources)
-
 
 # Target - FMU for testing FMI MCL
 # ================================

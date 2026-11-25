@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <ctype.h>
-#include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -366,9 +365,7 @@ static bool _is_settable(FmuModel* m, MarshalGroup* mg, size_t k)
     switch (m->runtime.state) {
     case FMU_STATE_INSTANTIATED:
         return !_is_start_value(mg, k, &m->signals[idx]);
-        return !_is_start_value(mg, k, &m->signals[idx]);
     case FMU_STATE_RUN:
-        return a->parameter.changed[idx];
         return a->parameter.changed[idx];
     default:
         return false;
@@ -396,9 +393,13 @@ static char* _absolute_path(const char* path)
     return _fullpath(NULL, path, 0);
 #else
     int   save_errno = errno;
+    errno = 0;
     char* _path = realpath(path, NULL);
-    errno = (errno == EINVAL) ? save_errno : errno; /* Consume: EINVAL. */
+    /* realpath may set errno to EINVAL if path is not canonical. */
+    if (errno == EINVAL) errno = 0; /* Consume: EINVAL. */
+    /* Other errors from realpath fail the function. */
     if (errno) return NULL;
+    errno = save_errno;
     return _path;
 #endif
 }
@@ -626,8 +627,6 @@ static int32_t fmi2mcl_unload(FmuModel* m)
     m->runtime.state = FMU_STATE_TERMINATED;
 
     if (a->dl_handle) dlclose(a->dl_handle);
-    free(a->parameter.tunable);
-    free(a->parameter.changed);
     free(a->parameter.tunable);
     free(a->parameter.changed);
     free(m->adapter);
